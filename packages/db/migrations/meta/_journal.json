@@ -92,6 +92,13 @@
       "when": 1785000060000,
       "tag": "0012_adjustment_withdrawals",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785000061000,
+      "tag": "0013_identity_merge_execution",
+      "breakpoints": true
     }
   ]
 }

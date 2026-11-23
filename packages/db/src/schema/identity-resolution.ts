@@ -100,7 +100,41 @@ export const identityRedirects = pgTable('identity_redirect', {
   oldPersonId:   uuid('old_person_id').notNull().references(() => persons.id),
   newPersonId:   uuid('new_person_id').notNull().references(() => persons.id),
   effectiveFrom: timestamp('effective_from', { withTimezone: true }).notNull().defaultNow(),
+  /** Core moves done and the event queued, in the decision's transaction (ADR-031 item 5). */
   propagatedAt:  timestamp('propagated_at', { withTimezone: true }),
+  mergeId:       uuid('merge_id'),
+  endedAt:       timestamp('ended_at', { withTimezone: true }),
+  endedByMergeId: uuid('ended_by_merge_id'),
+});
+
+/** An executed merge (ADR-031 item 5, migration 0013); unmerge sets unmergedAt (BL-359). */
+export const identityMerges = pgTable('identity_merge', {
+  id:                       uuid('id').primaryKey().defaultRandom(),
+  tenantId:                 uuid('tenant_id').notNull().references(() => tenants.id),
+  identityResolutionCaseId: uuid('identity_resolution_case_id').notNull(),
+  decisionId:               uuid('decision_id').notNull(),
+  proposalVersion:          integer('proposal_version').notNull(),
+  survivorPersonId:         uuid('survivor_person_id').notNull(),
+  mergedPersonId:           uuid('merged_person_id').notNull(),
+  effectiveAt:              timestamp('effective_at', { withTimezone: true }).notNull(),
+  decidedBy:                text('decided_by').notNull(),
+  unmergedAt:               timestamp('unmerged_at', { withTimezone: true }),
+  unmergeDecisionId:        uuid('unmerge_decision_id'),
+});
+
+/** One row moved by a merge, so unmerge can reverse exactly what it did. */
+export const identityMergeMoves = pgTable('identity_merge_move', {
+  id:              uuid('id').primaryKey().defaultRandom(),
+  tenantId:        uuid('tenant_id').notNull().references(() => tenants.id),
+  mergeId:         uuid('merge_id').notNull(),
+  tableName:       text('table_name').notNull(),
+  columnName:      text('column_name').notNull(),
+  rowKey:          text('row_key').notNull(),
+  mode:            text('mode').notNull(),
+  fromPersonId:    uuid('from_person_id').notNull(),
+  toPersonId:      uuid('to_person_id').notNull(),
+  closedVersionId: uuid('closed_version_id'),
+  newVersionId:    uuid('new_version_id'),
 });
 
 export type IdentityRedirect    = typeof identityRedirects.$inferSelect;

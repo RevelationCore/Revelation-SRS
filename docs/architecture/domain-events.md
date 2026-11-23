@@ -68,6 +68,14 @@ interface DomainEventEnvelope<T> {
 | `srs.identity.verification-requested` | personal | `personId` | identity-service |
 | `srs.identity.verification-completed` | personal | `personId` | identity-service, admissions-adapter |
 
+### Person (`srs.person.*`)
+
+| Subject | Data class | Partition key | Consumers |
+|---|---|---|---|
+| `srs.person.merged` | personal | `survivorPersonId` | wellbeing-module, attendance-module, vle-connector |
+
+Published from the core outbox when an identity merge has moved current ownership to the survivor (ADR-031 item 7). The payload is `{ mergeId, survivorPersonId, mergedPersonId, effectiveAt }`: ids only, never names or identifiers. Consumers re-key their own records idempotently by `mergeId` (BL-358). `srs.person.unmerged` follows with unmerge (BL-359).
+
 ### Enrolment (`srs.enrolment.*`)
 
 | Subject | Data Class | Partition Key | Consumers |

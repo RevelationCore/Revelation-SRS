@@ -427,7 +427,7 @@ export async function buildApp(
   const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher, adjustmentTargets, documentStore, audit);
   const businessCases = new BusinessCaseService(db);
   const auditReview = new AuditReviewService(db, businessCases);
-  const identityResolution = new IdentityResolutionService(db, businessCases);
+  const identityResolution = new IdentityResolutionService(db, businessCases, audit);
   const engagementOutcomes = new EngagementOutcomeService(db, eventBus);
   const exceptionalCircumstances = new ExceptionalCircumstancesService(db, eventBus);
   const misconduct = new MisconductService(db, valueSets, eventBus);

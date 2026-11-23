@@ -29,6 +29,7 @@ export const PERSON_REFERENCES: readonly PersonReference[] = [
 
   // ── Current state, not bitemporal: moved and recorded for unmerge ────────
   { table: 'adjustment_proposal',         column: 'person_id', mode: 'ledgered-move', note: 'A proposal awaiting a decision follows the student' },
+  { table: 'adjustment_withdrawal',       column: 'person_id', mode: 'ledgered-move', note: 'As for adjustment_proposal' },
   { table: 'award_recommendation',        column: 'person_id', mode: 'ledgered-move' },
   { table: 'examiner_appointment',        column: 'person_id', mode: 'ledgered-move', note: 'The examiner; a duplicate staff record merges like any other' },
   { table: 'fee_liability',               column: 'person_id', mode: 'ledgered-move', note: 'Not bitemporal although core principle 3 says it should be (BL-362)' },
@@ -45,6 +46,8 @@ export const PERSON_REFERENCES: readonly PersonReference[] = [
   // ── What happened to whom, or who acted: kept as it is ───────────────────
   { table: 'adjustment_proposal',          column: 'proposed_by_person_id', mode: 'history-in-place', note: 'Who proposed it' },
   { table: 'adjustment_proposal',          column: 'decided_by_person_id',  mode: 'history-in-place', note: 'Who decided it' },
+  { table: 'adjustment_withdrawal',        column: 'proposed_by_person_id', mode: 'history-in-place', note: 'Who proposed it' },
+  { table: 'adjustment_withdrawal',        column: 'decided_by_person_id',  mode: 'history-in-place', note: 'Who decided it' },
   { table: 'delivery_item',                column: 'person_id',  mode: 'history-in-place', note: 'What was sent; a merge requests a person-merged notice and a fresh snapshot instead (item 8)' },
   { table: 'delivery_item',                column: 'subject_id', subjectType: 'person', mode: 'history-in-place' },
   { table: 'email_message',                column: 'person_id',  mode: 'history-in-place' },
@@ -59,6 +62,10 @@ export const PERSON_REFERENCES: readonly PersonReference[] = [
 
   // ── The merge machinery ──────────────────────────────────────────────────
   { table: 'data_correction_case',          column: 'person_id',           mode: 'identity-infra' },
+  { table: 'identity_merge',                column: 'merged_person_id',    mode: 'identity-infra' },
+  { table: 'identity_merge',                column: 'survivor_person_id',  mode: 'identity-infra' },
+  { table: 'identity_merge_move',           column: 'from_person_id',      mode: 'identity-infra' },
+  { table: 'identity_merge_move',           column: 'to_person_id',        mode: 'identity-infra' },
   { table: 'identity_merge_proposal',       column: 'merged_person_id',    mode: 'identity-infra' },
   { table: 'identity_merge_proposal',       column: 'survivor_person_id',  mode: 'identity-infra' },
   { table: 'identity_redirect',             column: 'new_person_id',       mode: 'identity-infra' },

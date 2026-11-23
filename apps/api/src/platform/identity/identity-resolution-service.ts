@@ -6,6 +6,7 @@ import {
   deliveryItems,
   enrolments,
   identityMergeProposals,
+  identityMerges,
   identityResolutionCases,
   identityResolutionCandidates,
   identityResolutionDecisions,
@@ -20,10 +21,14 @@ import {
   type TenantScopedDb,
   withTenantContext,
 } from '@revelation-srs/db';
-import { ConflictError, DomainError, ForbiddenError, NotFoundError, ValidationError } from '@revelation-srs/domain';
+import { ConflictError, DomainError, EVENT_TYPES, ForbiddenError, NotFoundError, ValidationError, type PersonMergedV1Payload } from '@revelation-srs/domain';
 
+import type { AuditService } from '../audit/service.js';
 import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
+import { enqueueWorkflowEvent } from '../platform-controls/workflow-event-outbox.js';
+
+import { moveToSurvivor } from './person-merge.js';
 
 type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
@@ -112,6 +117,7 @@ export class IdentityResolutionService {
   constructor(
     private readonly db: Db,
     private readonly businessCases: BusinessCaseService,
+    private readonly audit?: AuditService,
   ) {}
 
   async openCase(tenantId: string, input: OpenResolutionCaseInput, actorId: string): Promise<string> {
@@ -239,14 +245,47 @@ export class IdentityResolutionService {
         });
       }
       if (input.decisionTypeCode === 'merge' && proposal) {
+        const now = clockNow();
+        const mergeId = randomUUID();
         await tx.insert(personIdentityLinks).values({
           id: randomUUID(), tenantId: tenantId as Uuid, sourcePersonId: proposal.mergedPersonId, targetPersonId: proposal.survivorPersonId,
-          linkTypeCode: 'merged-into', createdAt: clockNow(),
+          linkTypeCode: 'merged-into', createdAt: now,
         });
+        await tx.insert(identityMerges).values({
+          id: mergeId, tenantId: tenantId as Uuid, identityResolutionCaseId: identityResolutionCaseId as Uuid, decisionId: decisionId,
+          proposalVersion: proposal.version, survivorPersonId: proposal.survivorPersonId as Uuid, mergedPersonId: proposal.mergedPersonId as Uuid,
+          effectiveAt: now, decidedBy: actor.sub,
+        });
+        // ADR-031 item 5 (BL-355): move current ownership, keep history in place, record each move.
+        const moved = await moveToSurvivor(tx, {
+          tenantId, mergeId, survivorPersonId: proposal.survivorPersonId, mergedPersonId: proposal.mergedPersonId,
+          factChoices: proposal.factChoices, now,
+        });
+        // The merged person's row stays, so the old id stays resolvable.
+        await tx.update(persons).set({ personStatusCode: 'merged' })
+          .where(and(eq(persons.tenantId, tenantId as Uuid), eq(persons.id, proposal.mergedPersonId as Uuid)));
+        // propagated_at: core moves done and the event queued, in this transaction.
         await tx.insert(identityRedirects).values({
           id: randomUUID(), tenantId: tenantId as Uuid, oldPersonId: proposal.mergedPersonId, newPersonId: proposal.survivorPersonId,
-          effectiveFrom: clockNow(), propagatedAt: null,
+          effectiveFrom: now, propagatedAt: now, mergeId: mergeId,
         });
+        const payload: PersonMergedV1Payload = { mergeId, survivorPersonId: proposal.survivorPersonId, mergedPersonId: proposal.mergedPersonId, effectiveAt: now.toISOString() };
+        await enqueueWorkflowEvent(tx, {
+          tenantId, eventType: EVENT_TYPES.PERSON_MERGED, correlationId: decisionId, dataClassification: 'personal',
+          payload: payload as unknown as Record<string, unknown>,
+        });
+        if (this.audit) {
+          await this.audit.record({
+            tenantId, entityType: 'identity-merge', entityId: mergeId, actionType: 'create', actorType: 'user', actorId: actor.sub,
+            reasonText: `Merged ${proposal.mergedPersonId} into ${proposal.survivorPersonId} (decision ${decisionId})`,
+          }, tx);
+          for (const [tableColumn, count] of Object.entries(moved)) {
+            await this.audit.record({
+              tenantId, entityType: 'identity-merge', entityId: mergeId, actionType: 'update', actorType: 'user', actorId: actor.sub,
+              fieldName: tableColumn, afterValue: count, reasonText: `Merge moved ${count} ${tableColumn} row(s) to the survivor`,
+            }, tx);
+          }
+        }
         // The identifier value not kept still finds the survivor.
         for (const c of await identifierConflicts(tx, tenantId, proposal)) {
           const keep = proposal.identifierResolutions[c.identifierClass]!.keep;
