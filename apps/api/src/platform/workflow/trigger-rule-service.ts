@@ -129,16 +129,26 @@ export function evaluateLegacyEnrolmentCreationTriggers(input: CreateEnrolmentIn
   return decisions;
 }
 
+/** BP-02 pre-review F3 (BL-214): a return to study from interruption or suspension. */
+function isResumption(input: EnrolmentStatusTransitionTriggerContext): boolean {
+  return input.newStatus === 'enrolled' && ['intermitting', 'suspended'].includes(input.current.statusCode);
+}
+
 export function evaluateLegacyEnrolmentStatusTransitionTriggers(
   input: EnrolmentStatusTransitionTriggerContext,
 ): EnrolmentTriggerDecision[] {
-  if (!input.current.slcReference || !['withdrawn', 'intermitting'].includes(input.newStatus)) return [];
+  if (!input.current.slcReference) return [];
+  // BP-02 pre-review F3 (BL-214): SLC is told of withdrawal, interruption and
+  // suspension, and of a return from either, or a returning student keeps a
+  // stopped SLC record and a suspended one may be overpaid.
+  const resuming = isResumption(input);
+  if (!resuming && !['withdrawn', 'intermitting', 'suspended'].includes(input.newStatus)) return [];
   return [
     triggerDecision('legacy', 'legacy.slc-status-change-on-withdrawal-or-intermission', 'slc-confirmation', {
       sourceReference: input.current.slcReference,
       payloadSummary: {
         slcReference: input.current.slcReference,
-        notificationType: input.newStatus,
+        notificationType: resuming ? 'resumption' : input.newStatus,
       },
     }),
   ];
@@ -186,6 +196,11 @@ function matchesCondition(
       return 'current' in context
         && Boolean(context.current.slcReference)
         && ['withdrawn', 'intermitting'].includes(context.newStatus);
+    // F3 (BL-214): also suspension, and a return from interruption or suspension.
+    case 'slcReference.present-and-status.change-of-circumstances':
+      return 'current' in context
+        && Boolean(context.current.slcReference)
+        && (['withdrawn', 'intermitting', 'suspended'].includes(context.newStatus) || isResumption(context));
     default:
       return false;
   }
@@ -222,7 +237,7 @@ function payloadSummaryForRule(
   if ('current' in context) {
     return {
       ...(triggerTypeCode === 'slc-confirmation' ? { slcReference: context.current.slcReference } : {}),
-      notificationType: context.newStatus,
+      notificationType: isResumption(context) ? 'resumption' : context.newStatus,
       ...override,
     };
   }

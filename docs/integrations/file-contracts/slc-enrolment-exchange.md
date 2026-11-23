@@ -74,7 +74,8 @@ Generates a batch of pending SLC enrolment confirmations for all enrolments wher
 |---|---|---|
 | `enrolment` | Student enrolled and fee liability confirmed | Enrolment confirmation |
 | `withdrawal` | Student withdrew from programme | Withdrawal notification |
-| `intermission` | Student intermitting (temporary leave of absence) | Intermission notification |
+| `intermission` | Student intermitting (temporary leave of absence) or suspended | Intermission notification |
+| `resumption` | Student returned to study from interruption or suspension (added 2026-11-23, BL-214) | Change of circumstances: resumption |
 
 ### Fee amount format
 

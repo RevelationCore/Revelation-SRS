@@ -25436,7 +25436,7 @@ export interface operations {
                                 slcReference: string;
                                 programmeId: string | null;
                                 modeOfStudyCode: string;
-                                confirmationType: "enrolment" | "withdrawal" | "intermission";
+                                confirmationType: "enrolment" | "withdrawal" | "intermission" | "resumption";
                                 feeAmount: string | null;
                                 startDate: string;
                                 expectedEndDate: string | null;
@@ -25470,7 +25470,7 @@ export interface operations {
                         slcReference: string;
                         programmeId: string | null;
                         modeOfStudyCode: string;
-                        confirmationType: "enrolment" | "withdrawal" | "intermission";
+                        confirmationType: "enrolment" | "withdrawal" | "intermission" | "resumption";
                         feeAmount: string | null;
                         startDate: string;
                         expectedEndDate: string | null;

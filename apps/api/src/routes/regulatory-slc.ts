@@ -28,6 +28,7 @@ const SlcConfirmationRecordSchema = Type.Object({
     Type.Literal('enrolment'),
     Type.Literal('withdrawal'),
     Type.Literal('intermission'),
+    Type.Literal('resumption'),
   ]),
   feeAmount: Type.Union([Type.String(), Type.Null()]),
   startDate: Type.String(),

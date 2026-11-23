@@ -47853,6 +47853,12 @@
                                     "enum": [
                                       "intermission"
                                     ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "resumption"
+                                    ]
                                   }
                                 ]
                               },
@@ -47968,6 +47974,12 @@
                           "type": "string",
                           "enum": [
                             "intermission"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "resumption"
                           ]
                         }
                       ]
