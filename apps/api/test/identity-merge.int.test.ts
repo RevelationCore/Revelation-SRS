@@ -113,3 +113,43 @@ describe('merge execution (ADR-031 item 5)', () => {
     expect(await rows(sql`SELECT 1 FROM identity_merge WHERE merged_person_id = ${a}::uuid`)).toEqual([]);
   });
 });
+
+describe('old ids are resolved at the edge (ADR-031 items 6 and 9, BL-356)', () => {
+  it('a GET on a merged-away id is redirected to the survivor; a write is refused, never redirected', async () => {
+    const merged = await person('EdgeOld'); const survivor = await person('EdgeNew');
+    await mergeInto(merged, survivor);
+    const get = await call(registry, 'GET', `/students/${merged}/adjustments`);
+    expect(get.statusCode).toBe(307);
+    expect(get.headers.location).toBe(`/api/v1/students/${survivor}/adjustments`);
+    expect(get.json()).toMatchObject({ type: 'https://srs.example.com/errors/person-merged', survivorPersonId: survivor });
+
+    const write = await ctx.app.inject({ method: 'PATCH', url: `/api/v1/students/${merged}/status`, headers: { authorization: `Bearer ${registry}` }, payload: { statusCode: 'student' } });
+    expect(write.statusCode).toBe(409);
+    expect(write.json()).toMatchObject({ type: 'https://srs.example.com/errors/person-merged', survivorPersonId: survivor });
+
+    // The survivor itself, and people never merged, are untouched.
+    expect((await call(registry, 'GET', `/students/${survivor}/adjustments`)).statusCode).toBe(200);
+  });
+
+  it('a student token issued for the merged person reads the survivor', async () => {
+    const merged = await person('TokOld'); const survivor = await person('TokNew');
+    const token = await ctx.makeJwt({ sub: 'student-kc-1', roles: ['student'], srsPersonId: merged });
+    expect((await call(token, 'GET', `/students/${survivor}/adjustments`)).statusCode).toBe(403);
+    await mergeInto(merged, survivor);
+    expect((await call(token, 'GET', `/students/${survivor}/adjustments`)).statusCode).toBe(200);
+  });
+
+  it('search by the merged person\'s student number or a dropped HUSID finds the survivor, with mergedFrom', async () => {
+    const merged = await person('SearchOld'); const survivor = await person('SearchNew');
+    await ctx.db.execute(sql`UPDATE person SET hesa_id = '1811111111111' WHERE id = ${merged}::uuid`);
+    await ctx.db.execute(sql`UPDATE person SET hesa_id = '1822222222222' WHERE id = ${survivor}::uuid`);
+    const [{ student_number: oldNumber }] = await rows<{ student_number: string }>(sql`SELECT student_number FROM person WHERE id = ${merged}::uuid`) as [{ student_number: string }];
+    await mergeInto(merged, survivor, { identifierResolutions: { husid: { keep: 'survivor', reason: 'HESA confirmed' } } });
+
+    for (const term of [oldNumber, '1811111111111']) {
+      const res = await call(registry, 'GET', `/students?search=${encodeURIComponent(term)}`);
+      expect(res.statusCode).toBe(200);
+      expect(res.json(), term).toEqual([expect.objectContaining({ personId: survivor, legalFirstName: 'SearchNew', mergedFrom: [merged] })]);
+    }
+  });
+});

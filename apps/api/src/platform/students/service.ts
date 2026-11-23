@@ -13,6 +13,7 @@ import {
   workflowTasks,
   type Db,
   withTenantContext,
+  type TenantScopedDb,
 } from '@revelation-srs/db';
 import { NotFoundError, ValidationError } from '@revelation-srs/domain';
 
@@ -123,6 +124,8 @@ export interface PersonSummaryDto {
   studentNumber: string;
   legalFirstName: string;
   legalFamilyName: string;
+  /** ADR-031 item 6: merged-away people this search matched, now this survivor. */
+  mergedFrom?:   string[];
 }
 
 export interface DisabilityDeclarationDto {
@@ -377,41 +380,62 @@ export class StudentService {
       ? opts.search.trim().split(/\s+/).map(t => `%${t}%`)
       : [];
 
-    const rows = await withTenantContext(this.db, tenantId, async (tx) => {
-      return tx
-        .select({
-          personId:       persons.id,
-          studentNumber:  persons.studentNumber,
-          legalFirstName:  personIdentities.legalFirstName,
-          legalFamilyName: personIdentities.legalFamilyName,
-        })
-        .from(persons)
-        .leftJoin(
-          personIdentities,
-          and(
-            eq(personIdentities.personId, persons.id),
-            isNull(personIdentities.recordedUntil),
-          ),
-        )
-        .where(and(
-          eq(persons.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-          ...(opts.statusCode ? [eq(persons.personStatusCode, opts.statusCode)] : []),
-          ...tokens.map(pat => or(
-            ilike(personIdentities.legalFirstName,  pat),
-            ilike(personIdentities.legalFamilyName, pat),
-            ilike(persons.studentNumber,             pat),
-          )),
-        ))
-        .limit(limit)
-        .offset(offset);
+    // ADR-031 item 6: a student number, HUSID or alias value of a merged-away
+    // person finds the survivor, with mergedFrom. A token matches the names,
+    // student number and HUSID, or is exactly an identifier alias.
+    const raw = opts.search ? opts.search.trim().split(/\s+/) : [];
+    const summary = (tx: TenantScopedDb, where: ReturnType<typeof and>) => tx
+      .select({
+        personId:        persons.id,
+        studentNumber:   persons.studentNumber,
+        statusCode:      persons.personStatusCode,
+        legalFirstName:  personIdentities.legalFirstName,
+        legalFamilyName: personIdentities.legalFamilyName,
+      })
+      .from(persons)
+      .leftJoin(personIdentities, and(eq(personIdentities.personId, persons.id), isNull(personIdentities.recordedUntil)))
+      .where(where);
+
+    const result = await withTenantContext(this.db, tenantId, async (tx) => {
+      const rows = await summary(tx, and(
+        eq(persons.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        ...(opts.statusCode ? [eq(persons.personStatusCode, opts.statusCode)] : []),
+        ...tokens.map((pat, i) => or(
+          ilike(personIdentities.legalFirstName,  pat),
+          ilike(personIdentities.legalFamilyName, pat),
+          ilike(persons.studentNumber,             pat),
+          ilike(persons.hesaId,                    pat),
+          sql`${persons.id} IN (SELECT person_id FROM person_identifier_alias WHERE tenant_id = ${tenantId}::uuid AND value = ${raw[i]})`,
+        )),
+      )).limit(limit).offset(offset);
+
+      // Replace each merged-away person by the survivor its current redirect names.
+      const merged = rows.filter((r) => r.statusCode === 'merged').map((r) => r.personId);
+      const redirects = merged.length === 0 ? [] : await tx.execute(sql`SELECT old_person_id::text AS old_id, new_person_id::text AS new_id FROM identity_redirect
+        WHERE tenant_id = ${tenantId}::uuid AND ended_at IS NULL AND old_person_id IN (${sql.join(merged.map((m) => sql`${m}::uuid`), sql`, `)})`) as unknown as Array<{ old_id: string; new_id: string }>;
+      const survivorOf = new Map(redirects.map((r) => [r.old_id, r.new_id]));
+      const missing = [...new Set(redirects.map((r) => r.new_id))].filter((id) => !rows.some((r) => r.personId === id));
+      const survivors = missing.length === 0 ? [] : await summary(tx, and(
+        eq(persons.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        sql`${persons.id} IN (${sql.join(missing.map((m) => sql`${m}::uuid`), sql`, `)})`,
+      ));
+      return { rows, survivorOf, survivors };
     });
 
-    return rows.map((r) => ({
-      personId:       r.personId,
-      studentNumber:  r.studentNumber,
-      legalFirstName:  r.legalFirstName  ?? '',
-      legalFamilyName: r.legalFamilyName ?? '',
-    }));
+    const out = new Map<string, PersonSummaryDto>();
+    const add = (r: { personId: string; studentNumber: string; legalFirstName: string | null; legalFamilyName: string | null }) => {
+      if (!out.has(r.personId)) out.set(r.personId, { personId: r.personId, studentNumber: r.studentNumber, legalFirstName: r.legalFirstName ?? '', legalFamilyName: r.legalFamilyName ?? '' });
+      return out.get(r.personId)!;
+    };
+    const byId = new Map([...result.rows, ...result.survivors].map((r) => [r.personId, r]));
+    for (const r of result.rows) {
+      const survivorId = result.survivorOf.get(r.personId);
+      const survivor = survivorId ? byId.get(survivorId) : undefined;
+      if (!survivor) { add(r); continue; }
+      const dto = add(survivor);
+      dto.mergedFrom = [...(dto.mergedFrom ?? []), r.personId];
+    }
+    return [...out.values()];
   }
 
   /**

@@ -53027,6 +53027,12 @@
                       },
                       "legalFamilyName": {
                         "type": "string"
+                      },
+                      "mergedFrom": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       }
                     }
                   }

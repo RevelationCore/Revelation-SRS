@@ -24,6 +24,12 @@ export interface AuthenticatedUser {
    * database rows, never `sub` or email.
    */
   srsPersonId?: string;
+  /**
+   * ADR-031 item 9: the srs_person_id the token was issued with, kept when it
+   * names a person since merged and srsPersonId has been resolved to the
+   * survivor. Absent otherwise.
+   */
+  srsPersonIdAsIssued?: string;
 }
 
 /** Fastify module augmentation so request.user is typed throughout the app. */

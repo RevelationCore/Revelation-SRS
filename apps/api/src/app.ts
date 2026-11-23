@@ -18,6 +18,7 @@ import type { Config } from './config.js';
 import { AdjustmentProposalService } from './platform/adjustments/adjustment-proposal-service.js';
 import { AdjustmentService } from './platform/adjustments/adjustment-service.js';
 import { AdjustmentWithdrawalService } from './platform/adjustments/adjustment-withdrawal-service.js';
+import { PersonRedirectResolver } from './platform/identity/person-redirects.js';
 import { AdjustmentDistributionDispatcher } from './platform/adjustments/distribution-dispatcher.js';
 import { AdjustmentTargetConfigService } from './platform/adjustments/target-config.js';
 import { AdjustmentTaskNoticeService } from './platform/adjustments/task-notices.js';
@@ -428,6 +429,35 @@ export async function buildApp(
   const businessCases = new BusinessCaseService(db);
   const auditReview = new AuditReviewService(db, businessCases);
   const identityResolution = new IdentityResolutionService(db, businessCases, audit);
+  // ADR-031 items 6 and 9 (BL-356): old, merged-away ids are resolved at the edge.
+  const personRedirects = new PersonRedirectResolver(db);
+  fastify.decorate('personRedirectResolver', personRedirects);
+  fastify.addHook('preHandler', async (request, reply) => {
+    if (!request.tenantId || !request.user) return;
+    // A token naming a merged person reads the survivor; self-service routes keep using srsPersonId.
+    if (request.user.srsPersonId) {
+      const survivor = await personRedirects.current(request.tenantId, request.user.srsPersonId);
+      if (survivor) {
+        request.user.srsPersonIdAsIssued = request.user.srsPersonId;
+        request.user.srsPersonId = survivor;
+        request.log.info({ srsPersonIdAsIssued: request.user.srsPersonIdAsIssued, srsPersonId: survivor }, 'Token person id resolved to merge survivor');
+      }
+    }
+    // A staff route naming a merged-away person: GET is redirected, a write is refused, never silently redirected.
+    const personId = (request.params as Record<string, unknown> | undefined)?.['personId'];
+    if (typeof personId !== 'string') return;
+    const survivor = await personRedirects.current(request.tenantId, personId);
+    if (!survivor) return;
+    const problem = {
+      type: 'https://srs.example.com/errors/person-merged', title: 'Person merged', status: request.method === 'GET' ? 307 : 409,
+      detail: `This person was merged into ${survivor}; use that id`, instance: request.url, survivorPersonId: survivor,
+    };
+    if (request.method === 'GET') {
+      await reply.code(307).header('Location', request.url.split(personId).join(survivor)).type('application/problem+json').send(problem);
+      return;
+    }
+    await reply.code(409).type('application/problem+json').send(problem);
+  });
   const engagementOutcomes = new EngagementOutcomeService(db, eventBus);
   const exceptionalCircumstances = new ExceptionalCircumstancesService(db, eventBus);
   const misconduct = new MisconductService(db, valueSets, eventBus);
@@ -1049,6 +1079,7 @@ declare module 'fastify' {
     adjustmentService: AdjustmentService;
     adjustmentProposalService: AdjustmentProposalService;
     adjustmentWithdrawalService: AdjustmentWithdrawalService;
+    personRedirectResolver: PersonRedirectResolver;
     adjustmentDispatcher: AdjustmentDistributionDispatcher;
     adjustmentTargetConfigService: AdjustmentTargetConfigService;
     adjustmentTaskNoticeService: AdjustmentTaskNoticeService;

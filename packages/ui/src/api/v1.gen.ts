@@ -27768,6 +27768,7 @@ export interface operations {
                         studentNumber: string;
                         legalFirstName: string;
                         legalFamilyName: string;
+                        mergedFrom?: string[];
                     }[];
                 };
             };
