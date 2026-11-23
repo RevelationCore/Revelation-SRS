@@ -426,6 +426,85 @@
    }
   ]
  },
+ "adjustment_proposal/manual_reason_code": {
+  "setCode": "adjustment-manual-reason-code",
+  "displayName": "Manual Adjustment Reason",
+  "entityName": "adjustment_proposal",
+  "fieldName": "manual_reason_code",
+  "members": [
+   {
+    "code": "external-case-system",
+    "displayLabel": "Decided in the disability service's own case system",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "paper-record",
+    "displayLabel": "A signed paper support plan",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "prior-provider-plan",
+    "displayLabel": "A plan from a previous or partner provider",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "migration-correction",
+    "displayLabel": "Re-entering a legacy adjustment the migration could not express",
+    "description": null,
+    "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "adjustment_proposal/status_code": {
+  "setCode": "adjustment-proposal-status-code",
+  "displayName": "Adjustment Proposal Status",
+  "entityName": "adjustment_proposal",
+  "fieldName": "status_code",
+  "members": [
+   {
+    "code": "proposed",
+    "displayLabel": "Proposed",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "approved",
+    "displayLabel": "Approved",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "rejected",
+    "displayLabel": "Rejected",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
  "adjustment_target_config/fulfilment_mode_code": {
   "setCode": "distribution-fulfilment-mode-code",
   "displayName": "Adjustment Target Fulfilment Mode",
@@ -1270,6 +1349,24 @@
     "displayLabel": "Identity resolution officer",
     "description": null,
     "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -6460,6 +6557,24 @@
     "displayLabel": "Identity resolution officer",
     "description": null,
     "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -15323,6 +15438,24 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -15607,6 +15740,24 @@
     "displayLabel": "Identity resolution officer",
     "description": null,
     "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -16073,6 +16224,24 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -16419,6 +16588,24 @@
     "displayLabel": "Identity resolution officer",
     "description": null,
     "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
     "active": true,
     "hidden": false,
     "selectable": true

@@ -145,6 +145,44 @@ export const adjustmentRequests = pgTable('adjustment_request', {
 export type AdjustmentRequest = typeof adjustmentRequests.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A manual adjustment proposal (ADR-033 item 2, migration 0009): a core
+ * adjustment with no wellbeing case behind it, held here until an adjustment
+ * approver who did not propose it decides it. Not bitemporal: a governed
+ * decision record, like ec_determination. Readers of reasonable_adjustment
+ * never see a proposal; approval writes the adjustment (provenance
+ * 'manual-approved') and sets adjustmentId. There is no notes field: free
+ * text must not reach the targets (BL-243).
+ */
+export const adjustmentProposals = pgTable('adjustment_proposal', {
+  id:                  uuid('id').primaryKey().defaultRandom(),
+  tenantId:            uuid('tenant_id').notNull().references(() => tenants.id),
+  personId:            uuid('person_id').notNull(),
+  enrolmentId:         uuid('enrolment_id').notNull(),
+  adjustmentTypeCode:  text('adjustment_type_code').notNull(),
+  scopeCode:           text('scope_code').notNull(),
+  amountValue:         numeric('amount_value', { precision: 8, scale: 2 }),
+  amountUnitCode:      text('amount_unit_code'),
+  validFrom:           timestamp('valid_from', { withTimezone: true }).notNull(),
+  validTo:             timestamp('valid_to', { withTimezone: true }),
+  manualReasonCode:    text('manual_reason_code').notNull(),   // value set adjustment-manual-reason-code
+  externalReference:   text('external_reference').notNull(),   // where the decision is held; 1-100 chars
+  statusCode:          text('status_code').notNull().default('proposed'), // proposed | approved | rejected
+  proposedBy:          text('proposed_by').notNull(),
+  proposedByPersonId:  uuid('proposed_by_person_id'),
+  proposedAt:          timestamp('proposed_at', { withTimezone: true }).notNull().defaultNow(),
+  workflowInstanceId:  uuid('workflow_instance_id'),
+  decidedBy:           text('decided_by'),
+  decidedByPersonId:   uuid('decided_by_person_id'),
+  decidedAt:           timestamp('decided_at', { withTimezone: true }),
+  decisionReason:      text('decision_reason'),
+  adjustmentId:        uuid('adjustment_id'),
+});
+
+export type AdjustmentProposal = typeof adjustmentProposals.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BPR-D09 note: an earlier `support_outcome`/shared distribution_item table
 // (originally migration 0046_support_outcome_distribution, since squashed
 // into 0000_baseline (section 0004_business_process_foundations)) was intended to replace

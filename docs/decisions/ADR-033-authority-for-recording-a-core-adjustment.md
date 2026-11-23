@@ -85,7 +85,7 @@ What the code shows:
      | `decision-gateway` (gateway `G01`, "Approve the manual adjustment?") | decision | `adjustment-approver` |
      | `manual-adjustment-closed` | end | |
 
-     The `GovernedReview` spec is: `subjectEntityType: 'adjustment_proposal'`, `assigneeRoleCode: 'adjustment-approver'` and `effectDecisionCodes: ['approved']`. Decision codes are `approved` and `rejected`.
+     The `GovernedReview` spec is: `subjectEntityType: 'adjustment_proposal'`, `assigneeRoleCode: 'adjustment-approver'` and `effectDecisionCodes: ['approved', 'rejected']`. As built (BL-378), a rejection is an effect too: it changes the proposal, and on Temporal only effect decisions reach the service. Decision codes are `approved` and `rejected`.
    - **The approval effect** is a new `AdjustmentProposalService` (`apps/api/src/platform/adjustments/adjustment-proposal-service.ts`). It calls the shared recording path with `authority: { kind: 'manual-proposal', proposalId }` and idempotency key `adjustment-proposal:<proposalId>`, so a retried activity finds the same adjustment. In the same transaction it sets `status_code = 'approved'`, `adjustment_id`, `decided_by` and `decided_at`. It then:
      - creates the distributions;
      - publishes `srs.adjustment.approved`;
@@ -177,13 +177,14 @@ What the code shows:
    | Permission | Roles | Change |
    |---|---|---|
    | `adjustment:record-approved` | `wellbeing-service` | unchanged; now the only way into `POST .../adjustments` |
-   | `adjustment:propose` | `registry-administrator`, `wellbeing-advisor` | new |
+   | `adjustment:propose` | `registry-administrator`, `adjustment-proposer` | new. Amended by SME-6 (2026-11-23): not `wellbeing-advisor`, who has the governed case; a new `adjustment-proposer` role holds it and nothing else |
    | `adjustment:approve-manual` | `adjustment-approver` | new |
    | `adjustment:release-migrated` | `adjustment-approver` | new |
    | `adjustment:read:all` | adds `adjustment-approver` | changed |
    | `adjustment:write` | `registry-administrator`, `wellbeing-advisor` | unchanged; now covers only `POST /adjustments/:id/expire` and the outcome-document upload |
 
    - **New realm role `adjustment-approver`**, named for BP-04-004's approval under delegated authority. It holds the three permissions above and nothing else.
+   - **New realm role `adjustment-proposer`** (SME-6), for disability-service administrators in a tenant that does not run the wellbeing module. It holds `adjustment:propose` only.
    - **No role holds both `adjustment:propose` and `adjustment:approve-manual`.** The permissions test asserts it. This is separation at the role level as well as in the service, because the proposer here is usually registry, who is not the decision authority.
 
 ## Rationale

@@ -55,7 +55,9 @@
       { "name": "ec-decision-maker",       "composite": false },
       { "name": "wellbeing-service",       "composite": false },
       { "name": "vle-connector-service",       "composite": false },
-      { "name": "identity-resolution-officer",       "composite": false }
+      { "name": "identity-resolution-officer",       "composite": false },
+      { "name": "adjustment-approver",       "composite": false },
+      { "name": "adjustment-proposer",       "composite": false }
     ]
   },
 

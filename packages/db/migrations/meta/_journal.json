@@ -64,6 +64,13 @@
       "when": 1785000056000,
       "tag": "0008_adjustment_provenance",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785000057000,
+      "tag": "0009_adjustment_proposals",
+      "breakpoints": true
     }
   ]
 }

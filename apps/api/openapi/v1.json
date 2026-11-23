@@ -3721,6 +3721,932 @@
         }
       }
     },
+    "/api/v1/students/{personId}/adjustment-proposals": {
+      "post": {
+        "operationId": "createStudentsByPersonIdAdjustmentProposals",
+        "tags": [
+          "students"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "enrolmentId",
+                  "adjustmentTypeCode",
+                  "scopeCode",
+                  "validFrom",
+                  "manualReasonCode",
+                  "externalReference"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "adjustmentTypeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scopeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "validFrom": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "validTo": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "unitCode"
+                    ],
+                    "properties": {
+                      "value": {
+                        "exclusiveMinimum": 0,
+                        "maximum": 999999.99,
+                        "type": "number"
+                      },
+                      "unitCode": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "manualReasonCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "externalReference": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "Where the decision is held, e.g. the disability service case number. An identifier, never narrative.",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalId",
+                    "statusCode"
+                  ],
+                  "properties": {
+                    "proposalId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-proposals": {
+      "get": {
+        "operationId": "getAdjustmentProposals",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "proposalId",
+                      "personId",
+                      "enrolmentId",
+                      "adjustmentTypeCode",
+                      "scopeCode",
+                      "amount",
+                      "validFrom",
+                      "validTo",
+                      "manualReasonCode",
+                      "externalReference",
+                      "statusCode",
+                      "proposedBy",
+                      "proposedAt",
+                      "workflowInstanceId",
+                      "decidedBy",
+                      "decidedAt",
+                      "decisionReason",
+                      "adjustmentId"
+                    ],
+                    "properties": {
+                      "proposalId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "adjustmentTypeCode": {
+                        "type": "string"
+                      },
+                      "scopeCode": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "value",
+                              "unitCode"
+                            ],
+                            "properties": {
+                              "value": {
+                                "exclusiveMinimum": 0,
+                                "maximum": 999999.99,
+                                "type": "number"
+                              },
+                              "unitCode": {
+                                "minLength": 1,
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "validFrom": {
+                        "type": "string"
+                      },
+                      "validTo": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "manualReasonCode": {
+                        "type": "string"
+                      },
+                      "externalReference": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "proposedBy": {
+                        "type": "string"
+                      },
+                      "proposedAt": {
+                        "type": "string"
+                      },
+                      "workflowInstanceId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decidedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decidedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decisionReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "adjustmentId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-proposals/{proposalId}": {
+      "get": {
+        "operationId": "getAdjustmentProposalsByProposalId",
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalId",
+                    "personId",
+                    "enrolmentId",
+                    "adjustmentTypeCode",
+                    "scopeCode",
+                    "amount",
+                    "validFrom",
+                    "validTo",
+                    "manualReasonCode",
+                    "externalReference",
+                    "statusCode",
+                    "proposedBy",
+                    "proposedAt",
+                    "workflowInstanceId",
+                    "decidedBy",
+                    "decidedAt",
+                    "decisionReason",
+                    "adjustmentId"
+                  ],
+                  "properties": {
+                    "proposalId": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "adjustmentTypeCode": {
+                      "type": "string"
+                    },
+                    "scopeCode": {
+                      "type": "string"
+                    },
+                    "amount": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "unitCode"
+                          ],
+                          "properties": {
+                            "value": {
+                              "exclusiveMinimum": 0,
+                              "maximum": 999999.99,
+                              "type": "number"
+                            },
+                            "unitCode": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "validFrom": {
+                      "type": "string"
+                    },
+                    "validTo": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "manualReasonCode": {
+                      "type": "string"
+                    },
+                    "externalReference": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "proposedBy": {
+                      "type": "string"
+                    },
+                    "proposedAt": {
+                      "type": "string"
+                    },
+                    "workflowInstanceId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "adjustmentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-proposals/{proposalId}/decision": {
+      "post": {
+        "operationId": "createAdjustmentProposalsByProposalIdDecision",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "decisionCode"
+                ],
+                "properties": {
+                  "decisionCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approved"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "rejected"
+                        ]
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "maxLength": 500,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalId",
+                    "statusCode",
+                    "adjustmentId",
+                    "decisionStatus"
+                  ],
+                  "properties": {
+                    "proposalId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "adjustmentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalId",
+                    "statusCode",
+                    "adjustmentId",
+                    "decisionStatus"
+                  ],
+                  "properties": {
+                    "proposalId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "adjustmentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/delivery-flows": {
       "get": {
         "operationId": "getDeliveryFlows",

@@ -164,6 +164,8 @@ export class AdjustmentService {
     authority: AdjustmentAuthority,
     actorId: string,
     idempotencyKey?: string,
+    /** Runs in the recording transaction, after the adjustment is written (not on a replay). */
+    inTransaction?: (tx: TenantScopedDb, adjustmentId: string) => Promise<void>,
   ): Promise<RecordAdjustmentResult> {
     const sourceCaseId = authority.kind === 'wellbeing-case' ? authority.sourceCaseId : null;
     await this.#ensureEnrolmentBelongsToPerson(input.enrolmentId, personId, tenantId);
@@ -260,6 +262,7 @@ export class AdjustmentService {
         })));
       }
 
+      if (inTransaction) await inTransaction(tx, adjustmentId);
       return { adjustmentId, replayed: false };
     });
 
@@ -296,6 +299,17 @@ export class AdjustmentService {
     await this.dispatcher.dispatchTenant(tenantId);
 
     return result;
+  }
+
+  /**
+   * The checks recording would make, without writing anything: the person and
+   * enrolment, the dates, the value-set codes and the amount. A manual
+   * proposal is checked on the way in, and again when it is approved.
+   */
+  async validateForRecording(tenantId: string, personId: string, input: RecordAdjustmentInput): Promise<void> {
+    await this.#ensurePersonExists(personId, tenantId);
+    await this.#ensureEnrolmentBelongsToPerson(input.enrolmentId, personId, tenantId);
+    await this.#validateInput(tenantId, input);
   }
 
   async listAdjustments(

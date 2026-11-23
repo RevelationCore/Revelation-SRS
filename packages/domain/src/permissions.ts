@@ -38,6 +38,11 @@ export const ROLES = [
   'vle-connector-service',
   // ADR-031: BP-08-001's Identity Resolution Officer prepares and decides merges (never both on one case).
   'identity-resolution-officer',
+  // ADR-033: approves manual adjustments (and releases migrated ones) under
+  // BP-04-004's delegated authority; never held with adjustment:propose.
+  'adjustment-approver',
+  // SME-6: proposes a manual adjustment, for disability-service staff outside registry.
+  'adjustment-proposer',
 ] as const;
 
 /** The integration contracts the VLE connector serves (ADR-032). */
@@ -63,10 +68,14 @@ export const PERMISSION_ROLES = {
   'exam-board:read':           ['registry-administrator', 'exam-board-chair', 'exam-board-member', 'external-examiner'] as Role[],
   'exam-board:ratify':         ['exam-board-chair', 'registry-administrator'] as Role[],
   'adjustment:read:own':       ['student'] as Role[],
-  'adjustment:read:all':       ['registry-administrator', 'wellbeing-advisor', 'integration-service'] as Role[],
+  'adjustment:read:all':       ['registry-administrator', 'wellbeing-advisor', 'integration-service', 'adjustment-approver'] as Role[],
   'adjustment:write':          ['registry-administrator', 'wellbeing-advisor'] as Role[],
   // ADR-029: record an adjustment the wellbeing service approved; needs sourceCaseId.
   'adjustment:record-approved':         ['wellbeing-service'] as Role[],
+  // ADR-033 item 2: a case-less adjustment is a proposal a second person
+  // approves. SME-6: not wellbeing-advisor, who has the governed case instead.
+  'adjustment:propose':        ['registry-administrator', 'adjustment-proposer'] as Role[],
+  'adjustment:approve-manual': ['adjustment-approver'] as Role[],
   // Work the adjustment task queue: confirm, by hand, that an instruction for
   // a target with no connected system was applied or removed.
   'adjustment:fulfil':         ['registry-administrator', 'engagement-officer', 'tenant-administrator'] as Role[],
