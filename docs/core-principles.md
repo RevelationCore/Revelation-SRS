@@ -1,7 +1,7 @@
 # Revelation SRS — Core Principles
 
 > Status: Draft for review
-> Last updated: 2026-11-22
+> Last updated: 2026-11-23
 
 This document defines the foundational principles that govern the design, development, and operation of Revelation SRS. These principles apply across all modules, integrations, and deployment contexts and must be respected by any party contributing to or extending the system.
 
@@ -165,6 +165,7 @@ All services are containerised. The deployment topology is defined as code and v
 - Non-production environments must be production-like enough to validate integrations, workflows, migrations, feature flags, accessibility, security, performance, and operational runbooks.
 - Production data must not be copied into non-production environments unless it is anonymised, minimised, access-controlled, and approved under the privacy and security principles.
 - Each environment has isolated secrets, identity configuration, integration endpoints, feature flag state, tenant configuration, observability, audit, and data stores.
+- Pods deny egress by default. A workload reaches only the destinations its network policy names, and reaches the internet only through the egress proxy, to exact host names on that workload's own allow-list, declared per deployment (ADR-036).
 - UAT and pre-production environments may connect to external test endpoints or simulators, but must never accidentally send live statutory, financial, admissions, identity, or student communications traffic.
 
 ---
@@ -333,6 +334,7 @@ The system is designed to be operated and diagnosed without requiring direct dat
 
 - **Structured logging**: all application logs are structured (JSON), include a correlation ID for request tracing, and are written to a centralised log store with a defined retention policy.
 - **Metrics**: services expose Prometheus-compatible metrics covering throughput, error rates, latency, and queue depths. Alert thresholds are defined and maintained alongside the metrics.
+- **Alerts that can fire**: every alert rule queries a metric or log event that a service in the same build is shown to emit, and reaches a named receiver; an alert that cannot fire is a defect. Metric labels never carry personal data or raw paths (ADR-035).
 - **Distributed tracing**: inter-service calls carry trace context to support end-to-end request tracing across the integration layer.
 - **Health endpoints**: every service exposes `/health` (liveness) and `/ready` (readiness) endpoints.
 - **Runbooks**: operational runbooks for common failure scenarios are maintained alongside the codebase.
