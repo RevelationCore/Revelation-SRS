@@ -735,6 +735,8 @@ export class AdjustmentService {
     adjustmentId: string,
     authority: WithdrawalAuthority,
     actor: WithdrawalActor,
+    /** Runs in the withdrawal transaction, also when it had already ended (changed: false). */
+    inTransaction?: (tx: TenantScopedDb, outcome: { changed: boolean; validTo: Date }) => Promise<void>,
   ): Promise<WithdrawalResult> {
     const now = clockNow();
     const reasonCode = authority.kind === 'enrolment-ended' ? 'enrolment-ended' : authority.reasonCode;
@@ -771,21 +773,11 @@ export class AdjustmentService {
 
       const endAt = now > current.validFrom ? now : new Date(current.validFrom.getTime() + 1);
       if (current.validTo !== null && current.validTo <= endAt) {
+        if (inTransaction) await inTransaction(tx, { changed: false, validTo: current.validTo });
         return { current, changed: false as const, validTo: current.validTo };
       }
 
-      if (replacementAdjustmentId) {
-        const replacement = await tx.select({ id: reasonableAdjustments.id }).from(reasonableAdjustments).where(and(
-          eq(reasonableAdjustments.id, replacementAdjustmentId as Uuid),
-          eq(reasonableAdjustments.tenantId, tenantId as Uuid),
-          eq(reasonableAdjustments.personId, current.personId),
-          isNull(reasonableAdjustments.recordedUntil),
-          or(isNull(reasonableAdjustments.validTo), gt(reasonableAdjustments.validTo, now)),
-        )).limit(1);
-        if (replacementAdjustmentId === adjustmentId || replacement.length === 0) {
-          throw new ValidationError('The replacement must be a different adjustment of the same student, in force now', [{ field: 'replacementAdjustmentId', message: 'Not a current adjustment of this student' }]);
-        }
-      }
+      if (replacementAdjustmentId) await this.#assertReplacement(tx, tenantId, adjustmentId, current.personId, replacementAdjustmentId, now);
 
       await tx.update(reasonableAdjustments).set({ recordedUntil: now }).where(eq(reasonableAdjustments.versionId, current.versionId));
       await tx.insert(reasonableAdjustments).values({
@@ -833,6 +825,7 @@ export class AdjustmentService {
         reasonCode, reasonText: `Adjustment withdrawn: ${reasonCode} (${reference})`,
       }, tx);
 
+      if (inTransaction) await inTransaction(tx, { changed: true, validTo: endAt });
       return { current, changed: true as const, validTo: endAt };
     });
 
@@ -997,6 +990,42 @@ export class AdjustmentService {
       ...(a.validTo ? { validTo: a.validTo.toISOString() } : {}),
     };
     await this.eventBus.publish(EVENT_TYPES.ADJUSTMENT_APPROVED, '1.0.0', tenantId, actorId, 'sensitive', payload);
+  }
+
+  /** A replacement is a different adjustment of the same student, in force now (ADR-034 item 3). */
+  async #assertReplacement(tx: TenantScopedDb, tenantId: string, adjustmentId: string, personId: string, replacementAdjustmentId: string, now: Date): Promise<void> {
+    const replacement = await tx.select({ id: reasonableAdjustments.id }).from(reasonableAdjustments).where(and(
+      eq(reasonableAdjustments.id, replacementAdjustmentId as Uuid),
+      eq(reasonableAdjustments.tenantId, tenantId as Uuid),
+      eq(reasonableAdjustments.personId, personId as Uuid),
+      isNull(reasonableAdjustments.recordedUntil),
+      or(isNull(reasonableAdjustments.validTo), gt(reasonableAdjustments.validTo, now)),
+    )).limit(1);
+    if (replacementAdjustmentId === adjustmentId || replacement.length === 0) {
+      throw new ValidationError('The replacement must be a different adjustment of the same student, in force now', [{ field: 'replacementAdjustmentId', message: 'Not a current adjustment of this student' }]);
+    }
+  }
+
+  /**
+   * The checks a withdrawal proposal makes before it is stored, without
+   * writing anything (ADR-034 item 8): the adjustment is the student's, in
+   * force, not from a wellbeing case, and any replacement is valid.
+   */
+  async prepareWithdrawal(tenantId: string, personId: string, adjustmentId: string, replacementAdjustmentId?: string): Promise<void> {
+    const now = clockNow();
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      const [current] = await tx.select().from(reasonableAdjustments).where(and(
+        eq(reasonableAdjustments.id, adjustmentId as Uuid),
+        eq(reasonableAdjustments.tenantId, tenantId as Uuid),
+        isNull(reasonableAdjustments.recordedUntil),
+      )).limit(1);
+      if (!current || current.personId !== personId) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+      if (current.provenanceCode === 'wellbeing-case') {
+        throw new DomainError('An adjustment recorded from a wellbeing case is withdrawn through its case', 'withdrawal-through-case', 409);
+      }
+      if (current.validTo !== null && current.validTo <= now) throw new ConflictError('This adjustment has already ended');
+      if (replacementAdjustmentId) await this.#assertReplacement(tx, tenantId, adjustmentId, personId, replacementAdjustmentId, now);
+    });
   }
 
   async #validateInput(tenantId: string, input: RecordAdjustmentInput): Promise<void> {

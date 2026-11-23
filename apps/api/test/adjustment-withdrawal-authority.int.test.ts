@@ -152,3 +152,122 @@ describe('the wellbeing case withdrawal hand-off (ADR-034 item 4)', () => {
     expect(res.json<{ type: string }>().type).toBe('https://srs.example.com/errors/source-case-mismatch');
   });
 });
+
+describe('withdrawal proposals for manual, migrated and legacy adjustments (ADR-034 item 5)', () => {
+  let proposerJwt: string; let adviserJwt: string; let approverJwt: string; let secondApproverJwt: string;
+  beforeAll(async () => {
+    proposerJwt = await ctx.makeJwt({ sub: 'disability-admin-1', roles: ['adjustment-proposer'] });
+    adviserJwt = await ctx.makeJwt({ sub: 'adviser-1', roles: ['wellbeing-advisor'] });
+    approverJwt = await ctx.makeJwt({ sub: 'disability-head-1', roles: ['adjustment-approver'] });
+    secondApproverJwt = await ctx.makeJwt({ sub: 'disability-head-2', roles: ['adjustment-approver'] });
+  });
+
+  /** A migrated (or legacy-direct) adjustment, as the importer writes one. */
+  async function migrated(s: { personId: string; enrolmentId: string }, provenance: 'migrated' | 'legacy-direct' = 'migrated'): Promise<string> {
+    const id = randomUUID();
+    await ctx.db.execute(sql`INSERT INTO reasonable_adjustment (version_id, id, tenant_id, enrolment_id, person_id, adjustment_type_code, scope_code, actor_id, valid_from, recorded_at, provenance_code, migration_batch_id, migration_source_reference)
+      VALUES (gen_random_uuid(), ${id}::uuid, ${ctx.tenantId}::uuid, ${s.enrolmentId}::uuid, ${s.personId}::uuid, 'separate-room', 'exam', 'migration-import', '2026-09-01', now(), ${provenance},
+        ${provenance === 'migrated' ? randomUUID() : null}::uuid, ${provenance === 'migrated' ? `sits:${id}` : null})`);
+    return id;
+  }
+  const propose = (jwt: string, personId: string, adjustmentId: string, body: Record<string, unknown>) =>
+    ctx.app.inject({ method: 'POST', url: `/api/v1/students/${personId}/adjustments/${adjustmentId}/withdrawal-proposals`, headers: auth(jwt), payload: body });
+  const decide = (jwt: string, withdrawalId: string, body: Record<string, unknown>) =>
+    ctx.app.inject({ method: 'POST', url: `/api/v1/adjustment-withdrawals/${withdrawalId}/decision`, headers: auth(jwt), payload: body });
+  const body = (extra: Record<string, unknown> = {}) => ({ withdrawalReasonCode: 'student-request', externalReference: 'EMAIL-2026-11-20', ...extra });
+
+  it('may be proposed by registry, adjustment-proposer and wellbeing-advisor, never by an approver', async () => {
+    const s = await student('WP01');
+    for (const [jwt, expected] of [[registryJwt, 201], [proposerJwt, 201], [adviserJwt, 201], [approverJwt, 403]] as const) {
+      const id = await migrated(s);
+      expect((await propose(jwt, s.personId, id, body())).statusCode).toBe(expected);
+    }
+  });
+
+  it('refuses a wellbeing-case adjustment, an ended one, a second open proposal and the proposer\'s own record', async () => {
+    const s = await student('WP02');
+    const { adjustmentId: caseOne } = await caseAdjustment(s);
+    const through = await propose(registryJwt, s.personId, caseOne, body());
+    expect(through.statusCode).toBe(409);
+    expect(through.json<{ type: string }>().type).toBe('https://srs.example.com/errors/withdrawal-through-case');
+
+    const ended = await migrated(s);
+    await ctx.db.execute(sql`UPDATE reasonable_adjustment SET valid_to = now() - interval '1 day' WHERE id = ${ended}::uuid`);
+    expect((await propose(registryJwt, s.personId, ended, body())).statusCode).toBe(409);
+
+    const id = await migrated(s);
+    expect((await propose(registryJwt, s.personId, id, body())).statusCode).toBe(201);
+    expect((await propose(proposerJwt, s.personId, id, body())).statusCode).toBe(409);
+
+    const self = await ctx.makeJwt({ sub: 'registry-self', roles: ['registry-administrator'], srsPersonId: s.personId });
+    const own = await propose(self, s.personId, await migrated(s), body());
+    expect(own.statusCode).toBe(403);
+    expect(own.json<{ type: string }>().type).toBe('https://srs.example.com/errors/separation-of-duties');
+  });
+
+  it('refuses unknown fields, a system-only or unknown reason, and superseded without a replacement', async () => {
+    const s = await student('WP03');
+    const id = await migrated(s);
+    expect((await propose(registryJwt, s.personId, id, body({ notes: 'x' }))).statusCode).toBe(400);
+    expect((await propose(registryJwt, s.personId, id, body({ externalReference: 'x'.repeat(101) }))).statusCode).toBe(400);
+    for (const extra of [{ withdrawalReasonCode: 'enrolment-ended' }, { withdrawalReasonCode: 'made-up' }, { withdrawalReasonCode: 'superseded' }, { externalReference: '  ' }]) {
+      expect((await propose(registryJwt, s.personId, id, body(extra))).statusCode, JSON.stringify(extra)).toBe(422);
+    }
+    expect((await current(id)).valid_to).toBeNull();
+  });
+
+  it('changes nothing until approved; cannot be decided by its proposer, the student or registry', async () => {
+    const s = await student('WP04');
+    const id = await migrated(s);
+    const { withdrawalId } = (await propose(proposerJwt, s.personId, id, body())).json<{ withdrawalId: string }>();
+    expect((await current(id)).valid_to).toBeNull();
+    expect(published.filter((e) => e.type === EVENT_TYPES.ADJUSTMENT_EXPIRED)).toEqual([]);
+
+    const proposerAlsoApprover = await ctx.makeJwt({ sub: 'disability-admin-1', roles: ['adjustment-approver'] });
+    expect((await decide(proposerAlsoApprover, withdrawalId, { decisionCode: 'approved' })).json<{ type: string }>().type).toBe('https://srs.example.com/errors/separation-of-duties');
+    const subject = await ctx.makeJwt({ sub: 'approver-student', roles: ['adjustment-approver'], srsPersonId: s.personId });
+    expect((await decide(subject, withdrawalId, { decisionCode: 'approved' })).statusCode).toBe(403);
+    expect((await decide(registryJwt, withdrawalId, { decisionCode: 'approved' })).statusCode).toBe(403);
+    expect((await current(id)).valid_to).toBeNull();
+  });
+
+  it('once approved by a second person, ends the adjustment under that withdrawal, once', async () => {
+    const s = await student('WP05');
+    const id = await migrated(s, 'legacy-direct');
+    const { withdrawalId } = (await propose(adviserJwt, s.personId, id, body({ withdrawalReasonCode: 'no-longer-needed', externalReference: 'REVIEW-77' }))).json<{ withdrawalId: string }>();
+    const res = await decide(approverJwt, withdrawalId, { decisionCode: 'approved' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ withdrawalId, statusCode: 'approved', adjustmentId: id, decisionStatus: 'applied' });
+    expect(res.json<{ withdrawnAt: string | null }>().withdrawnAt).not.toBeNull();
+
+    expect(await current(id)).toMatchObject({ withdrawal_authority_code: 'approved-withdrawal', withdrawal_reason_code: 'no-longer-needed', actor_id: 'disability-head-1' });
+    expect(published.filter((e) => e.type === EVENT_TYPES.ADJUSTMENT_EXPIRED)).toHaveLength(1);
+    const audit = (await ctx.db.execute(sql`SELECT reason_text FROM audit_record WHERE entity_type = 'reasonable_adjustment' AND entity_id = ${id}::uuid AND action_type = 'update'`)) as unknown as Array<{ reason_text: string }>;
+    expect(audit.map((a) => a.reason_text)).toEqual([`Adjustment withdrawn: no-longer-needed (withdrawal ${withdrawalId})`]);
+
+    expect((await decide(secondApproverJwt, withdrawalId, { decisionCode: 'rejected', reason: 'Late' })).statusCode).toBe(409);
+    const listed = await ctx.app.inject({ method: 'GET', url: `/api/v1/adjustment-withdrawals?personId=${s.personId}&statusCode=approved`, headers: auth(adviserJwt) });
+    expect(listed.json<Array<{ withdrawalId: string }>>().map((w) => w.withdrawalId)).toEqual([withdrawalId]);
+  });
+
+  it('a rejection needs a reason and leaves the adjustment as it was', async () => {
+    const s = await student('WP06');
+    const id = await migrated(s);
+    const { withdrawalId } = (await propose(registryJwt, s.personId, id, body())).json<{ withdrawalId: string }>();
+    expect((await decide(approverJwt, withdrawalId, { decisionCode: 'rejected' })).statusCode).toBe(422);
+    const res = await decide(approverJwt, withdrawalId, { decisionCode: 'rejected', reason: 'The student withdrew the request' });
+    expect(res.json()).toMatchObject({ statusCode: 'rejected', withdrawnAt: null });
+    expect((await current(id)).valid_to).toBeNull();
+  });
+
+  it('approving one whose adjustment has already ended approves it with nothing withdrawn', async () => {
+    const s = await student('WP07');
+    const id = await migrated(s);
+    const { withdrawalId } = (await propose(registryJwt, s.personId, id, body())).json<{ withdrawalId: string }>();
+    await ctx.db.execute(sql`UPDATE reasonable_adjustment SET valid_to = now() - interval '1 minute' WHERE id = ${id}::uuid`);
+    const res = await decide(approverJwt, withdrawalId, { decisionCode: 'approved' });
+    expect(res.json()).toMatchObject({ statusCode: 'approved', withdrawnAt: null });
+    expect((await current(id)).withdrawal_authority_code).toBeNull();
+    expect(published.filter((e) => e.type === EVENT_TYPES.ADJUSTMENT_EXPIRED)).toEqual([]);
+  });
+});

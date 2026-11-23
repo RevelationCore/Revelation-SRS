@@ -404,6 +404,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/students/{personId}/adjustments/{adjustmentId}/withdrawal-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawalProposals"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-withdrawals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdjustmentWithdrawals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-withdrawals/{withdrawalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdjustmentWithdrawalsByWithdrawalId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-withdrawals/{withdrawalId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdjustmentWithdrawalsByWithdrawalIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/delivery-flows": {
         parameters: {
             query?: never;
@@ -9247,6 +9311,323 @@ export interface operations {
             };
             /** @description Default Response */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawalProposals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                adjustmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    withdrawalReasonCode: string;
+                    /** @description Where the evidence is held, e.g. the student's written request or the review record. An identifier, never narrative. */
+                    externalReference: string;
+                    /** Format: uuid */
+                    replacementAdjustmentId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        withdrawalId: string;
+                        statusCode: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAdjustmentWithdrawals: {
+        parameters: {
+            query?: {
+                statusCode?: string;
+                personId?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        withdrawalId: string;
+                        adjustmentId: string;
+                        personId: string;
+                        withdrawalReasonCode: string;
+                        externalReference: string;
+                        replacementAdjustmentId: string | null;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        workflowInstanceId: string | null;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        withdrawnAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    getAdjustmentWithdrawalsByWithdrawalId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                withdrawalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        withdrawalId: string;
+                        adjustmentId: string;
+                        personId: string;
+                        withdrawalReasonCode: string;
+                        externalReference: string;
+                        replacementAdjustmentId: string | null;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        workflowInstanceId: string | null;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        withdrawnAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdjustmentWithdrawalsByWithdrawalIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                withdrawalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        withdrawalId: string;
+                        statusCode: string;
+                        adjustmentId: string;
+                        withdrawnAt: string | null;
+                        decisionStatus: "applied" | "pending";
+                    };
+                };
+            };
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        withdrawalId: string;
+                        statusCode: string;
+                        adjustmentId: string;
+                        withdrawnAt: string | null;
+                        decisionStatus: "applied" | "pending";
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

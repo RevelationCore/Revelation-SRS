@@ -13,6 +13,7 @@ describe('adjustment authority permissions', () => {
     expect(holders('adjustment:withdraw-approved')).toEqual(['wellbeing-service']);
     expect(holders('adjustment:approve-manual')).toEqual(['adjustment-approver']);
     expect(holders('adjustment:release-migrated')).toEqual(['adjustment-approver']);
+    expect(holders('adjustment:approve-withdrawal')).toEqual(['adjustment-approver']);
   });
 
   it('SME-6: registry and adjustment-proposer propose; never a wellbeing adviser or an approver', () => {
@@ -24,13 +25,18 @@ describe('adjustment authority permissions', () => {
     expect(both).toEqual([]);
   });
 
-  it('adjustment-proposer holds adjustment:propose and nothing else', () => {
+  it('adjustment-proposer holds only the two propose permissions', () => {
     const held = Object.entries(PERMISSION_ROLES).filter(([, roles]) => (roles as string[]).includes('adjustment-proposer')).map(([p]) => p);
-    expect(held).toEqual(['adjustment:propose']);
+    expect(held).toEqual(['adjustment:propose', 'adjustment:propose-withdrawal']);
   });
 
   it('adjustment-approver holds only the approver permissions and read', () => {
     const held = Object.entries(PERMISSION_ROLES).filter(([, roles]) => (roles as string[]).includes('adjustment-approver')).map(([p]) => p).sort();
-    expect(held).toEqual(['adjustment:approve-manual', 'adjustment:read:all', 'adjustment:release-migrated']);
+    expect(held).toEqual(['adjustment:approve-manual', 'adjustment:approve-withdrawal', 'adjustment:read:all', 'adjustment:release-migrated']);
+  });
+
+  it('ADR-034: withdrawals are proposed by registry, adjustment-proposer and wellbeing-advisor, and no role both proposes and approves one', () => {
+    expect(holders('adjustment:propose-withdrawal')).toEqual(['adjustment-proposer', 'registry-administrator', 'wellbeing-advisor']);
+    expect(holders('adjustment:propose-withdrawal').filter((r) => holders('adjustment:approve-withdrawal').includes(r))).toEqual([]);
   });
 });

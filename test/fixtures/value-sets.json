@@ -584,6 +584,94 @@
    }
   ]
  },
+ "adjustment_withdrawal/status_code": {
+  "setCode": "adjustment-proposal-status-code",
+  "displayName": "Adjustment Proposal Status",
+  "entityName": "adjustment_withdrawal",
+  "fieldName": "status_code",
+  "members": [
+   {
+    "code": "proposed",
+    "displayLabel": "Proposed",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "approved",
+    "displayLabel": "Approved",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "rejected",
+    "displayLabel": "Rejected",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "adjustment_withdrawal/withdrawal_reason_code": {
+  "setCode": "adjustment-withdrawal-reason-code",
+  "displayName": "Adjustment Withdrawal Reason",
+  "entityName": "adjustment_withdrawal",
+  "fieldName": "withdrawal_reason_code",
+  "members": [
+   {
+    "code": "student-request",
+    "displayLabel": "The student asked to stop it",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "no-longer-needed",
+    "displayLabel": "A review found it is no longer needed",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "recorded-in-error",
+    "displayLabel": "It should never have been recorded",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "superseded",
+    "displayLabel": "Replaced by another adjustment",
+    "description": null,
+    "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "enrolment-ended",
+    "displayLabel": "The enrolment it belongs to has ended",
+    "description": null,
+    "sortOrder": 50,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
  "admissions_offer/fee_status_basis_code": {
   "setCode": "fee-status-code",
   "displayName": "Fee Status",

@@ -17,6 +17,7 @@ import { documentProblem } from './platform/documents/problems.js';
 import type { Config } from './config.js';
 import { AdjustmentProposalService } from './platform/adjustments/adjustment-proposal-service.js';
 import { AdjustmentService } from './platform/adjustments/adjustment-service.js';
+import { AdjustmentWithdrawalService } from './platform/adjustments/adjustment-withdrawal-service.js';
 import { AdjustmentDistributionDispatcher } from './platform/adjustments/distribution-dispatcher.js';
 import { AdjustmentTargetConfigService } from './platform/adjustments/target-config.js';
 import { AdjustmentTaskNoticeService } from './platform/adjustments/task-notices.js';
@@ -125,6 +126,7 @@ import { tenantAdminRoutes } from './routes/tenant-admin.js';
 import { valueSetsRoutes } from './routes/value-sets.js';
 import { globalisationRoutes } from './routes/globalisation.js';
 import { adjustmentProposalRoutes } from './routes/adjustment-proposals.js';
+import { adjustmentWithdrawalRoutes } from './routes/adjustment-withdrawals.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
 import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
 import { supportRoutes } from './routes/support.js';
@@ -272,7 +274,7 @@ function classifyOperation(method: string, url: string): string {
   if (m === 'POST' && path.includes('/retention-assignments')) return 'workflow';
   if (m === 'POST' && path.includes('/audit-review')) return 'workflow';
   if (m === 'POST' && path.includes('/data-pack')) return 'workflow';
-  if (m === 'POST' && (path.includes('/adjustment-proposals') || path.includes('/adjustment-migration-batches'))) return 'workflow';
+  if (m === 'POST' && (path.includes('/adjustment-proposals') || path.includes('/adjustment-migration-batches') || path.includes('/adjustment-withdrawals'))) return 'workflow';
 
   // Reporting — regulatory submission data and read-only compliance extracts
   if (path.includes('/regulatory/')) return 'reporting';
@@ -510,6 +512,10 @@ export async function buildApp(
   const adjustmentProposals = new AdjustmentProposalService(db, adjustments, valueSets, featureFlags, workflowBridge, examEntries, reviewExecution, fastify.log);
   adjustmentProposals.registerWorkflowEffects(reviewActivities);
   fastify.decorate('adjustmentProposalService', adjustmentProposals);
+  // ADR-034 (BL-408): early withdrawals of manual, migrated and legacy adjustments.
+  const adjustmentWithdrawals = new AdjustmentWithdrawalService(db, adjustments, valueSets, workflowBridge, examEntries, reviewExecution, fastify.log);
+  adjustmentWithdrawals.registerWorkflowEffects(reviewActivities);
+  fastify.decorate('adjustmentWithdrawalService', adjustmentWithdrawals);
   const pgrSupervision = new SupervisionService(db, businessCases, regulatoryExchanges, deliveries);
   const pgrProgressReview = new ProgressReviewService(db, businessCases, regulatoryExchanges, valueSets);
   const pgrExamination = new ExaminationService(db, businessCases, valueSets);
@@ -796,6 +802,7 @@ export async function buildApp(
       ['/adjustment-targets',        'adjustments'],
       ['/adjustment-proposals',      'adjustments'],
       ['/adjustment-migration-batches', 'adjustments'],
+      ['/adjustment-withdrawals',    'adjustments'],
       ['/delivery-',                 'integration-registry'],
       ['/inbound',                   'integration-registry'],
       ['/support-',                  'students'],
@@ -921,6 +928,7 @@ export async function buildApp(
   await fastify.register(valueSetsRoutes,           { prefix: '/api/v1' });
   await fastify.register(adjustmentRoutes,          { prefix: '/api/v1' });
   await fastify.register(adjustmentProposalRoutes,  { prefix: '/api/v1' });
+  await fastify.register(adjustmentWithdrawalRoutes, { prefix: '/api/v1' });
   await fastify.register(deliveryRoutes,            { prefix: '/api/v1' });
   await fastify.register(inboundRoutes,             { prefix: '/api/v1' });
   await fastify.register(supportRoutes,             { prefix: '/api/v1' });
@@ -1038,6 +1046,7 @@ declare module 'fastify' {
     moderationService: ModerationService;
     adjustmentService: AdjustmentService;
     adjustmentProposalService: AdjustmentProposalService;
+    adjustmentWithdrawalService: AdjustmentWithdrawalService;
     adjustmentDispatcher: AdjustmentDistributionDispatcher;
     adjustmentTargetConfigService: AdjustmentTargetConfigService;
     adjustmentTaskNoticeService: AdjustmentTaskNoticeService;

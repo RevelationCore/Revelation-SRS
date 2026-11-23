@@ -69,7 +69,7 @@ const DecisionResponse = Type.Object({
  * caller's notes or sourceCaseId into silence. Refuse them instead (ADR-033:
  * no free text reaches core, and a proposal has no case).
  */
-function refuseUnknownFields(allowed: readonly string[]) {
+export function refuseUnknownFields(allowed: readonly string[]) {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const raw = request.body;
     if (!raw || typeof raw !== 'object') return;

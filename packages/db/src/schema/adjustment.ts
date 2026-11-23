@@ -190,6 +190,34 @@ export const adjustmentProposals = pgTable('adjustment_proposal', {
 export type AdjustmentProposal = typeof adjustmentProposals.$inferSelect;
 
 /**
+ * A proposal to end a manual, migrated or legacy adjustment early (ADR-034
+ * item 5, migration 0012), decided by an adjustment approver who did not
+ * propose it. Until it is approved the adjustment is unchanged. An adjustment
+ * from a wellbeing case is withdrawn through its case instead.
+ */
+export const adjustmentWithdrawals = pgTable('adjustment_withdrawal', {
+  id:                      uuid('id').primaryKey().defaultRandom(),
+  tenantId:                uuid('tenant_id').notNull().references(() => tenants.id),
+  adjustmentId:            uuid('adjustment_id').notNull(),   // the logical id; not a FK, it repeats across versions
+  personId:                uuid('person_id').notNull(),
+  withdrawalReasonCode:    text('withdrawal_reason_code').notNull(),
+  externalReference:       text('external_reference').notNull(),
+  replacementAdjustmentId: uuid('replacement_adjustment_id'),
+  statusCode:              text('status_code').notNull().default('proposed'), // proposed | approved | rejected
+  proposedBy:              text('proposed_by').notNull(),
+  proposedByPersonId:      uuid('proposed_by_person_id'),
+  proposedAt:              timestamp('proposed_at', { withTimezone: true }).notNull().defaultNow(),
+  workflowInstanceId:      uuid('workflow_instance_id'),
+  decidedBy:               text('decided_by'),
+  decidedByPersonId:       uuid('decided_by_person_id'),
+  decidedAt:               timestamp('decided_at', { withTimezone: true }),
+  decisionReason:          text('decision_reason'),
+  withdrawnAt:             timestamp('withdrawn_at', { withTimezone: true }),
+});
+
+export type AdjustmentWithdrawal = typeof adjustmentWithdrawals.$inferSelect;
+
+/**
  * The release of one migrated adjustment for distribution (ADR-033 item 7,
  * migration 0010). Append-only; its presence is what makes a repeated batch
  * release a no-op, including for adjustments every target ignores.

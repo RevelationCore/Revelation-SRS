@@ -80,6 +80,11 @@ export const PERMISSION_ROLES = {
   'adjustment:approve-manual': ['adjustment-approver'] as Role[],
   // ADR-033 item 7, SME-8: distribute a reconciled migration batch.
   'adjustment:release-migrated': ['adjustment-approver'] as Role[],
+  // ADR-034 item 8: end a manual, migrated or legacy adjustment early, by a
+  // proposal a second person decides. wellbeing-advisor may propose (these
+  // adjustments have no case); no role both proposes and approves.
+  'adjustment:propose-withdrawal': ['registry-administrator', 'adjustment-proposer', 'wellbeing-advisor'] as Role[],
+  'adjustment:approve-withdrawal': ['adjustment-approver'] as Role[],
   // Work the adjustment task queue: confirm, by hand, that an instruction for
   // a target with no connected system was applied or removed.
   'adjustment:fulfil':         ['registry-administrator', 'engagement-officer', 'tenant-administrator'] as Role[],
