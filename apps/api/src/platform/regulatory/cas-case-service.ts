@@ -64,7 +64,7 @@ export interface CasCaseDto {
 export interface CasCaseDetailDto extends CasCaseDto {
   openedAt: Date;
   subject: { studentName: string | null; programmeCode: string | null; programmeTitle: string | null };
-  eligibilityChecks: Array<{ checkId: string; guidanceVersion: string; checkTypeCode: string; resultCode: string; checkedBy: string; checkedAt: Date }>;
+  eligibilityChecks: Array<{ checkId: string; guidanceVersion: string; checkTypeCode: string; resultCode: string; exemptionReason: string | null; checkedBy: string; checkedAt: Date }>;
   assignmentVersions: Array<{ assignmentVersionId: string; versionNumber: number; assignedPayloadHash: string; casNumber: string | null; approvedBy: string; approvedAt: Date; smsRequestSentAt: Date | null; smsReceiptRef: string | null }>;
   /** Why a CAS officer must look at this case: the applicant withdrew while it was still in hand (D-39). */
   attentionReason: 'application-withdrawn' | null;
@@ -75,6 +75,8 @@ export interface RecordEligibilityCheckInput {
   checkTypeCode:   string;
   resultCode:      string;
   evidenceRef?:    string;
+  /** Required with resultCode 'exempt': why this check does not apply. */
+  exemptionReason?: string;
 }
 
 export interface RecordSponsorReportVersionInput {
@@ -190,11 +192,15 @@ export class CasCaseService {
   async recordEligibilityCheck(casCaseId: string, tenantId: string, input: RecordEligibilityCheckInput, actorId: string): Promise<string> {
     const current = await this.#open(tenantId, casCaseId);
     if (!input.guidanceVersion.trim()) throw new ValidationError('Record the sponsor guidance version the check was made under');
+    const exemptionReason = input.exemptionReason?.trim() || null;
+    if ((input.resultCode === 'exempt') !== Boolean(exemptionReason)) {
+      throw new ValidationError(input.resultCode === 'exempt' ? 'An exempt check needs the reason it does not apply' : 'Only an exempt check has an exemption reason', [{ field: 'exemptionReason', message: 'Required with exempt, and only then' }]);
+    }
     const checkId = randomUUID();
     await withTenantContext(this.db, tenantId, (tx) => tx.insert(casEligibilityChecks).values({
       id: checkId, tenantId: tenantId as Uuid, casCaseId: casCaseId as Uuid,
       guidanceVersion: input.guidanceVersion.trim(), checkTypeCode: input.checkTypeCode, resultCode: input.resultCode,
-      evidenceRef: input.evidenceRef ? (input.evidenceRef as Uuid) : null, checkedBy: actorId, checkedAt: clockNow(),
+      evidenceRef: input.evidenceRef ? (input.evidenceRef as Uuid) : null, exemptionReason, checkedBy: actorId, checkedAt: clockNow(),
     }));
     // A new check after preparation needs the CAS data preparing (and approving) again.
     if (['opened', 'prepared'].includes(current.statusCode)) await this.#version(tenantId, current, { statusCode: 'eligibility-checked', preparedPayload: null, preparedBy: null }, actorId);
@@ -210,8 +216,11 @@ export class CasCaseService {
     const detail = await this.getCase(tenantId, casCaseId);
     // The latest check of each type counts: a failed check can be redone, and the earlier result stays on record.
     const latest = new Map(detail.eligibilityChecks.map((c) => [c.checkTypeCode, c]));
-    const failed = [...latest.values()].filter((c) => c.resultCode !== 'pass');
+    const failed = [...latest.values()].filter((c) => c.resultCode !== 'pass' && c.resultCode !== 'exempt');
     if (failed.length > 0) throw new ConflictError(`Eligibility checks not passed: ${failed.map((c) => c.checkTypeCode).join(', ')}`);
+    // F8 (BL-198): every mandatory check type must have been recorded, as passed or exempt with a reason.
+    const missing = (await this.#mandatoryCheckTypes(tenantId)).filter((t) => !latest.has(t));
+    if (missing.length > 0) throw new ConflictError(`Required eligibility checks not recorded: ${missing.join(', ')}`);
     const payload = await this.#personData(tenantId, current);
     await this.#version(tenantId, current, { statusCode: 'prepared', preparedPayload: payload, preparedBy: actorId }, actorId);
     return this.getCase(tenantId, casCaseId);
@@ -371,6 +380,13 @@ export class CasCaseService {
           .where(and(eq(admissionsOffers.applicationId, c.applicationId as Uuid), inArray(admissionsOffers.statusCode, ['made', 'accepted', 'confirmed'])))
           .orderBy(desc(admissionsOffers.version)).limit(1);
         if (!offer) throw new ConflictError('A CAS needs a current offer to state the course');
+        // F8 (BL-198): only after an unconditional offer has been accepted, or a conditional one confirmed (Doc 2, 3.22).
+        const unconditionalAccepted = offer.statusCode === 'accepted' && offer.offerTypeCode === 'unconditional';
+        if (!unconditionalAccepted && offer.statusCode !== 'confirmed') {
+          throw new ConflictError(offer.statusCode === 'made'
+            ? 'A CAS can be prepared only once the applicant has accepted an unconditional offer'
+            : 'A CAS can be prepared only once the conditional offer is confirmed (its conditions met)');
+        }
         course = { programmeId: offer.programmeId, modeOfStudyCode: offer.modeOfStudyCode, intakeCode: offer.intakeCode, startDate: null };
       }
       const [programme] = course.programmeId ? await tx.select({ code: programmes.code, title: programmes.title }).from(programmes)
@@ -384,6 +400,16 @@ export class CasCaseService {
         ...(c.applicationId ? { applicationId: c.applicationId } : {}), ...(c.enrolmentId ? { enrolmentId: c.enrolmentId } : {}),
       };
     });
+  }
+
+  /** The check types every CAS needs (value set metadata casMandatory), platform and tenant members. */
+  async #mandatoryCheckTypes(tenantId: string): Promise<string[]> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.execute(sql`
+      SELECT m.code FROM value_set_member m JOIN value_set vs ON vs.id = m.value_set_id
+      WHERE vs.set_code = 'cas-eligibility-check-type-code' AND (m.tenant_id IS NULL OR m.tenant_id = ${tenantId}::uuid)
+        AND (m.active_to IS NULL OR m.active_to > now()) AND (m.source_metadata->>'casMandatory')::boolean IS TRUE
+      ORDER BY m.sort_order`)) as unknown as Array<{ code: string }>;
+    return rows.map((r) => r.code);
   }
 
   async #approverMustDiffer(tenantId: string): Promise<boolean> {
@@ -425,7 +451,7 @@ export class CasCaseService {
           programmeCode: (payload?.['programmeCode'] as string | undefined) ?? null, programmeTitle: (payload?.['programmeTitle'] as string | undefined) ?? null,
         },
         eligibilityChecks: data.checks.filter((k) => k.casCaseId === c.id).map((k) => ({
-          checkId: k.id, guidanceVersion: k.guidanceVersion, checkTypeCode: k.checkTypeCode, resultCode: k.resultCode, checkedBy: k.checkedBy, checkedAt: k.checkedAt,
+          checkId: k.id, guidanceVersion: k.guidanceVersion, checkTypeCode: k.checkTypeCode, resultCode: k.resultCode, exemptionReason: k.exemptionReason, checkedBy: k.checkedBy, checkedAt: k.checkedAt,
         })),
         assignmentVersions: data.versions.filter((v) => v.casCaseId === c.id).map((v) => ({
           assignmentVersionId: v.id, versionNumber: v.versionNumber, assignedPayloadHash: v.assignedPayloadHash, casNumber: v.casNumber,

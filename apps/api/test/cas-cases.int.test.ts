@@ -6,6 +6,7 @@
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { recordRequiredCasChecks } from './helpers/cas.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 let ctx: TestApp;
@@ -70,6 +71,11 @@ describe('one CAS record (D-16)', () => {
     // A recheck that passes: the failed check stays on record, and the latest of each type counts.
     expect((await check(id, officerJwt, 'genuine-student')).statusCode).toBe(201);
     expect((await check(id, officerJwt, 'financial-requirement')).statusCode).toBe(201);
+    // BL-198: the required set, not just what was recorded.
+    const short = await call('POST', `/regulatory/cas-cases/${id}/preparation`, officerJwt);
+    expect(short.statusCode).toBe(409);
+    expect(short.json<{ detail: string }>().detail).toMatch(/Required eligibility checks not recorded: .*english-language/);
+    await recordRequiredCasChecks(ctx, id, officerJwt);
 
     const prepared = await call('POST', `/regulatory/cas-cases/${id}/preparation`, officerJwt);
     expect(prepared.statusCode).toBe(200);
@@ -123,3 +129,39 @@ describe('one CAS record (D-16)', () => {
     expect((await check('00000000-0000-0000-0000-000000000000', officerJwt, 'genuine-student')).statusCode).toBe(404);
   });
 });
+
+describe('CAS preparation rules (BP-01 pre-review F8, BL-198)', () => {
+  it('refuses a conditional offer until it is confirmed, and a made offer that is not accepted', async () => {
+    const app = (await call('POST', '/applications', connectorJwt, {
+      channelCode: 'international-direct', sourceReference: 'CAS-F8', cycle: '2027', programmeId, intakeCode: '2027-09', modeOfStudyCode: 'full-time',
+      applicant: { legalFirstName: 'Conditional', legalFamilyName: 'Offer', dateOfBirth: '2001-04-02' }, payload: {},
+    })).json<{ id: string }>();
+    await call('POST', `/applications/${app.id}/assessments`, selectorJwt, { assessmentTypeCode: 'academic', outcomeCode: 'meets' });
+    await call('POST', `/applications/${app.id}/recommendation`, registryJwt, { recommendationCode: 'offer', reason: 'Meets criteria' });
+    const offer = (await call('POST', `/applications/${app.id}/decision`, selectorJwt, { decisionCode: 'offer', offer: { offerTypeCode: 'conditional', conditions: [{ conditionTypeCode: 'academic', description: 'Merit in the BSc', requiredValue: 'Merit' }] } }))
+      .json<{ offers: Array<{ id: string }> }>().offers[0]!;
+    const id = (await call('POST', `/applications/${app.id}/cas-cases`, officerJwt)).json<CasCase>().casCaseId;
+    await recordRequiredCasChecks(ctx, id, officerJwt);
+
+    const made = await call('POST', `/regulatory/cas-cases/${id}/preparation`, officerJwt);
+    expect(made.statusCode).toBe(409);
+    expect(made.json<{ detail: string }>().detail).toMatch(/accepted an unconditional offer/);
+    await call('POST', `/admissions-offers/${offer.id}/response`, connectorJwt, { responseCode: 'accept', sourceTimestamp: '2027-05-01T12:00:00Z' });
+    const accepted = await call('POST', `/regulatory/cas-cases/${id}/preparation`, officerJwt);
+    expect(accepted.statusCode).toBe(409);
+    expect(accepted.json<{ detail: string }>().detail).toMatch(/conditional offer is confirmed/);
+  });
+
+  it('an exempt check needs a reason, and counts towards the required set', async () => {
+    const { applicationId } = await offered('CAS-EX1', 'Exempt');
+    const id = (await call('POST', `/applications/${applicationId}/cas-cases`, officerJwt)).json<CasCase>().casCaseId;
+    await recordRequiredCasChecks(ctx, id, officerJwt);
+    expect((await check(id, officerJwt, 'english-language', 'exempt')).statusCode).toBe(422);
+    const exempt = await call('POST', `/regulatory/cas-cases/${id}/eligibility-checks`, officerJwt, {
+      guidanceVersion: 'Student sponsor guidance 10/2026', checkTypeCode: 'english-language', resultCode: 'exempt', exemptionReason: 'National of a majority English-speaking country',
+    });
+    expect(exempt.statusCode).toBe(201);
+    expect((await call('POST', `/regulatory/cas-cases/${id}/preparation`, officerJwt)).statusCode).toBe(200);
+  });
+});
+

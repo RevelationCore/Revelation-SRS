@@ -54,7 +54,7 @@ export function CasCasePanel({ item, onChanged }: { item: CasCase; onChanged: ()
         <p className="font-medium text-neutral-800">Eligibility checks</p>
         {item.eligibilityChecks.length === 0 ? <p className="text-neutral-600">None recorded.</p> : (
           <ul className="mt-1 text-neutral-700">
-            {item.eligibilityChecks.map((c) => <li key={c.checkId}><CodeLabel entity="cas_eligibility_check" field="check_type_code" code={c.checkTypeCode} />: <strong><CodeLabel entity="cas_eligibility_check" field="result_code" code={c.resultCode} /></strong> · {c.guidanceVersion} · {c.checkedBy}, {when(c.checkedAt)}</li>)}
+            {item.eligibilityChecks.map((c) => <li key={c.checkId}><CodeLabel entity="cas_eligibility_check" field="check_type_code" code={c.checkTypeCode} />: <strong><CodeLabel entity="cas_eligibility_check" field="result_code" code={c.resultCode} /></strong>{c.exemptionReason ? ` (${c.exemptionReason})` : ''} · {c.guidanceVersion} · {c.checkedBy}, {when(c.checkedAt)}</li>)}
           </ul>
         )}
         {canPrepare && open && <EligibilityForm id={id} onSubmit={(body) => run(() => recordEligibilityCheck(id, body))} />}
@@ -128,16 +128,17 @@ function SponsorReports({ casCaseId, canRecord }: { casCaseId: string; canRecord
   );
 }
 
-function EligibilityForm({ id, onSubmit }: { id: string; onSubmit: (body: { guidanceVersion: string; checkTypeCode: string; resultCode: string }) => Promise<void> }) {
+function EligibilityForm({ id, onSubmit }: { id: string; onSubmit: (body: { guidanceVersion: string; checkTypeCode: string; resultCode: string; exemptionReason?: string }) => Promise<void> }) {
   const { members: types } = useValueSet('cas_eligibility_check', 'check_type_code');
   const { members: results } = useValueSet('cas_eligibility_check', 'result_code');
-  const [form, setForm] = useState({ guidanceVersion: '', checkTypeCode: '', resultCode: '' });
+  const [form, setForm] = useState({ guidanceVersion: '', checkTypeCode: '', resultCode: '', exemptionReason: '' });
   function submit(e: FormEvent) {
     e.preventDefault();
-    void onSubmit({ guidanceVersion: form.guidanceVersion.trim(), checkTypeCode: form.checkTypeCode, resultCode: form.resultCode }).then(() => setForm((f) => ({ ...f, checkTypeCode: '', resultCode: '' })));
+    void onSubmit({ guidanceVersion: form.guidanceVersion.trim(), checkTypeCode: form.checkTypeCode, resultCode: form.resultCode, ...(form.exemptionReason.trim() ? { exemptionReason: form.exemptionReason.trim() } : {}) })
+      .then(() => setForm((f) => ({ ...f, checkTypeCode: '', resultCode: '', exemptionReason: '' })));
   }
   return (
-    <form className="mt-2 grid grid-cols-1 items-end gap-2 md:grid-cols-4" onSubmit={submit}>
+    <form className="mt-2 grid grid-cols-1 items-end gap-2 md:grid-cols-5" onSubmit={submit}>
       <LabelledField label="Guidance version" htmlFor={`cas-${id}-guidance`} required hint="e.g. Student sponsor guidance 10/2026">
         <Input id={`cas-${id}-guidance`} value={form.guidanceVersion} onChange={(e) => setForm((f) => ({ ...f, guidanceVersion: e.target.value }))} />
       </LabelledField>
@@ -152,6 +153,9 @@ function EligibilityForm({ id, onSubmit }: { id: string; onSubmit: (body: { guid
           <option value="">Choose…</option>
           {results.map((m) => <option key={m.code} value={m.code}>{m.displayLabel}</option>)}
         </Select>
+      </LabelledField>
+      <LabelledField label="Exemption reason" htmlFor={`cas-${id}-exemption`} hint="Required when the result is an exemption: why this check does not apply">
+        <Input id={`cas-${id}-exemption`} maxLength={500} value={form.exemptionReason} onChange={(e) => setForm((f) => ({ ...f, exemptionReason: e.target.value }))} />
       </LabelledField>
       <Button type="submit" size="sm" variant="secondary" disabled={!form.guidanceVersion.trim() || !form.checkTypeCode || !form.resultCode}>Record check</Button>
     </form>

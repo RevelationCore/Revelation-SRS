@@ -288,6 +288,8 @@ export const casEligibilityChecks = pgTable('cas_eligibility_check', {
   checkTypeCode:   text('check_type_code').notNull(),
   resultCode:      text('result_code').notNull(),
   evidenceRef:     uuid('evidence_ref'), // FK -> case_evidence_reference.id, nullable
+  /** Required when the result is 'exempt' (BL-198). */
+  exemptionReason: text('exemption_reason'),
   checkedBy:       text('checked_by').notNull(),
   checkedAt:       timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
 });

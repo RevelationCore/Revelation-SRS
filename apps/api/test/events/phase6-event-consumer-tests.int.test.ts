@@ -2,6 +2,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
+import { recordRequiredCasChecks } from '../helpers/cas.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
 
 interface CapturedEvent {
@@ -195,7 +196,8 @@ describe('Phase 6 event consumers', () => {
     const post = (url: string, as: string, payload?: Record<string, unknown>) =>
       ctx.app.inject({ method: 'POST', url: `/api/v1${url}`, headers: { authorization: `Bearer ${as}` }, ...(payload ? { payload } : {}) });
     const casCaseId = (await post(`/enrolments/${fixture.enrolmentId}/regulatory/cas-cases`, officer)).json<{ casCaseId: string }>().casCaseId;
-    await post(`/regulatory/cas-cases/${casCaseId}/eligibility-checks`, officer, { guidanceVersion: '10/2026', checkTypeCode: 'genuine-student', resultCode: 'pass' });
+    // BL-198: every mandatory check type, not one.
+    await recordRequiredCasChecks(ctx, casCaseId, officer);
     await post(`/regulatory/cas-cases/${casCaseId}/preparation`, officer);
     await post(`/regulatory/cas-cases/${casCaseId}/approval`, approver);
     expect((await post('/regulatory/cas-cases/sms-export', officer)).statusCode).toBe(200);

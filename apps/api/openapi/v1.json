@@ -51687,6 +51687,10 @@
                   },
                   "evidenceRef": {
                     "type": "string"
+                  },
+                  "exemptionReason": {
+                    "maxLength": 500,
+                    "type": "string"
                   }
                 }
               }

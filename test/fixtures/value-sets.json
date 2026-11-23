@@ -2989,6 +2989,15 @@
   "fieldName": "check_type_code",
   "members": [
    {
+    "code": "identity",
+    "displayLabel": "Identity and nationality",
+    "description": null,
+    "sortOrder": 5,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
     "code": "genuine-student",
     "displayLabel": "Genuine student requirement",
     "description": null,
@@ -3007,6 +3016,15 @@
     "selectable": true
    },
    {
+    "code": "english-language",
+    "displayLabel": "English language",
+    "description": null,
+    "sortOrder": 25,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
     "code": "financial-requirement",
     "displayLabel": "Financial requirement",
     "description": null,
@@ -3020,6 +3038,15 @@
     "displayLabel": "Immigration history",
     "description": null,
     "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "atas",
+    "displayLabel": "ATAS certificate (where the course needs one)",
+    "description": null,
+    "sortOrder": 50,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -3055,6 +3082,15 @@
     "displayLabel": "Referred for review",
     "description": null,
     "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "exempt",
+    "displayLabel": "Exempt (with a recorded reason)",
+    "description": null,
+    "sortOrder": 40,
     "active": true,
     "hidden": false,
     "selectable": true

@@ -12,7 +12,7 @@ export interface CasCase {
   preparedPayload: Record<string, unknown> | null;
   openedAt: string;
   subject: { studentName: string | null; programmeCode: string | null; programmeTitle: string | null };
-  eligibilityChecks: Array<{ checkId: string; guidanceVersion: string; checkTypeCode: string; resultCode: string; checkedBy: string; checkedAt: string }>;
+  eligibilityChecks: Array<{ checkId: string; guidanceVersion: string; checkTypeCode: string; resultCode: string; exemptionReason?: string | null; checkedBy: string; checkedAt: string }>;
   assignmentVersions: Array<{ assignmentVersionId: string; versionNumber: number; assignedPayloadHash: string; casNumber: string | null; approvedBy: string; approvedAt: string; smsRequestSentAt: string | null; smsReceiptRef: string | null }>;
   /** Set when the applicant withdrew while the case was still in hand (Phase 5 D-39). */
   attentionReason?: 'application-withdrawn' | null;
@@ -36,7 +36,7 @@ export const listCasCaseWorklist = (q: { open?: boolean; statusCode?: string; pe
 export const listCasCases = (enrolmentId: string) => api.get<CasCase[]>(`/api/v1/enrolments/${enrolmentId}/regulatory/cas-cases`);
 export const openCasCaseForApplication = (applicationId: string) => api.post<CasCase>(`/api/v1/applications/${applicationId}/cas-cases`, {});
 export const openCasCase = (enrolmentId: string) => api.post<CasCase>(`/api/v1/enrolments/${enrolmentId}/regulatory/cas-cases`, {});
-export const recordEligibilityCheck = (casCaseId: string, body: { guidanceVersion: string; checkTypeCode: string; resultCode: string; evidenceRef?: string }) =>
+export const recordEligibilityCheck = (casCaseId: string, body: { guidanceVersion: string; checkTypeCode: string; resultCode: string; evidenceRef?: string; exemptionReason?: string }) =>
   api.post<{ checkId: string }>(`/api/v1/regulatory/cas-cases/${casCaseId}/eligibility-checks`, body);
 export const prepareCas = (casCaseId: string) => api.post<CasCase>(`/api/v1/regulatory/cas-cases/${casCaseId}/preparation`);
 export const approveCas = (casCaseId: string) => api.post<CasCase>(`/api/v1/regulatory/cas-cases/${casCaseId}/approval`);

@@ -127,6 +127,13 @@
       "when": 1785000065000,
       "tag": "0017_right_to_study_exempt_nationalities",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785000066000,
+      "tag": "0018_cas_mandatory_checks",
+      "breakpoints": true
     }
   ]
 }

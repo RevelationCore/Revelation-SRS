@@ -27105,6 +27105,7 @@ export interface operations {
                     checkTypeCode: string;
                     resultCode: string;
                     evidenceRef?: string;
+                    exemptionReason?: string;
                 };
             };
         };
