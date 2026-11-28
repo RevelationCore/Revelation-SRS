@@ -38,7 +38,7 @@ export async function handlePersonMerged(tx: WellbeingTx, envelope: DomainEventE
 export async function handlePersonUnmerged(tx: WellbeingTx, envelope: DomainEventEnvelope<PersonUnmergedV1Payload>): Promise<ReverseMergeResult> {
   const p = envelope.payload;
   const kit: MergeSqlKit<SQLWrapper> = {
-    sql: sql as unknown as MergeSqlKit<SQLWrapper>['sql'],
+    sql,
     execute: (q) => tx.execute(q),
     savepoint: (fn) => tx.transaction((sp) => fn((q) => sp.execute(q))),
   };

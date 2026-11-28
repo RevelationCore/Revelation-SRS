@@ -307,7 +307,8 @@ describe('unmerge (ADR-031 item 10, BL-359)', () => {
     await call(officerC, 'PUT', `/identity-unmerge-cases/${caseId}/proposal`, { allocations: {} });
     expect((await decideUnmerge(officerD, caseId, { proposalVersion: 1 })).statusCode).toBe(200);
     const [iam] = await rows<{ payload: Record<string, unknown>; person_id: string }>(sql`SELECT payload, person_id::text FROM delivery_item WHERE idempotency_key = ${`person-unmerged:${mergeId}:iam`}`);
-    expect(iam).toMatchObject({ person_id: merged, payload: expect.objectContaining({ instruction: 'restore', fromPersonId: survivor }) });
+    expect(iam?.person_id).toBe(merged);
+    expect(iam?.payload).toMatchObject({ instruction: 'restore', fromPersonId: survivor });
     const notices = await rows<{ flow_code: string; payload: Record<string, unknown> }>(sql`SELECT flow_code, payload FROM delivery_item WHERE idempotency_key = ${`person-unmerged:${mergeId}`}`);
     expect(notices.map((n) => n.flow_code)).toEqual(['F-SIS-LIB-01']);
     expect(notices[0]!.payload).toMatchObject({ messageType: 'person-unmerged', restoredPersonId: merged });

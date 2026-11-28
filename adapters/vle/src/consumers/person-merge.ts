@@ -15,7 +15,7 @@ export async function handlePersonMerged(envelope: DomainEventEnvelope<PersonMer
   const p = envelope.payload;
   const tx = ctx.tx;
   const kit: MergeSqlKit<SQLWrapper> = {
-    sql: sql,
+    sql,
     execute: (q) => tx.execute(q),
     savepoint: (fn) => tx.transaction((sp) => fn((q) => sp.execute(q))),
   };
@@ -31,7 +31,7 @@ export async function handlePersonUnmerged(envelope: DomainEventEnvelope<PersonU
   const p = envelope.payload;
   const tx = ctx.tx;
   const kit: MergeSqlKit<SQLWrapper> = {
-    sql: sql as unknown as MergeSqlKit<SQLWrapper>['sql'],
+    sql,
     execute: (q) => tx.execute(q),
     savepoint: (fn) => tx.transaction((sp) => fn((q) => sp.execute(q))),
   };

@@ -76,7 +76,7 @@ export class IdentityUnmergeService {
     const id = randomUUID();
     try {
       await withTenantContext(this.db, tenantId, (tx) => tx.insert(identityUnmergeCases).values({
-        id: id as Uuid, tenantId: tenantId as Uuid, mergeId: mergeId as Uuid, businessCaseId: businessCaseId as Uuid, openedBy: actor.sub,
+        id, tenantId: tenantId as Uuid, mergeId: mergeId as Uuid, businessCaseId: businessCaseId as Uuid, openedBy: actor.sub,
       }));
     } catch (err) {
       if (isUniqueViolation(err)) throw new ConflictError('This merge already has an unmerge case open');
