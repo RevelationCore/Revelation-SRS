@@ -9,10 +9,23 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Calls go to the BFF on this origin (ADR-026), which adds the access token:
+ * the browser sends only its session cookie and the CSRF header.
+ */
 export interface ApiClientConfig {
+  /** '/bff/srs' or '/bff/wellbeing'. */
   baseUrl:        string;
-  getToken:       () => string | null;
   onUnauthorized?: () => void;
+}
+
+/** fetch through the BFF: same-origin cookie and the CSRF header; a 401 means sign in again. */
+export async function bffFetch(input: string, init: RequestInit = {}, onUnauthorized?: () => void): Promise<Response> {
+  const headers = new Headers(init.headers);
+  headers.set('X-SRS-Request', '1');
+  const res = await fetch(input, { ...init, headers, credentials: 'same-origin' });
+  if (res.status === 401) onUnauthorized?.();
+  return res;
 }
 
 async function parseError(res: Response): Promise<{ message: string; detail?: string }> {
@@ -24,15 +37,11 @@ async function parseError(res: Response): Promise<{ message: string; detail?: st
   }
 }
 
-export function createApiClient({ baseUrl, getToken, onUnauthorized }: ApiClientConfig) {
+export function createApiClient({ baseUrl, onUnauthorized }: ApiClientConfig) {
   async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const token   = getToken();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const res = await fetch(`${baseUrl}${path}`, {
+    const res = await bffFetch(`${baseUrl}${path}`, {
       method,
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 

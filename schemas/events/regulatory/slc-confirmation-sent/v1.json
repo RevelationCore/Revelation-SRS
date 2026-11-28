@@ -13,7 +13,8 @@
           "enum": [
             "enrolment",
             "withdrawal",
-            "intermission"
+            "intermission",
+            "resumption"
           ]
         },
         "exchangeId": {

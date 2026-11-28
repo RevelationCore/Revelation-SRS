@@ -38,18 +38,32 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestAttend
   const connectionString = container.getConnectionUri();
   const db = createAttendanceDb(connectionString);
 
-  // Apply the core platform migration first (creates the tenant table which
+  // Apply the core platform migrations first, in journal order (creates the tenant table which
   // attendance tables reference via FOREIGN KEY).
   const coreMigrationsDir = join(__dirname, '../../../../packages/db/migrations');
-  await applySql(db, join(coreMigrationsDir, '0000_platform_foundations.sql'));
+  const journal = JSON.parse(await readFile(join(coreMigrationsDir, 'meta/_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of journal.entries) await applySql(db, join(coreMigrationsDir, `${tag}.sql`));
 
   // Apply attendance module migrations in order
   const attendanceMigrationsDir = join(__dirname, '../../migrations');
-  await applySql(db, join(attendanceMigrationsDir, '0001_attendance_initial.sql'));
+  const attendanceJournal = JSON.parse(await readFile(join(attendanceMigrationsDir, 'meta/_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const { tag } of attendanceJournal.entries) await applySql(db, join(attendanceMigrationsDir, `${tag}.sql`));
 
   // Seed test tenants
   const tenantId       = '00000000-0000-0000-0000-000000000001';
   const secondTenantId = '00000000-0000-0000-0000-000000000002';
+
+  // The service connects as production does: a login role inheriting srs_app
+  // (no superuser, no BYPASSRLS, not the owner), so row-level security
+  // applies to every query it makes. `db` stays the owner connection, for
+  // fixtures and assertions (BL-034).
+  await db.execute(sql`
+    CREATE ROLE attendance_api_test LOGIN PASSWORD 'attendance_api_test' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS INHERIT;
+    GRANT srs_app TO attendance_api_test;
+  `);
+  const appUrl = new URL(connectionString);
+  appUrl.username = 'attendance_api_test';
+  appUrl.password = 'attendance_api_test';
 
   await db.execute(sql`
     INSERT INTO tenant (id, code, name, active)
@@ -62,7 +76,7 @@ export async function startTestApp(appOpts: AppOptions = {}): Promise<TestAttend
     port:            3011,
     logLevel:        'silent',
     nodeEnv:         'test',
-    databaseUrl:     connectionString,
+    databaseUrl:     appUrl.toString(),
     srsApiUrl:       'http://localhost:3000',
     natsUrl:         'nats://localhost:4222', // NATS not running in tests
     jwtSecret:       JWT_SECRET,

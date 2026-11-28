@@ -65,22 +65,30 @@ function RuntimeTab() {
       <Card>
         <CardHeader title="Current environment" />
         <CardBody>
+        {!data.environment && (
+          <div role="status" className="mb-4 rounded-md border border-warning-300 bg-warning-50 px-4 py-3 text-sm text-neutral-900">
+            <p className="font-medium">This deployment runs as <span className="font-mono">{data.environmentCode}</span>, which is not registered.</p>
+            <p className="mt-1">
+              Until it is, promotions and environment-specific flag settings cannot name it. Either set
+              {' '}<span className="font-mono">SRS_ENVIRONMENT_CODE</span> to one of the codes on the Environments tab and restart the API,
+              or ask a system administrator to register <span className="font-mono">{data.environmentCode}</span>.
+            </p>
+          </div>
+        )}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
-          <KV label="Environment" value={data.environment.displayName} />
-          <KV label="Type" value={data.environment.environmentTypeCode} />
+          <KV label="Environment" value={data.environment?.displayName ?? `${data.environmentCode} (not registered)`} />
+          {data.environment && <KV label="Type" value={data.environment.environmentTypeCode} />}
           <KV label="Release version" value={data.releaseVersion} mono />
           <KV label="Migration version" value={data.migrationVersion} mono />
           {data.imageDigest && (
             <KV label="Image digest" value={data.imageDigest.slice(0, 24) + '…'} mono />
           )}
-          <KV
-            label="Production-like"
-            value={data.environment.productionLike ? 'Yes' : 'No'}
-          />
-          <KV
-            label="Live integrations"
-            value={data.environment.liveIntegrationsAllowed ? 'Allowed' : 'Disabled'}
-          />
+          {data.environment && (
+            <>
+              <KV label="Production-like" value={data.environment.productionLike ? 'Yes' : 'No'} />
+              <KV label="Live integrations" value={data.environment.liveIntegrationsAllowed ? 'Allowed' : 'Disabled'} />
+            </>
+          )}
         </div>
         </CardBody>
       </Card>

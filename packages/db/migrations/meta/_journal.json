@@ -5,71 +5,148 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1785000000000,
-      "tag": "0000_platform_foundations",
+      "when": 1785000048000,
+      "tag": "0000_baseline",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1785000001000,
-      "tag": "0001_platform_hardening_and_refinements",
+      "when": 1785000049000,
+      "tag": "0001_security_and_tenant_isolation",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1785000002000,
-      "tag": "0002_demo_performance_and_seed_data",
+      "when": 1785000050000,
+      "tag": "0002_ec_decision_roles",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "7",
-      "when": 1785000003000,
-      "tag": "0003_engagement_and_attendance",
+      "when": 1785000051000,
+      "tag": "0003_wellbeing_service_role",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "7",
-      "when": 1785000004000,
-      "tag": "0004_business_process_foundations",
+      "when": 1785000052000,
+      "tag": "0004_retention_disposal_plan",
       "breakpoints": true
     },
     {
       "idx": 5,
       "version": "7",
-      "when": 1785000018000,
-      "tag": "0005_curriculum_regulatory_and_pgr",
+      "when": 1785000053000,
+      "tag": "0005_vle_connector_service_role",
       "breakpoints": true
     },
     {
       "idx": 6,
       "version": "7",
-      "when": 1785000032000,
-      "tag": "0006_adjustments_integration_and_support",
+      "when": 1785000054000,
+      "tag": "0006_document_scanning",
       "breakpoints": true
     },
     {
       "idx": 7,
       "version": "7",
-      "when": 1785000037000,
-      "tag": "0007_business_process_completion",
+      "when": 1785000055000,
+      "tag": "0007_identity_merge_governance",
       "breakpoints": true
     },
     {
       "idx": 8,
       "version": "7",
-      "when": 1785000047000,
-      "tag": "0008_registration_integrations_and_rule_depth",
+      "when": 1785000056000,
+      "tag": "0008_adjustment_provenance",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "7",
-      "when": 1785000048000,
-      "tag": "0009_audiences_and_evidence",
+      "when": 1785000057000,
+      "tag": "0009_adjustment_proposals",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785000058000,
+      "tag": "0010_adjustment_migration_release",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785000059000,
+      "tag": "0011_adjustment_withdrawal_authority",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1785000060000,
+      "tag": "0012_adjustment_withdrawals",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785000061000,
+      "tag": "0013_identity_merge_execution",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1785000062000,
+      "tag": "0014_identity_unmerge",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1785000063000,
+      "tag": "0015_conferment_authority",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1785000064000,
+      "tag": "0016_hesa_mode_crosswalk",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1785000065000,
+      "tag": "0017_right_to_study_exempt_nationalities",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785000066000,
+      "tag": "0018_cas_mandatory_checks",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1785000067000,
+      "tag": "0019_progression_defer",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1785000068000,
+      "tag": "0020_slc_change_of_circumstances",
       "breakpoints": true
     }
   ]

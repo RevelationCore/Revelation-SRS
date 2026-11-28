@@ -9,7 +9,7 @@ import { renderWithProviders } from './render.js';
 import { EngagementPage } from '../src/pages/EngagementPage.js';
 import { EngagementCasePage } from '../src/pages/EngagementCasePage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const CASE_ID = 'case-001';
 
 const explainableAlert = {

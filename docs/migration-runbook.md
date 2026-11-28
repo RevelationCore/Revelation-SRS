@@ -85,10 +85,15 @@ model dependencies:
 | 3 | enrolments | enrolments |
 | 4 | registrations | module registrations |
 | 5 | assessment | marks |
-| 6 | adjustments | reasonable adjustments, exceptional circumstances |
+| 6 | adjustments | reasonable adjustments (with the amount, e.g. 25% extra time), exceptional circumstances |
 
-Each phase runs in a single database transaction. If any phase fails critically,
-the transaction rolls back and no data is written.
+The whole import runs in one database transaction, and each row is written in
+its own savepoint. A row the database refuses (for example a student number
+already in use) is not loaded: it is counted as `failed`, reported as a
+`ROW_LOAD_FAILURE` error with the database's reason, and every row that refers
+to it is reported as an unresolved reference. The rows that did load are
+committed. Any other failure, or an interrupted run, rolls the whole import
+back and writes nothing.
 
 ---
 
@@ -149,9 +154,9 @@ After a successful import:
 
 1. Log into the admin interface and verify that students, enrolments, and
    module registrations appear as expected.
-2. Check the validation report's record counts (source vs loaded) — any
-   `failed` rows indicate records that were skipped due to unresolvable
-   references; investigate each.
+2. Check the validation report's record counts (source vs loaded). Every
+   `failed` row has an `error` issue naming the record and why it was not
+   loaded; fix the source and import those records again.
 3. Run the demo validator (if applicable) or a custom integrity check against
    the imported tenant.
 4. Retain the full CLI output as evidence of the migration.
@@ -166,7 +171,9 @@ The validation report is printed to stdout after every run. It covers:
 |---|---|---|
 | Missing required fields | `error` | Required fields absent from a record |
 | Duplicate external IDs | `error` | Two records with the same `externalId` |
-| Unresolved references | `error` | FK reference to unknown parent (e.g. enrolment → unknown person) |
+| Unresolved references | `error` | FK reference to unknown parent (e.g. enrolment → unknown person), or to a parent that was not loaded |
+| Invalid values | `error` | An adjustment amount the SRS would refuse: a unit the adjustment type does not take, an amount on a type that takes none, or a value that is not positive with at most two decimal places |
+| Row load failures | `error` | A row the database refused during the import, with its reason (never the row's values) |
 | Value-set mapping failures | `warning` | Status/mode/type code not in the SRS known-value set |
 | Bitemporal window violations | `error` | `expectedEndDate` before `startDate`; `validTo` before `validFrom` |
 | Special-category data | `warning` / `info` | Records containing disability or ethnicity data |

@@ -28,6 +28,10 @@ bao lease revoke -prefix database/creds/srs-worker
 # Update in OpenBao:
 bao kv put kv/srs/keycloak client_secret=<new-value>
 
+# Rotate the public verification IP key (BL-184). apply-policies.sh creates
+# it once; rotating it means new log entries cannot be linked to older ones.
+bao kv put kv/srs/api/public-verify ip_key="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+
 # Force pod restart to pick up new secrets
 kubectl rollout restart deployment/srs-api -n revelation-srs
 ```

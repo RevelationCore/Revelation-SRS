@@ -8,7 +8,8 @@
     "ignoreDeprecations": "6.0"
   },
   "references": [
-    { "path": "../db" }
+    { "path": "../db" },
+    { "path": "../domain" }
   ],
   "include": ["src"]
 }

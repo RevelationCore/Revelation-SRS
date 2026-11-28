@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { TaskInboxPage } from '../src/pages/TaskInboxPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 
 const genericTask = {
   workflowTaskId: 'task-001',

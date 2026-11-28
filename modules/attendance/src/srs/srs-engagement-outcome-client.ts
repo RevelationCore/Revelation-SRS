@@ -13,6 +13,8 @@
  * srs.engagement.outcome-recorded to downstream consumers.
  */
 
+import { fetchWithTimeout } from '@revelation-srs/auth';
+
 export interface SubmitEngagementOutcomeInput {
   idempotencyKey:        string;
   personId:              string;
@@ -70,7 +72,7 @@ export class SrsEngagementOutcomeHttpClient implements SrsEngagementOutcomeClien
       ...(input.reevaluationRequired !== undefined ? { reevaluationRequired: input.reevaluationRequired } : {}),
     };
 
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       method:  'POST',
       headers: {
         'content-type':      'application/json',

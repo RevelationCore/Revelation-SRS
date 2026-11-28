@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 /**
  * Phase 5 Domain Event Consumer Tests
  *
@@ -13,6 +14,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
 import { ratifyThroughDecision } from '../helpers/board-ratification.js';
+import { wellbeingServiceJwt, withdrawApprovedAdjustment } from '../helpers/adjustments.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
 import { conferViaBoard } from '../helpers/award.js';
 
@@ -175,13 +177,15 @@ describe('Adjustment events', () => {
     const res = await ctx.app.inject({
       method: 'POST',
       url:    `/api/v1/students/${personId}/adjustments`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {
+      headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+      payload: { sourceCaseId: randomUUID(), 
         enrolmentId,
         adjustmentTypeCode: 'extra-time',
         scopeCode: 'exam',
         validFrom: '2025-09-22T00:00:00.000Z',
-        validTo:   '2026-07-31T00:00:00.000Z',
+        // In force, so ending it early publishes srs.adjustment.expired (ADR-034:
+        // one already ended is left as it is and publishes nothing).
+        validTo:   '2099-07-31T00:00:00.000Z',
       },
     });
     expect(res.statusCode).toBe(201);
@@ -234,12 +238,8 @@ describe('Adjustment events', () => {
   });
 
   it('expiring an adjustment publishes srs.adjustment.expired (sensitive)', async () => {
-    const res = await ctx.app.inject({
-      method: 'POST',
-      url:    `/api/v1/adjustments/${adjustmentId}/expire`,
-      headers: { authorization: `Bearer ${jwt}` },
-    });
-    expect(res.statusCode).toBe(204);
+    const res = await withdrawApprovedAdjustment(ctx, adjustmentId);
+    expect(res.statusCode).toBe(200);
 
     const evt = findEvent('srs.adjustment.expired');
     expect(evt).toBeDefined();
@@ -295,7 +295,7 @@ describe('EC and misconduct events', () => {
   });
 
   it('deciding an EC outcome publishes srs.circumstances.exceptional-circumstances-updated (sensitive)', async () => {
-    const decider = await ctx.makeJwt({ sub: 'evt-ec-decider', roles: ['exam-board-chair'] });
+    const decider = await ctx.makeJwt({ sub: 'evt-ec-decider', roles: ['ec-decision-maker'] });
     const res = await ctx.app.inject({
       method: 'POST',
       url:    `/api/v1/ec-determinations/${determinationId}/decision`,

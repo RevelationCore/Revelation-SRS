@@ -15,6 +15,8 @@ export interface AuthenticatedUser {
   email: string;
   /** Raw `preferred_username` claim. */
   preferredUsername: string;
+  /** The client the token was issued to (`azp`): for a service, its tenant-bound client (ADR-029). */
+  authorizedParty?: string;
   /**
    * SRS person UUID from the srs_person_id JWT claim: present for anyone with
    * an SRS person row (students, applicants, supervisors, examiners), set by
@@ -22,6 +24,12 @@ export interface AuthenticatedUser {
    * database rows, never `sub` or email.
    */
   srsPersonId?: string;
+  /**
+   * ADR-031 item 9: the srs_person_id the token was issued with, kept when it
+   * names a person since merged and srsPersonId has been resolved to the
+   * survivor. Absent otherwise.
+   */
+  srsPersonIdAsIssued?: string;
 }
 
 /** Fastify module augmentation so request.user is typed throughout the app. */

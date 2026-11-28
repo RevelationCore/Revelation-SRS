@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { wellbeingServiceJwt } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -230,6 +231,24 @@ describe('Marks', () => {
     expect(patch.statusCode).toBe(403);
   });
 
+  it('refuses a new mark on a ratified registration and stores nothing (BL-269)', async () => {
+    const fixture = await createAssessmentFixture('MRKLOCK');
+    await ingestMark(fixture, 50);
+    // Ratification locks the result and the marks.
+    await ctx.db.execute(sql`UPDATE module_result SET locked = true WHERE module_registration_id = ${fixture.moduleRegistrationId} AND recorded_until IS NULL`);
+    await ctx.db.execute(sql`UPDATE mark SET locked = true WHERE module_registration_id = ${fixture.moduleRegistrationId} AND recorded_until IS NULL`);
+    const count = async () => ((await ctx.db.execute(sql`SELECT count(*)::int AS n FROM mark WHERE module_registration_id = ${fixture.moduleRegistrationId}`)) as unknown as Array<{ n: number }>)[0]!.n;
+    const before = await count();
+
+    const late = await ctx.app.inject({
+      method: 'POST', url: `/api/v1/module-registrations/${fixture.moduleRegistrationId}/marks`, headers: { authorization: `Bearer ${jwt}` },
+      payload: { assessmentComponentId: fixture.assessmentComponentId, rawMark: 70, attemptNumber: 2 },
+    });
+    expect(late.statusCode).toBe(409);
+    expect(late.json<{ type: string }>().type).toMatch(/record-locked$/);
+    expect(await count()).toBe(before);
+  });
+
   it('does not expose marks through another tenant', async () => {
     const fixture = await createAssessmentFixture('MRK105');
     await ingestMark(fixture, 64);
@@ -372,8 +391,8 @@ async function insertDeadlineExtension(enrolmentId: string, personId: string): P
   const adjustment = await ctx.app.inject({
     method: 'POST',
     url: `/api/v1/students/${personId}/adjustments`,
-    headers: { authorization: `Bearer ${jwt}` },
-    payload: {
+    headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+    payload: { sourceCaseId: randomUUID(), 
       enrolmentId,
       adjustmentTypeCode: 'deadline-extension',
       scopeCode: 'coursework',

@@ -4,10 +4,13 @@ import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 let ctx: TestApp;
 let jwt: string;
+// BL-065: the ratifier is not the person who recorded the decision.
+let ratifierJwt: string;
 
 beforeAll(async () => {
   ctx = await startTestApp();
   jwt = await ctx.makeJwt();
+  ratifierJwt = await ctx.makeJwt({ sub: 'board-ratifier', roles: ['exam-board-chair'] });
 }, 120_000);
 
 afterAll(async () => {
@@ -102,8 +105,15 @@ describe('Board authority & ratification (BPR-D11)', () => {
       url: `/api/v1/board-decisions/${decisionId}/ratification`,
       headers: { authorization: `Bearer ${jwt}` },
     });
-    expect(ratification.statusCode).toBe(201);
-    const { ratificationRecordId } = ratification.json<{ ratificationRecordId: string }>();
+    // The person who recorded the decision cannot ratify it (BL-065).
+    expect(ratification.statusCode).toBe(403);
+    const ratified = await ctx.app.inject({
+      method: 'POST',
+      url: `/api/v1/board-decisions/${decisionId}/ratification`,
+      headers: { authorization: `Bearer ${ratifierJwt}` },
+    });
+    expect(ratified.statusCode).toBe(201);
+    const { ratificationRecordId } = ratified.json<{ ratificationRecordId: string }>();
 
     const publish = await ctx.app.inject({
       method: 'PATCH',
@@ -138,7 +148,7 @@ describe('Board authority & ratification (BPR-D11)', () => {
     const ratification = await ctx.app.inject({
       method: 'POST',
       url: `/api/v1/board-decisions/${decisionId}/ratification`,
-      headers: { authorization: `Bearer ${jwt}` },
+      headers: { authorization: `Bearer ${ratifierJwt}` },
     });
     expect(ratification.statusCode).toBe(422);
   });

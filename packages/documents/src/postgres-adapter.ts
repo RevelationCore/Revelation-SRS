@@ -1,48 +1,35 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, ne } from 'drizzle-orm';
 import type { ExtractTablesWithRelations } from 'drizzle-orm';
 import type { PgDatabase, PgQueryResultHKT, PgTransaction } from 'drizzle-orm/pg-core';
 
 import {
   type DocumentStorageAdapter,
-  type StoreDocumentInput,
   type StoredDocument,
   type RetrievedDocument,
   type DocumentMetadata,
+  DocumentNotAvailableError,
   DocumentNotFoundError,
-  DocumentTooLargeError,
-  DocumentTypeNotAllowedError,
 } from './adapter.js';
-import { type DocumentScanner, NoopScanner } from './scanner.js';
+import { assertIssued, type ScannedUpload } from './scanned-upload.js';
 import { documents, documentAccessLog } from './schema.js';
 
 // Generic over the caller's own schema type so this accepts either a full
 // database handle or a transaction from any service that has installed
 // this package's tables alongside its own (e.g. the wellbeing module) —
 // without this package needing to depend on that service's schema type.
-type Db<TSchema extends Record<string, unknown>, H extends PgQueryResultHKT> =
+export type DocumentsDb<TSchema extends Record<string, unknown>, H extends PgQueryResultHKT> =
   PgDatabase<H, TSchema> | PgTransaction<H, TSchema, ExtractTablesWithRelations<TSchema>>;
 
-const DEFAULT_MAX_BYTES = 15 * 1024 * 1024; // 15MB — generous for a scanned letter/report, not arbitrary binaries
-
-const DEFAULT_ALLOWED_MIME_TYPES = new Set([
-  'application/pdf',
-  'image/png',
-  'image/jpeg',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-]);
-
-export interface PostgresDocumentAdapterOptions {
-  scanner?:            DocumentScanner;
-  maxBytes?:           number;
-  allowedMimeTypes?:   Set<string>;
+/** Observer for what the adapter refuses (ADR-030 item 8); the store passes its own. */
+export interface AdapterObserver {
+  retrievalRefused(event: { tenantId: string; documentId: string; reason: 'pending-scan' | 'infected'; actorId: string }): void;
 }
 
-async function writeAccessLog<TSchema extends Record<string, unknown>, H extends PgQueryResultHKT>(
-  db: Db<TSchema, H>,
-  input: { documentId: string; tenantId: string; actorId: string; action: 'store' | 'retrieve' | 'delete' },
+export async function writeAccessLog<TSchema extends Record<string, unknown>, H extends PgQueryResultHKT>(
+  db: DocumentsDb<TSchema, H>,
+  input: { documentId: string; tenantId: string; actorId: string; action: 'store' | 'retrieve' | 'delete' | 'upload-rejected' | 'rescan' },
 ): Promise<void> {
   await db.insert(documentAccessLog).values({
     id:         randomUUID(),
@@ -72,29 +59,20 @@ function toMetadata(row: typeof documents.$inferSelect): DocumentMetadata {
 
 /**
  * Default DocumentStorageAdapter implementation: content stored directly
- * in Postgres as bytea. See adapter.ts for the interface contract and
- * schema.ts for the table shapes this reads/writes.
+ * in Postgres as bytea. Reached only through documentStore.adapter(db)
+ * (ADR-030): it stores only uploads the store scanned, and serves only
+ * clean or system-generated content.
  */
 export function createPostgresDocumentAdapter<TSchema extends Record<string, unknown>, H extends PgQueryResultHKT>(
-  db: Db<TSchema, H>,
-  options: PostgresDocumentAdapterOptions = {},
+  db: DocumentsDb<TSchema, H>,
+  observer: AdapterObserver,
 ): DocumentStorageAdapter {
-  const scanner          = options.scanner ?? new NoopScanner();
-  const maxBytes         = options.maxBytes ?? DEFAULT_MAX_BYTES;
-  const allowedMimeTypes = options.allowedMimeTypes ?? DEFAULT_ALLOWED_MIME_TYPES;
-
   return {
-    async store(input: StoreDocumentInput): Promise<StoredDocument> {
-      if (input.content.byteLength > maxBytes) {
-        throw new DocumentTooLargeError(input.content.byteLength, maxBytes);
-      }
-      if (!allowedMimeTypes.has(input.mimeType)) {
-        throw new DocumentTypeNotAllowedError(input.mimeType);
-      }
-
-      const checksumSha256 = createHash('sha256').update(input.content).digest('hex');
-      const scanResult     = await scanner.scan(input.content);
-      const documentId     = randomUUID();
+    async store(upload: ScannedUpload): Promise<StoredDocument> {
+      assertIssued(upload);
+      const { input, checksumSha256, verdict, scannedAt } = upload;
+      const scanResult = verdict ? 'clean' : 'system-generated';
+      const documentId = randomUUID();
 
       await db.insert(documents).values({
         id:             documentId,
@@ -107,6 +85,9 @@ export function createPostgresDocumentAdapter<TSchema extends Record<string, unk
         checksumSha256,
         content:        input.content,
         statusCode:     scanResult,
+        scannedAt,
+        scanEngine:     verdict?.engine ?? null,
+        scanDatabaseVersion: verdict?.databaseVersion ?? null,
         uploadedBy:     input.actorId,
       });
 
@@ -120,7 +101,16 @@ export function createPostgresDocumentAdapter<TSchema extends Record<string, unk
         .where(and(eq(documents.id, documentId), eq(documents.tenantId, tenantId), isNull(documents.deletedAt)))
         .limit(1);
 
-      if (!row || row.content === null) throw new DocumentNotFoundError(documentId);
+      if (!row) throw new DocumentNotFoundError(documentId);
+      // ADR-030: only scanned or system-generated content is served. The
+      // refusal is a log event, not an access-log row: nothing was disclosed
+      // and the caller's transaction rolls back.
+      if (row.statusCode === 'pending-scan' || row.statusCode === 'infected') {
+        observer.retrievalRefused({ tenantId, documentId, reason: row.statusCode, actorId });
+        throw new DocumentNotAvailableError(documentId, row.statusCode);
+      }
+      if (row.statusCode !== 'clean' && row.statusCode !== 'system-generated') throw new DocumentNotFoundError(documentId);
+      if (row.content === null) throw new DocumentNotFoundError(documentId);
 
       await writeAccessLog(db, { documentId, tenantId, actorId, action: 'retrieve' });
 
@@ -162,6 +152,7 @@ export function createPostgresDocumentAdapter<TSchema extends Record<string, unk
           eq(documents.ownerService, ownerService),
           eq(documents.ownerRef, ownerRef),
           isNull(documents.deletedAt),
+          ne(documents.statusCode, 'infected'),
         ));
 
       return rows.map(toMetadata);

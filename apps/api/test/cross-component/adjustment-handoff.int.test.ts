@@ -27,11 +27,13 @@
  * projection is fed by its own event consumer, which is not part of this
  * hand-off.
  */
+import { vleConnectorClientId, wellbeingServiceClientId } from '@revelation-srs/auth';
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers';
 import { pino } from 'pino';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { IntegrationBusPublisher } from '../../src/platform/integration-bus/publisher.js';
+import { withdrawApprovedAdjustment } from '../helpers/adjustments.js';
 import { startTestApp, type TestApp } from '../helpers/test-app.js';
 // Other components, imported from their own source — this test sits in the
 // API package only because that is where the SRS test harness lives.
@@ -54,6 +56,7 @@ let wellbeing: TestWellbeingApp;
 let vle: TestVleApp;
 let consumer: VleEventConsumer;
 let srsJwt: string;
+let serviceTokensIssued = 0;
 
 beforeAll(async () => {
   nats = await new GenericContainer('nats:2.10-alpine')
@@ -74,14 +77,24 @@ beforeAll(async () => {
 
   // Wellbeing module calling the real SRS over HTTP.
   wellbeing = await startWellbeing({
-    srsAdjustmentClient: new SrsAdjustmentHttpClient(srsUrl, srsJwt),
+    // No static token (ADR-029): a token per tenant, as its own client would
+    // get from Keycloak, so the hand-off goes through bindServiceRoles and
+    // the narrow adjustment:record-approved permission.
+    srsAdjustmentClient: new SrsAdjustmentHttpClient(srsUrl, {
+      getToken: (tenantId: string) => { serviceTokensIssued++; return srs.makeJwt({ sub: 'service-account-srs-wellbeing', name: null, roles: ['wellbeing-service'], tenantId, azp: wellbeingServiceClientId(tenantId) }); },
+      invalidate: () => undefined,
+    }),
   });
 
   // VLE adapter consuming from NATS, writing to the stub VLE, replying to the real SRS.
   vle = await startVleAdapter();
   consumer = new VleEventConsumer(natsUrl, vle.db, srs.tenantId, log, {
     vleClient:      new HttpVleClient(vle.stubVleBaseUrl),
-    srsAckClient:   new HttpSrsAcknowledgementClient(srsUrl, await srs.makeJwt({ roles: ['tenant-administrator'] })),
+    // ADR-032: the connector replies as srs-vle-svc-<tenant>, with only its VLE-scoped permission.
+    srsAckClient:   new HttpSrsAcknowledgementClient(srsUrl, {
+      getToken: (tenantId: string) => srs.makeJwt({ sub: 'service-account-srs-vle-svc', name: null, roles: ['vle-connector-service'], tenantId, azp: vleConnectorClientId(tenantId) }),
+      invalidate: () => undefined,
+    }, srs.tenantId),
     platformDriver: new StubVleDriver(vle.stubVleBaseUrl),
   });
   await consumer.connect();
@@ -149,12 +162,12 @@ describe('AJ-21 hand-off: wellbeing → SRS → NATS → VLE adapter → VLE', (
     await wellbeing.app.inject({
       method: 'POST', url: `/api/v1/adjustment-cases/${caseId}/assessments`,
       headers: { authorization: `Bearer ${adviserJwt}` },
-      payload: { assessorId: 'adviser-1', assessedAt: '2026-09-10T10:00:00Z', outcomeCode: 'recommended' },
+      payload: { assessedAt: '2026-09-10T10:00:00Z', outcomeCode: 'recommended' },
     });
 
     const approved = await wellbeing.app.inject({
       method: 'POST', url: `/api/v1/adjustment-cases/${caseId}/approve`,
-      headers: { authorization: `Bearer ${wellbeing.makeJwt({ roles: ['wellbeing-panel-chair'] })}` },
+      headers: { authorization: `Bearer ${wellbeing.makeJwt({ sub: 'panel-chair-001', roles: ['wellbeing-panel-chair'] })}` },
       payload: {
         enrolmentId,
         adjustmentTypeCode:    'extra-time',
@@ -162,11 +175,11 @@ describe('AJ-21 hand-off: wellbeing → SRS → NATS → VLE adapter → VLE', (
         recommendedAdjustment: '25% extra time in timed assessments',
         validFrom:             '2026-09-21T00:00:00.000Z',
         amount:                { value: 25, unitCode: 'percent-of-duration' },
-        notes:                 'Cross-component note that must not reach the VLE',
         forceApprove:          true,
       },
     });
     expect(approved.statusCode, approved.body).toBe(202);
+    expect(serviceTokensIssued).toBeGreaterThan(0); // the hand-off authenticated as the wellbeing service
     adjustmentId = approved.json<{ adjustmentId: string }>().adjustmentId;
 
     const adjustment = await srsGet(`/api/v1/adjustments/${adjustmentId}`);
@@ -197,11 +210,8 @@ describe('AJ-21 hand-off: wellbeing → SRS → NATS → VLE adapter → VLE', (
 
   it('expiry withdraws it from the VLE and the SRS records the withdrawal', async () => {
     const vleCourseId = vle.stubVle.stubStore.courses.get(moduleId)!.vleCourseId;
-    const expired = await srs.app.inject({
-      method: 'POST', url: `/api/v1/adjustments/${adjustmentId}/expire`,
-      headers: { authorization: `Bearer ${srsJwt}` },
-    });
-    expect(expired.statusCode).toBe(204);
+    const expired = await withdrawApprovedAdjustment(srs, adjustmentId);
+    expect(expired.statusCode).toBe(200);
 
     await vi.waitFor(async () => {
       expect(vle.stubVle.stubStore.timeAccommodations.has(`${vleCourseId}:${personId}`)).toBe(false);

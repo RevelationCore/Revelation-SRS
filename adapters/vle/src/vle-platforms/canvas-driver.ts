@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@revelation-srs/service-client';
+
 import { extraMinutesFor } from './time-accommodation.js';
 import {
   VlePlatformError,
@@ -46,7 +48,7 @@ export class CanvasDriver implements VlePlatformDriver {
   constructor(
     private readonly baseUrl: string,
     private readonly token: string,
-    private readonly fetchImpl: FetchLike = fetch,
+    private readonly fetchImpl: FetchLike = fetchWithTimeout,
   ) {}
 
   async setTimeAccommodation(target: PersonInCourse, extraTimePercent: number): Promise<AccommodationResult> {

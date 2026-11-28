@@ -1,4 +1,6 @@
-import { api, ApiError } from './client.js';
+import { bffFetch } from '@revelation-srs/ui';
+
+import { api, ApiError, SRS_BASE } from './client.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -233,10 +235,9 @@ export function getAdjustments(personId: string, enrolmentId?: string): Promise<
 // seating/equipment/software specification) that a disability adviser
 // attached to this record.
 export async function downloadAdjustmentOutcomeDocument(personId: string, adjustmentId: string): Promise<Blob> {
-  const token = localStorage.getItem('srs_portal_token');
-  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/v1/students/${personId}/adjustments/${adjustmentId}/outcome-document`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  const baseUrl = SRS_BASE;
+  const res = await bffFetch(`${baseUrl}/api/v1/students/${personId}/adjustments/${adjustmentId}/outcome-document`, {
+    headers: {},
   });
   if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
   return res.blob();
@@ -629,8 +630,7 @@ export function submitRightToStudyShareCode(personId: string, shareCode: string)
 
 /** Downloads one of my issued documents as its signed PDF (D-20). */
 export async function downloadMyDocument(documentIssueId: string, filename: string): Promise<void> {
-  const token = localStorage.getItem('srs_portal_token');
-  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1/document-issues/${documentIssueId}/pdf`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  const res = await bffFetch(`${SRS_BASE}/api/v1/document-issues/${documentIssueId}/pdf`, { headers: {} });
   if (!res.ok) throw new Error(`Download failed (${res.status})`);
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement('a');

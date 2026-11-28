@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/PersonUnmergedV1Payload",
+  "definitions": {
+    "PersonUnmergedV1Payload": {
+      "type": "object",
+      "properties": {
+        "mergeId": {
+          "type": "string"
+        },
+        "survivorPersonId": {
+          "type": "string"
+        },
+        "restoredPersonId": {
+          "type": "string"
+        },
+        "effectiveAt": {
+          "type": "string"
+        },
+        "reallocatedToRestored": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "mergeId",
+        "survivorPersonId",
+        "restoredPersonId",
+        "effectiveAt",
+        "reallocatedToRestored"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/person/unmerged/v1.json",
+  "title": "PersonUnmergedV1Payload",
+  "description": "Payload schema for srs.person.unmerged v1.0.0"
+}

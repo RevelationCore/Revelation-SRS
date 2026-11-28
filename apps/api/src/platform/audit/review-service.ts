@@ -2,12 +2,13 @@ import { randomUUID } from 'node:crypto';
 
 import { eq, and, inArray } from 'drizzle-orm';
 import {
+  auditRecords,
   auditReviewCases,
   auditReviewFindings,
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { NotFoundError } from '@revelation-srs/domain';
+import { DomainError, NotFoundError } from '@revelation-srs/domain';
 
 import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
@@ -61,8 +62,13 @@ export class AuditReviewService {
     return id;
   }
 
-  async addFinding(tenantId: string, auditReviewCaseId: string, input: AddFindingInput): Promise<string> {
+  async addFinding(tenantId: string, auditReviewCaseId: string, input: AddFindingInput, reviewerId: string): Promise<string> {
     await this.#ensureCaseExists(tenantId, auditReviewCaseId);
+    // R08-8 (BL-287): no one reviews their own actions.
+    const [audited] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ actorId: auditRecords.actorId }).from(auditRecords)
+      .where(and(eq(auditRecords.tenantId, tenantId as Uuid), eq(auditRecords.id, input.auditRecordId as Uuid))).limit(1));
+    if (!audited) throw new NotFoundError('AuditRecord', input.auditRecordId);
+    if (audited.actorId === reviewerId) throw new DomainError('A finding about your own action is recorded by another reviewer', 'separation-of-duties', 403);
 
     const id = randomUUID();
     await withTenantContext(this.db, tenantId, async (tx) => {

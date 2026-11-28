@@ -31,15 +31,20 @@ jobs:
           - service: admin
             context: .
             dockerfile: infra/docker/admin/Dockerfile
-          - service: worker
-            context: .
-            dockerfile: infra/docker/worker/Dockerfile
+          # The worker runs the API image with a different command (workers.yaml),
+          # so it has no image of its own (BL-176).
           - service: wellbeing
             context: .
             dockerfile: infra/docker/wellbeing/Dockerfile
           - service: vle-adapter
             context: .
             dockerfile: infra/docker/vle-adapter/Dockerfile
+          - service: attendance
+            context: .
+            dockerfile: infra/docker/attendance/Dockerfile
+          - service: bff
+            context: .
+            dockerfile: infra/docker/bff/Dockerfile
 
     steps:
       - name: Checkout
@@ -76,6 +81,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Always fetch the current base image, and never take the runtime
+          # stage from cache, so its package upgrades (apk upgrade) are current:
+          # a cached layer kept a vulnerable nginx after the fix was published.
+          pull: true
+          no-cache-filters: runtime
           provenance: true
           sbom: true
 

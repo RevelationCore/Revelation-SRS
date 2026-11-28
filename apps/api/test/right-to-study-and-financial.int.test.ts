@@ -100,6 +100,44 @@ describe('right to study (D-17)', () => {
   });
 });
 
+describe('right-to-study scope (institution-confirmations pre-review F-5, BL-182)', () => {
+  const setConfig = (patch: Record<string, unknown>) => call('PATCH', '/tenant/configuration', adminJwt, patch);
+  const nationality = (personId: string, code: string | null) => ctx.db.execute(sql`UPDATE person_identity SET nationality_code = ${code} WHERE person_id = ${personId}::uuid AND recorded_until IS NULL`);
+
+  it("refuses scope 'none' unless the institution records it holds no sponsor licence", async () => {
+    const refused = await setConfig({ rightToStudy: { scope: 'none' } });
+    expect(refused.statusCode).toBe(422);
+    expect(refused.body).toContain('holdsSponsorLicence');
+    expect((await setConfig({ ukvi: { holdsSponsorLicence: false }, rightToStudy: { scope: 'none' } })).statusCode).toBe(200);
+    expect((await setConfig({ ukvi: { holdsSponsorLicence: true }, rightToStudy: { scope: 'all' } })).statusCode).toBe(200);
+  });
+
+  it("a stored 'none' without that record still checks; 'sponsored' still checks non-UK, non-Irish and unknown nationalities", async () => {
+    const year = '2042-43';
+    const french = await preRegistered('Francoise', year);
+    const british = await preRegistered('Britta', year);
+    const unknown = await preRegistered('Unknown', year);
+    expect((await call('POST', '/registration-periods', registryJwt, { academicYear: year, opensAt: '2026-01-01T00:00:00Z', closesAt: '2099-01-01T00:00:00Z', periodTypeCode: 'initial' })).statusCode).toBe(201);
+    await nationality(french.personId, 'FRA');
+    await nationality(british.personId, 'GBR');
+    await nationality(unknown.personId, null);
+    const blockers = async (s: { personId: string; jwt: string }) => (await registrations(s))[0]!.blockers.map((b) => b.code);
+    const setStored = (configuration: Record<string, unknown>) => ctx.db.execute(sql`UPDATE tenant SET configuration = configuration || ${JSON.stringify(configuration)}::jsonb WHERE id = ${ctx.tenantId}::uuid`);
+    try {
+      // Written around the route, with no record that the tenant holds no licence.
+      await setStored({ rightToStudy: { scope: 'none' }, ukvi: {} });
+      expect(await blockers(french)).toEqual(['right-to-study']);
+
+      await setStored({ rightToStudy: { scope: 'sponsored' } });
+      expect(await blockers(french)).toEqual(['right-to-study']);
+      expect(await blockers(unknown)).toEqual(['right-to-study']);
+      expect(await blockers(british)).toEqual([]);
+    } finally {
+      await setStored({ rightToStudy: { scope: 'all' } });
+    }
+  });
+});
+
 describe('financial registration (D-18)', () => {
   it('is a separate state per year: set by finance or SLC, sent to Finance, and never blocks by default', async () => {
     const s = await preRegistered('Fay', '2043-44');

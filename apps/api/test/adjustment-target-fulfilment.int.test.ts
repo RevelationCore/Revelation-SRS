@@ -7,11 +7,14 @@
  * manual (staff work a task queue), file (an SRS file exchange) or not used,
  * so "pending" never silently means "nothing will ever do this".
  */
+import { randomUUID } from 'node:crypto';
+
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher, PublishOptions } from '../src/platform/integration-bus/publisher.js';
 
+import { wellbeingServiceJwt, withdrawApprovedAdjustment } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 const published: Array<{ type: string; payload: Record<string, unknown>; options: PublishOptions }> = [];
@@ -163,7 +166,7 @@ describe('Manual task queue', () => {
     const task = (await tasks()).find((t) => t.adjustmentId === adjustmentId)!;
     await post(`/api/v1/adjustments/${adjustmentId}/distributions/${task.distributionId}/acknowledge`, { targetSystem: 'attendance' }, officerJwt);
 
-    expect((await post(`/api/v1/adjustments/${adjustmentId}/expire`, {}, registryJwt)).statusCode).toBe(204);
+    expect((await withdrawApprovedAdjustment(ctx, adjustmentId)).statusCode).toBe(200);
 
     expect((await tasks()).find((t) => t.adjustmentId === adjustmentId)).toMatchObject({ action: 'remove', statusCode: 'withdrawal-requested' });
     expect(published.some((e) => e.type === 'srs.adjustment.distribution-withdrawal-requested' && e.options.subjectSuffix === 'attendance')).toBe(false);
@@ -261,11 +264,16 @@ async function adjust(
   amount: { value: number; unitCode: string } = { value: 25, unitCode: 'percent-of-duration' },
 ): Promise<{ adjustmentId: string }> {
   const res = await post(`/api/v1/students/${f.personId}/adjustments`, {
+    sourceCaseId: randomUUID(),
     enrolmentId: f.enrolmentId, adjustmentTypeCode, scopeCode, validFrom: '2026-09-21T00:00:00.000Z',
-    amount, notes: 'PRIVATE-NOTE must not reach the task queue',
-  }, registryJwt);
+    amount,
+  }, await wellbeingServiceJwt(ctx));
   expect(res.statusCode, res.body).toBe(201);
-  return res.json<{ adjustmentId: string }>();
+  const recorded = res.json<{ adjustmentId: string }>();
+  // Core no longer accepts notes (BL-243), but rows recorded before that, or
+  // migrated, may hold them: the task queue must still never show them.
+  await ctx.db.execute(sql`UPDATE reasonable_adjustment SET notes = 'PRIVATE-NOTE must not reach the task queue' WHERE id = ${recorded.adjustmentId}`);
+  return recorded;
 }
 
 async function distributions(adjustmentId: string): Promise<Distribution[]> {

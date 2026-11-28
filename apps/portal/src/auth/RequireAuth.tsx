@@ -5,7 +5,7 @@ import { Spinner } from '@revelation-srs/ui';
 import type { ReactNode } from 'react';
 
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { token, isReady, sessionExpired } = useAuth();
+  const { authenticated, isReady, sessionExpired } = useAuth();
   const location = useLocation();
   const { t }    = useTranslation();
 
@@ -33,7 +33,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!token) {
+  if (!authenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

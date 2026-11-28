@@ -1,7 +1,10 @@
+import { randomUUID } from 'node:crypto';
+
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { wellbeingServiceJwt } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -88,7 +91,11 @@ describe('Exceptional circumstances and misconduct', () => {
       method: 'POST', url: `/api/v1/ec-determinations/${id}/decision`, headers: { authorization: `Bearer ${as}` }, payload: { decisionCode },
     });
     expect((await decide(jwt, 'upheld')).statusCode).toBe(403);
-    const decider = await ctx.makeJwt({ sub: 'ec-panel-chair', roles: ['exam-board-chair'] });
+    // ADR-028: only ec-decision-maker decides; a board chair or registry administrator no longer can.
+    for (const roles of [['exam-board-chair'], ['registry-administrator']]) {
+      expect((await decide(await ctx.makeJwt({ sub: 'not-a-decider', roles }), 'upheld')).statusCode).toBe(403);
+    }
+    const decider = await ctx.makeJwt({ sub: 'ec-panel-chair', roles: ['ec-decision-maker'] });
     const upheld = await decide(decider, 'upheld');
     expect(upheld.statusCode, upheld.body).toBe(200);
     expect(upheld.json<{ statusCode: string; decidedBy: string }>()).toMatchObject({ statusCode: 'upheld', decidedBy: 'ec-panel-chair' });
@@ -141,8 +148,8 @@ describe('Exceptional circumstances and misconduct', () => {
     const adjustment = await ctx.app.inject({
       method: 'POST',
       url: `/api/v1/students/${fixture.personId}/adjustments`,
-      headers: { authorization: `Bearer ${wellbeingJwt}` },
-      payload: {
+      headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+      payload: { sourceCaseId: randomUUID(), 
         enrolmentId: fixture.enrolmentId,
         adjustmentTypeCode: 'extra-time',
         scopeCode: 'exam',

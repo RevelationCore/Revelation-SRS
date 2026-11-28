@@ -1,5 +1,6 @@
 import { Type } from '@sinclair/typebox';
-import { requirePermission } from '@revelation-srs/auth';
+import { requireAnyPermission, requirePermission } from '@revelation-srs/auth';
+import { hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance } from 'fastify';
 
 import type {
@@ -76,16 +77,34 @@ export function markRoutes(fastify: FastifyInstance): void {
         params: Type.Object({ moduleRegistrationId: Type.String() }),
         body: IngestMarkBody,
         response: {
+          200: Type.Object({ markId: Type.String() }),
           201: Type.Object({ markId: Type.String() }),
           404: ErrorSchema,
           422: ErrorSchema,
         },
       },
-      preHandler: [requirePermission('mark:write')],
+      // ADR-032: staff with mark:write, or the VLE connector, whose
+      // mark:record-from-vle records VLE marks only, each with its reference.
+      preHandler: [requireAnyPermission('mark:write', 'mark:record-from-vle')],
     },
     async (request, reply) => {
       const { moduleRegistrationId } = request.params as { moduleRegistrationId: string };
       const body = request.body as IngestMarkInput;
+      if (!hasPermission(request.user.roles, 'mark:write')) {
+        if (body.sourceSystem !== 'vle' || !body.sourceReference) {
+          await reply.code(422).type('application/problem+json').send({
+            type: 'https://srs.example.com/errors/unprocessable', title: 'VLE mark required', status: 422,
+            detail: 'The VLE connector records marks with sourceSystem vle and the VLE submission reference (sourceReference)', instance: request.url,
+          });
+          return;
+        }
+        // The submission reference makes a repeat idempotent.
+        const existing = await fastify.markService.findMarkBySource(request.tenantId, moduleRegistrationId, 'vle', body.sourceReference);
+        if (existing) {
+          await reply.code(200).send({ markId: existing });
+          return;
+        }
+      }
       const markId = await fastify.markService.ingestMark(
         request.tenantId,
         moduleRegistrationId,

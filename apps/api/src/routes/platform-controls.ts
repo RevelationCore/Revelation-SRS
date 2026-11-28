@@ -360,7 +360,9 @@ const EnvironmentSchema = Type.Object({
 });
 
 const EnvironmentRuntimeReportSchema = Type.Object({
-  environment: EnvironmentSchema,
+  environmentCode: Type.String(),
+  registered: Type.Boolean(),
+  environment: Type.Union([EnvironmentSchema, Type.Null()]),
   releaseVersion: Type.String(),
   imageDigest: Type.Union([Type.String(), Type.Null()]),
   migrationVersion: Type.String(),
@@ -1127,7 +1129,7 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
     preHandler: [requirePermission('feature-flag:read')],
   }, async (request, reply) => {
     const { featureFlagId } = request.params as { featureFlagId: string };
-    const impact = await fastify.featureFlagService.getImpact(featureFlagId);
+    const impact = await fastify.featureFlagService.getImpact(featureFlagId, request.tenantId);
     await reply.send(impact);
   });
 
@@ -1249,17 +1251,17 @@ export function platformControlRoutes(fastify: FastifyInstance): void {
   });
 
   fastify.get('/environment-runtime', {
-    schema: { response: { 200: EnvironmentRuntimeReportSchema, 404: ErrorSchema } },
+    schema: { response: { 200: EnvironmentRuntimeReportSchema } },
     preHandler: [requirePermission('environment:read')],
   }, async (_request, reply) => {
     const report = await fastify.environmentService.getRuntimeReport();
     await reply.send({
       ...report,
-      environment: {
+      environment: report.environment ? {
         ...report.environment,
         createdAt: report.environment.createdAt.toISOString(),
         updatedAt: report.environment.updatedAt.toISOString(),
-      },
+      } : null,
     });
   });
 

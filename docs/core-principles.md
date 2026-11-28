@@ -1,7 +1,7 @@
 # Revelation SRS — Core Principles
 
 > Status: Draft for review
-> Last updated: 2026-06-14
+> Last updated: 2026-11-23
 
 This document defines the foundational principles that govern the design, development, and operation of Revelation SRS. These principles apply across all modules, integrations, and deployment contexts and must be respected by any party contributing to or extending the system.
 
@@ -53,7 +53,7 @@ Bitemporal recording applies to (but is not limited to):
 - Institutional rules, assessment regulations, and classification algorithms
 - Address and contact data
 
-There is no destructive update of temporal records. Prior states are always recoverable. This principle is distinct from, but complementary to, the audit trail (§5): bitemporal data records *what was true and when*; the audit trail records *who changed it and why*.
+There is no destructive update of temporal records. Prior states are always recoverable. An identity merge follows the same rule: it is a governed decision that moves current ownership to the surviving person as new versions, leaves the record of what happened in place, redirects the old identifier, and can be reversed by a governed unmerge (ADR-031). This principle is distinct from, but complementary to, the audit trail (§5): bitemporal data records *what was true and when*; the audit trail records *who changed it and why*.
 
 ---
 
@@ -107,6 +107,10 @@ All access to the system — human and machine — is authenticated and authoris
 - **Authorisation**: access control is role-based (RBAC) with attribute-based extensions where required. Roles are defined at the application level; group membership is resolved from the institutional directory.
 - **Row-level security**: data-access scoping (by institution, faculty, cohort, or individual student) is enforced at the database layer, not application code alone.
 - **Least privilege**: every user and integration receives the minimum permissions required to perform its function.
+- **Separation of duties**: permission to decide a governed outcome is separate from permission to prepare it, and the service refuses a decision by anyone who recorded or assessed the case. The acting user is always taken from the authenticated token, never from the request body (ADR-028). A decided outcome is written only by its decision, or by the authenticated hand-off of a decision taken in the service that owns the case; no route lets one person write it directly (ADR-031, ADR-033). Withdrawing or revoking a decided outcome is governed the same way: through the owning case, a second person, or a system effect of an authoritative upstream record, and the record states which (ADR-034).
+- **Browser sessions**: browser applications never hold OAuth tokens; they use a same-origin backend-for-frontend with an HTTP-only session cookie (ADR-026).
+- **Service identity**: a service calling another service authenticates as itself with client credentials, through a client the identity provider binds to one tenant. The tenant always comes from the verified token, never from the caller, and a service role is honoured only from its own client (ADR-029, ADR-032).
+- **Uploaded files**: every uploaded file is scanned for malware before it is stored, and a document that has not passed the scan is never served. When the scanner cannot answer, the upload is refused (ADR-030).
 - **API security**: all API endpoints are protected. No unauthenticated endpoints exist outside of publicly documented health and readiness probes.
 - **Secrets management**: credentials, certificates, and API keys are managed through a dedicated secrets store; they are never baked into container images or committed to source control.
 
@@ -161,6 +165,7 @@ All services are containerised. The deployment topology is defined as code and v
 - Non-production environments must be production-like enough to validate integrations, workflows, migrations, feature flags, accessibility, security, performance, and operational runbooks.
 - Production data must not be copied into non-production environments unless it is anonymised, minimised, access-controlled, and approved under the privacy and security principles.
 - Each environment has isolated secrets, identity configuration, integration endpoints, feature flag state, tenant configuration, observability, audit, and data stores.
+- Pods deny egress by default. A workload reaches only the destinations its network policy names, and reaches the internet only through the egress proxy, to exact host names on that workload's own allow-list, declared per deployment (ADR-036).
 - UAT and pre-production environments may connect to external test endpoints or simulators, but must never accidentally send live statutory, financial, admissions, identity, or student communications traffic.
 
 ---
@@ -318,6 +323,7 @@ The system is designed to operate responsively under the load profile of a large
 - Interactive API responses return within 500ms at the 95th percentile under normal load.
 - Batch and bulk operations (HESA return generation, exam board data preparation) are non-blocking and run asynchronously.
 - The system scales horizontally: adding instances increases throughput without requiring architectural changes.
+- State shared between instances (cache invalidation, live notification fan-out, rate-limit counters, job exclusivity) lives in PostgreSQL, never in process memory, and no second state store is added without an ADR (ADR-027).
 - Performance benchmarks are defined, documented, and verified as part of the CI/release process.
 
 ---
@@ -328,6 +334,7 @@ The system is designed to be operated and diagnosed without requiring direct dat
 
 - **Structured logging**: all application logs are structured (JSON), include a correlation ID for request tracing, and are written to a centralised log store with a defined retention policy.
 - **Metrics**: services expose Prometheus-compatible metrics covering throughput, error rates, latency, and queue depths. Alert thresholds are defined and maintained alongside the metrics.
+- **Alerts that can fire**: every alert rule queries a metric or log event that a service in the same build is shown to emit, and reaches a named receiver; an alert that cannot fire is a defect. Metric labels never carry personal data or raw paths (ADR-035).
 - **Distributed tracing**: inter-service calls carry trace context to support end-to-end request tracing across the integration layer.
 - **Health endpoints**: every service exposes `/health` (liveness) and `/ready` (readiness) endpoints.
 - **Runbooks**: operational runbooks for common failure scenarios are maintained alongside the codebase.

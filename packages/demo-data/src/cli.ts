@@ -11,15 +11,24 @@ import { validateScenario } from './validate.js';
 import { assertSchemaVersion, SafetyError } from './safety.js';
 
 function requireDatabaseUrl(): string {
-  const url = process.env['DATABASE_URL'];
+  // The loader writes across tenants and resets whole scenarios, so it uses the
+  // owner connection the migrations use, not the application role.
+  const url = process.env['MIGRATION_DATABASE_URL'] ?? process.env['DATABASE_URL'];
   if (!url) {
-    console.error('Error: DATABASE_URL environment variable is not set.');
+    console.error('Error: MIGRATION_DATABASE_URL (or DATABASE_URL) environment variable is not set.');
     process.exit(1);
   }
   return url;
 }
 
 const DEFAULT_DEMO_TENANT_CODE = 'DEMO';
+/**
+ * The id a new demo tenant is created with. The development realm's users
+ * (infra/compose/keycloak/srs-realm.json) and setup-keycloak's default carry
+ * this tenant_id, so a demo tenant with any other id leaves every persona
+ * signed in to a tenant that does not exist (BL-375).
+ */
+const DEFAULT_DEMO_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 const DEFAULT_DEMO_TENANT_NAME = 'Demo Institution';
 
 /**
@@ -53,6 +62,7 @@ async function resolveTenantId(
 
   if (allowCreate && !tenantCode) {
     const [created] = await db.insert(tenants).values({
+      id:       DEFAULT_DEMO_TENANT_ID,
       code:     DEFAULT_DEMO_TENANT_CODE,
       name:     DEFAULT_DEMO_TENANT_NAME,
       active:   true,
@@ -198,9 +208,16 @@ async function cmdSetupKeycloak(): Promise<void> {
   process.env['KEYCLOAK_REALM']          ??= 'srs';
   process.env['KEYCLOAK_ADMIN_USERNAME'] ??= 'admin';
   process.env['KEYCLOAK_ADMIN_PASSWORD'] ??= 'admin';
+  // The personas belong to the demo tenant that is actually loaded, which may
+  // predate DEFAULT_DEMO_TENANT_ID on an existing database.
+  if (!process.env['KEYCLOAK_TENANT_ID'] && process.env['DATABASE_URL']) {
+    const [demo] = await createDb(process.env['DATABASE_URL'])
+      .select({ id: tenants.id }).from(tenants).where(eq(tenants.demoMode, true)).orderBy(tenants.code).limit(1);
+    if (demo) process.env['KEYCLOAK_TENANT_ID'] = demo.id;
+  }
 
   console.log('Provisioning Keycloak demo personas...');
-  console.log(`  Keycloak: ${process.env['KEYCLOAK_ADMIN_URL']}  realm: ${process.env['KEYCLOAK_REALM']}`);
+  console.log(`  Keycloak: ${process.env['KEYCLOAK_ADMIN_URL']}  realm: ${process.env['KEYCLOAK_REALM']}  tenant: ${process.env['KEYCLOAK_TENANT_ID'] ?? '(default)'}`);
   await provisionPersonas({ hardFail: true });
   console.log('Setup complete.');
 }

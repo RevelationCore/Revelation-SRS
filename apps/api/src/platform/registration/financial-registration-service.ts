@@ -238,10 +238,10 @@ export class FinancialRegistrationService implements RegistrationBlockerProvider
   }
 
   async #isTuitionHold(tenantId: string, code: string): Promise<boolean> {
-    const [row] = await this.db.select({ meta: valueSetMembers.sourceMetadata }).from(valueSetMembers)
+    // In tenant context, so an institution's own hold reasons are found too.
+    const [row] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ meta: valueSetMembers.sourceMetadata }).from(valueSetMembers)
       .innerJoin(valueSetTable, eq(valueSetTable.id, valueSetMembers.valueSetId))
-      .where(and(eq(valueSetTable.setCode, 'financial-hold-reason-code'), eq(valueSetMembers.code, code))).limit(1);
-    void tenantId;
+      .where(and(eq(valueSetTable.setCode, 'financial-hold-reason-code'), eq(valueSetMembers.code, code))).limit(1));
     return (row?.meta as { tuition?: boolean } | null)?.tuition === true;
   }
 

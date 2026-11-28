@@ -600,3 +600,62 @@ async function createIntervention(code: string): Promise<string> {
   expect(response.statusCode).toBe(201);
   return response.json<{ interventionCaseId: string }>().interventionCaseId;
 }
+
+describe('srs.person.merged (ADR-031 item 7, BL-358)', () => {
+  it('re-keys the merged person\'s records to the survivor once, recording each move', async () => {
+    const merged = await createFixture('MRG01');
+    const survivorPersonId = randomUUID();
+    const expectedEventId = await createEvent(merged, 'TT-MRG01');
+    const mergeId = randomUUID();
+    const event = () => makeEnvelope(EVENT_TYPES.PERSON_MERGED,
+      { mergeId, survivorPersonId, mergedPersonId: merged.personId, effectiveAt: new Date().toISOString() }, ctx.tenantId);
+
+    await consumer.dispatch(event());
+
+    const versions = await ctx.db.execute(sql`SELECT person_id::text, recorded_until FROM attendance.expected_engagement_event WHERE id = ${expectedEventId}::uuid`) as unknown as Array<{ person_id: string; recorded_until: Date | null }>;
+    expect(versions.filter((v) => v.recorded_until === null).map((v) => v.person_id)).toEqual([survivorPersonId]);
+    expect(versions.some((v) => v.person_id === merged.personId && v.recorded_until !== null)).toBe(true);
+    const map = await ctx.db.execute(sql`SELECT person_id::text FROM attendance.enrolment_person_map WHERE enrolment_id = ${merged.enrolmentId}::uuid`) as unknown as Array<{ person_id: string }>;
+    expect(map.map((m) => m.person_id)).toEqual([survivorPersonId]);
+    const moves = await ctx.db.execute(sql`SELECT table_name, mode FROM attendance.person_merge_move WHERE merge_id = ${mergeId}::uuid ORDER BY 1`) as unknown as Array<{ table_name: string; mode: string }>;
+    expect(moves).toEqual(expect.arrayContaining([
+      { table_name: 'enrolment_person_map', mode: 'ledgered-move' },
+      { table_name: 'expected_engagement_event', mode: 'versioned-move' },
+    ]));
+
+    // Redelivered under a new event id: the merge is not applied twice.
+    await consumer.dispatch(event());
+    const again = await ctx.db.execute(sql`SELECT count(*)::int AS n FROM attendance.person_merge_move WHERE merge_id = ${mergeId}::uuid`) as unknown as Array<{ n: number }>;
+    expect(again[0]!.n).toBe(moves.length);
+  });
+});
+
+describe('srs.person.unmerged (ADR-031 item 10, BL-359)', () => {
+  it('reverses the moves, gives the restored person reallocated enrolments\' rows, and applies once', async () => {
+    const merged = await createFixture('UNM01');
+    const survivor = await createFixture('UNM02');
+    const mergedEvent = await createEvent(merged, 'TT-UNM01');
+    const survivorEvent = await createEvent(survivor, 'TT-UNM02');
+    const mergeId = randomUUID();
+    await consumer.dispatch(makeEnvelope(EVENT_TYPES.PERSON_MERGED,
+      { mergeId, survivorPersonId: survivor.personId, mergedPersonId: merged.personId, effectiveAt: new Date().toISOString() }, ctx.tenantId));
+
+    const unmerge = () => makeEnvelope(EVENT_TYPES.PERSON_UNMERGED, {
+      mergeId, survivorPersonId: survivor.personId, restoredPersonId: merged.personId, effectiveAt: new Date().toISOString(),
+      reallocatedToRestored: { enrolment: [survivor.enrolmentId] },
+    }, ctx.tenantId);
+    await consumer.dispatch(unmerge());
+
+    const ownerOf = async (id: string) => ((await ctx.db.execute(sql`SELECT person_id::text FROM attendance.expected_engagement_event WHERE id = ${id}::uuid AND recorded_until IS NULL`)) as unknown as Array<{ person_id: string }>)[0]!.person_id;
+    expect(await ownerOf(mergedEvent)).toBe(merged.personId);
+    // The decision gave the survivor's enrolment to the restored person, so its rows follow.
+    expect(await ownerOf(survivorEvent)).toBe(merged.personId);
+    const map = await ctx.db.execute(sql`SELECT person_id::text FROM attendance.enrolment_person_map WHERE enrolment_id = ${merged.enrolmentId}::uuid`) as unknown as Array<{ person_id: string }>;
+    expect(map.map((m) => m.person_id)).toEqual([merged.personId]);
+
+    const versions = async () => ((await ctx.db.execute(sql`SELECT count(*)::int AS n FROM attendance.expected_engagement_event WHERE id = ${mergedEvent}::uuid`)) as unknown as Array<{ n: number }>)[0]!.n;
+    const before = await versions();
+    await consumer.dispatch(unmerge());
+    expect(await versions()).toBe(before);
+  });
+});

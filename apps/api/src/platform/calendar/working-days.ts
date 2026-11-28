@@ -18,16 +18,25 @@ async function divisionFor(db: Db, tenantId: string): Promise<CalendarDivision> 
 }
 
 /**
- * Adds working days to a date (Phase 5 D-42): Monday to Friday, less the
- * tenant's bank holidays for its division and its own closure days. Every
- * statutory deadline uses this, so a holiday inside the period moves it.
+ * What a deadline counts as non-working (institution-confirmations pre-review
+ * F-1, BL-178). A statutory deadline (UKVI reporting, FOI) excludes only
+ * weekends and bank holidays: neither the law nor UKVI counts an institution's
+ * closure as non-working. An institutional one (a Clearing review, UCAS
+ * reconciliation) also skips the institution's closure days.
  */
-export async function addWorkingDaysFor(db: Db, tenantId: string, from: Date, days: number): Promise<Date> {
+export type DeadlineKind = 'statutory' | 'institutional';
+
+/**
+ * Adds working days to a date (Phase 5 D-42): Monday to Friday, less the
+ * tenant's bank holidays for its division and, for an institutional deadline
+ * only, its own closure days. The kind is required, so no caller can forget it.
+ */
+export async function addWorkingDaysFor(db: Db, tenantId: string, from: Date, days: number, kind: DeadlineKind): Promise<Date> {
   const division = await divisionFor(db, tenantId);
   // Enough calendar days to cover the span with any plausible run of holidays.
   const until = new Date(from.getTime() + (days * 2 + 21) * DAY_MS);
   const rows = await withTenantContext(db, tenantId, (tx) => tx.select({ date: nonWorkingDays.date }).from(nonWorkingDays).where(and(
-    eq(nonWorkingDays.tenantId, tenantId as Uuid), inArray(nonWorkingDays.divisionCode, [division, 'tenant']),
+    eq(nonWorkingDays.tenantId, tenantId as Uuid), inArray(nonWorkingDays.divisionCode, kind === 'statutory' ? [division] : [division, 'tenant']),
     gte(nonWorkingDays.date, isoDay(from)), lte(nonWorkingDays.date, isoDay(until)),
   )));
   const closed = new Set(rows.map((r) => r.date));

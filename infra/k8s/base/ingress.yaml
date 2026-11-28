@@ -31,7 +31,7 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384"
     # HTTP → HTTPS redirect
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    # CORS — the API handles CORS itself via ALLOWED_ORIGINS; do not set at ingress
+    # CORS — the API handles CORS itself via CORS_ORIGINS; do not set at ingress
     # Proxy buffer tuning for SSE (notification stream)
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"   # keep SSE connections alive

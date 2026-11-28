@@ -8,7 +8,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { ExamBoardDetailPage } from '../src/pages/ExamBoardDetailPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const BOARD_ID = 'board-001';
 const ROUTE = `/exam-boards/${BOARD_ID}`;
 

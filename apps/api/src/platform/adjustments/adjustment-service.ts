@@ -1,25 +1,22 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm';
 import {
   adjustmentDistributions,
+  adjustmentMigrationReleases,
   adjustmentRequests,
   enrolments,
   personIdentities,
   persons,
   reasonableAdjustments,
   type Db,
+  type TenantScopedDb,
   withTenantContext,
 } from '@revelation-srs/db';
-import {
-  createPostgresDocumentAdapter,
-  DocumentNotFoundError,
-  DocumentTooLargeError,
-  DocumentTypeNotAllowedError,
-  type RetrievedDocument,
-} from '@revelation-srs/documents';
+import { DocumentNotFoundError, type RetrievedDocument } from '@revelation-srs/documents';
 import {
   ConflictError,
+  DomainError,
   EVENT_TYPES,
   NotFoundError,
   ValidationError,
@@ -31,6 +28,8 @@ import type {
   AdjustmentExpiredV1Payload,
 } from '@revelation-srs/domain';
 
+import type { AuditService } from '../audit/service.js';
+import type { ApiDocumentStore } from '../documents/document-store.js';
 import type { IntegrationBusPublisher } from '../integration-bus/publisher.js';
 import type { ValueSetService } from '../value-sets/service.js';
 import { clockNow } from '../clock.js';
@@ -78,15 +77,49 @@ export interface RecordAdjustmentInput {
   scopeCode: string;
   validFrom: string;
   validTo?: string;
-  notes?: string;
   /** Structured amount, e.g. { value: 25, unitCode: 'percent-of-duration' }.
    * Target systems that compute per-assessment values need it. */
   amount?: AdjustmentAmountV1;
-  /** Wellbeing module adjustment_case logical id, when this record
-   * originated from that module's referral -> assessment -> approve
-   * workflow rather than a direct registry-administrator entry. Opaque
-   * cross-service reference, not validated against anything in this DB. */
-  sourceCaseId?: string;
+}
+
+/**
+ * The authority an adjustment is recorded under (ADR-033). There is no way to
+ * record one without it: the wellbeing case that approved it (ADR-029 hand-off),
+ * or a manual proposal a second person approved (BL-378).
+ */
+export type AdjustmentAuthority =
+  | { kind: 'wellbeing-case'; sourceCaseId: string }
+  | { kind: 'manual-proposal'; proposalId: string };
+
+/** The reasons a case or a withdrawal proposal may give (ADR-034 item 9). */
+export const CASE_WITHDRAWAL_REASONS = ['student-request', 'no-longer-needed', 'recorded-in-error', 'superseded'] as const;
+export type CaseWithdrawalReason = (typeof CASE_WITHDRAWAL_REASONS)[number];
+
+/**
+ * The authority an adjustment is ended early under (ADR-034). There is no way
+ * to end one without it: its wellbeing case, a withdrawal a second person
+ * approved, or the end of its enrolment.
+ */
+export type WithdrawalAuthority =
+  | { kind: 'wellbeing-case'; sourceCaseId: string; reasonCode: CaseWithdrawalReason; replacementAdjustmentId?: string }
+  | { kind: 'approved-withdrawal'; withdrawalId: string; reasonCode: CaseWithdrawalReason; replacementAdjustmentId?: string }
+  | { kind: 'enrolment-ended'; enrolmentStatusTransitionId: string };
+
+/** Who is ending it, for the version and the audit row. */
+export interface WithdrawalActor {
+  actorId: string;
+  actorType: 'user' | 'system' | 'integration';
+  actorDisplayName?: string | undefined;
+  correlationId?: string | undefined;
+}
+
+export interface WithdrawalResult {
+  adjustmentId: string;
+  /** False when it had already ended: nothing was written or published. */
+  changed: boolean;
+  validTo: Date;
+  withdrawalAuthorityCode: string | null;
+  withdrawalReasonCode: string | null;
 }
 
 export interface RecordAdjustmentResult {
@@ -111,6 +144,12 @@ export interface AdjustmentDto {
   recordedUntil: Date | null;
   sourceCaseId: string | null;
   outcomeDocumentId: string | null;
+  /** ADR-033: wellbeing-case | manual-approved | migrated | legacy-direct. */
+  provenanceCode: string;
+  manualProposalId: string | null;
+  /** ADR-034: set when the adjustment was ended early. */
+  withdrawalAuthorityCode: string | null;
+  withdrawalReasonCode: string | null;
 }
 
 export interface AttachOutcomeDocumentInput {
@@ -138,6 +177,33 @@ export interface AdjustmentDistributionDto {
   updatedAt: Date;
 }
 
+export interface MigrationBatchSummary {
+  batchId: string;
+  /** Every version recorded in the batch. */
+  total: number;
+  /** Current versions: what expectedCount is checked against. */
+  current: number;
+  released: number;
+  /** Current, in force or future, and not yet released. */
+  unreleased: number;
+  /** Current but ended before release; never distributed. */
+  ended: number;
+}
+
+export interface MigrationBatchRelease {
+  released: number;
+  alreadyReleased: number;
+  ended: number;
+}
+
+/** 409: the batch does not hold the number of adjustments the legacy report says. */
+export class MigrationCountMismatchError extends DomainError {
+  constructor(actual: number, expected: number) {
+    super(`This batch holds ${actual} current adjustments, not ${expected}; reconcile it against the legacy report before releasing`, 'migration-count-mismatch', 409);
+    this.name = 'MigrationCountMismatchError';
+  }
+}
+
 const TARGET_SYSTEMS_BY_SCOPE: Record<string, string[]> = {
   all: ['vle', 'attendance', 'exams'],
   coursework: ['vle'],
@@ -152,15 +218,21 @@ export class AdjustmentService {
     private readonly valueSets: ValueSetService,
     private readonly dispatcher: AdjustmentDistributionDispatcher,
     private readonly targetConfig: AdjustmentTargetConfigService,
+    private readonly documents: ApiDocumentStore,
+    private readonly audit: AuditService,
   ) {}
 
-  async recordAdjustment(
+  async recordAuthorisedAdjustment(
     tenantId: string,
     personId: string,
     input: RecordAdjustmentInput,
+    authority: AdjustmentAuthority,
     actorId: string,
     idempotencyKey?: string,
+    /** Runs in the recording transaction, after the adjustment is written (not on a replay). */
+    inTransaction?: (tx: TenantScopedDb, adjustmentId: string) => Promise<void>,
   ): Promise<RecordAdjustmentResult> {
+    const sourceCaseId = authority.kind === 'wellbeing-case' ? authority.sourceCaseId : null;
     await this.#ensureEnrolmentBelongsToPerson(input.enrolmentId, personId, tenantId);
     await this.#validateInput(tenantId, input);
 
@@ -176,8 +248,10 @@ export class AdjustmentService {
       validFrom: validFrom.toISOString(),
       validTo: validTo ? validTo.toISOString() : null,
       amount: input.amount ? { value: input.amount.value, unitCode: input.amount.unitCode } : null,
-      notes: input.notes ?? null,
-      sourceCaseId: input.sourceCaseId ?? null,
+      // Kept so request hashes recorded before notes were refused still match.
+      notes: null,
+      sourceCaseId,
+      manualProposalId: authority.kind === 'manual-proposal' ? authority.proposalId : null,
     });
 
     const result = await withTenantContext(this.db, tenantId, async (tx): Promise<RecordAdjustmentResult> => {
@@ -216,41 +290,22 @@ export class AdjustmentService {
         personId: personId as `${string}-${string}-${string}-${string}-${string}`,
         adjustmentTypeCode: input.adjustmentTypeCode,
         scopeCode: input.scopeCode,
-        notes: input.notes ?? null,
+        notes: null,
         actorId,
         validFrom,
         validTo,
         recordedAt: now,
         recordedUntil: null,
-        sourceCaseId: input.sourceCaseId ?? null,
+        sourceCaseId,
         amountValue: input.amount ? input.amount.value.toFixed(2) : null,
         amountUnitCode: input.amount?.unitCode ?? null,
+        provenanceCode: authority.kind === 'wellbeing-case' ? 'wellbeing-case' : 'manual-approved',
+        manualProposalId: authority.kind === 'manual-proposal' ? authority.proposalId : null,
       });
 
-      // One distribution per target the tenant delivers to. A 'not-used'
-      // target gets none; manual and file targets are issued straight away
-      // (a task in the queue, or the next file exchange), so only connected
-      // targets wait for the dispatcher to publish an event.
-      const modes = await this.targetConfig.modesIn(tx, tenantId);
-      const delivered = targetSystems
-        .map((targetSystem) => ({ targetSystem, mode: isAdjustmentTarget(targetSystem) ? modes[targetSystem] : 'connected' }))
-        .filter((t) => t.mode !== 'not-used');
-      if (delivered.length > 0) {
-        await tx.insert(adjustmentDistributions).values(delivered.map(({ targetSystem, mode }) => ({
-          id: randomUUID(),
-          tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
-          adjustmentId,
-          targetSystem,
-          fulfilmentModeCode: mode,
-          statusCode: 'pending',
-          distributedAt: null,
-          failureReason: null,
-          requestPublishedAt: mode === 'connected' ? null : now,
-          createdAt: now,
-          updatedAt: now,
-        })));
-      }
+      await this.#createDistributions(tx, tenantId, adjustmentId, targetSystems, now);
 
+      if (inTransaction) await inTransaction(tx, adjustmentId);
       return { adjustmentId, replayed: false };
     });
 
@@ -261,32 +316,119 @@ export class AdjustmentService {
     }
     const { adjustmentId } = result;
 
-    if (this.eventBus.isConnected()) {
-      const payload: AdjustmentApprovedV1Payload = {
-        adjustmentId,
-        enrolmentId: input.enrolmentId,
-        personId,
-        adjustmentTypeCode: input.adjustmentTypeCode,
-        scopeCode: input.scopeCode,
-        ...(input.amount ? { amount: { value: input.amount.value, unitCode: input.amount.unitCode } } : {}),
-        validFrom: validFrom.toISOString(),
-        ...(validTo ? { validTo: validTo.toISOString() } : {}),
-      };
-      await this.eventBus.publish(
-        EVENT_TYPES.ADJUSTMENT_APPROVED,
-        '1.0.0',
-        tenantId,
-        actorId,
-        'sensitive',
-        payload,
-      );
-    }
+    await this.#publishApproved(tenantId, actorId, {
+      adjustmentId, enrolmentId: input.enrolmentId, personId, adjustmentTypeCode: input.adjustmentTypeCode,
+      scopeCode: input.scopeCode, amount: input.amount ?? null, validFrom, validTo,
+    });
 
     // Instruct each target. Failures leave the rows due; the worker's
     // reconcile loop republishes them.
     await this.dispatcher.dispatchTenant(tenantId);
 
     return result;
+  }
+
+  /**
+   * The checks recording would make, without writing anything: the person and
+   * enrolment, the dates, the value-set codes and the amount. A manual
+   * proposal is checked on the way in, and again when it is approved.
+   */
+  async validateForRecording(tenantId: string, personId: string, input: RecordAdjustmentInput): Promise<void> {
+    await this.#ensurePersonExists(personId, tenantId);
+    await this.#ensureEnrolmentBelongsToPerson(input.enrolmentId, personId, tenantId);
+    await this.#validateInput(tenantId, input);
+  }
+
+  /**
+   * A migration batch (ADR-033 item 7): its current adjustments, how many are
+   * released, how many are still to release, and how many have ended.
+   */
+  async summariseMigrationBatch(tenantId: string, batchId: string): Promise<MigrationBatchSummary> {
+    return withTenantContext(this.db, tenantId, (tx) => this.#summarise(tx, tenantId, batchId));
+  }
+
+  /**
+   * Distributes a reconciled migration batch: for each current adjustment in
+   * the batch still in force and not yet released, the same per-target
+   * distributions a newly approved adjustment gets, and its approved event.
+   * Ended adjustments are skipped. expectedCount must equal the batch's
+   * current adjustments (SME-8), and the release names the legacy report it
+   * was checked against. Safe to repeat: a released adjustment is skipped.
+   */
+  async releaseMigrationBatch(
+    tenantId: string,
+    batchId: string,
+    input: { expectedCount: number; reconciliationReference: string },
+    actorId: string,
+  ): Promise<MigrationBatchRelease> {
+    const reference = input.reconciliationReference.trim();
+    if (reference.length < 1 || reference.length > 100) {
+      throw new ValidationError('reconciliationReference must be 1 to 100 characters', [{ field: 'reconciliationReference', message: 'The reference of the legacy report the count was checked against' }]);
+    }
+    const now = clockNow();
+    const outcome = await withTenantContext(this.db, tenantId, async (tx) => {
+      // One release of a batch at a time.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`adjustment-migration-batch:${batchId}`}))`);
+      const summary = await this.#summarise(tx, tenantId, batchId);
+      if (summary.current !== input.expectedCount) throw new MigrationCountMismatchError(summary.current, input.expectedCount);
+
+      const toRelease = await tx.select().from(reasonableAdjustments)
+        .leftJoin(adjustmentMigrationReleases, and(
+          eq(adjustmentMigrationReleases.tenantId, reasonableAdjustments.tenantId),
+          eq(adjustmentMigrationReleases.adjustmentId, reasonableAdjustments.id),
+        ))
+        .where(and(
+          eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(reasonableAdjustments.migrationBatchId, batchId as `${string}-${string}-${string}-${string}-${string}`),
+          isNull(reasonableAdjustments.recordedUntil),
+          isNull(adjustmentMigrationReleases.adjustmentId),
+          or(isNull(reasonableAdjustments.validTo), gt(reasonableAdjustments.validTo, now)),
+        ));
+      for (const { reasonable_adjustment: a } of toRelease) {
+        await this.#createDistributions(tx, tenantId, a.id, this.#targetSystemsForScope(a.scopeCode), now);
+        await tx.insert(adjustmentMigrationReleases).values({
+          tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
+          adjustmentId: a.id, migrationBatchId: batchId as `${string}-${string}-${string}-${string}-${string}`,
+          reconciliationReference: reference, releasedBy: actorId, releasedAt: now,
+        });
+      }
+      return { released: toRelease.map((r) => r.reasonable_adjustment), summary };
+    });
+
+    for (const a of outcome.released) {
+      await this.#publishApproved(tenantId, actorId, {
+        adjustmentId: a.id, enrolmentId: a.enrolmentId, personId: a.personId, adjustmentTypeCode: a.adjustmentTypeCode,
+        scopeCode: a.scopeCode, amount: amountFromRow(a), validFrom: a.validFrom, validTo: a.validTo,
+      });
+    }
+    if (outcome.released.length > 0) await this.dispatcher.dispatchTenant(tenantId);
+    return {
+      released: outcome.released.length,
+      alreadyReleased: outcome.summary.released,
+      ended: outcome.summary.ended,
+    };
+  }
+
+  async #summarise(tx: TenantScopedDb, tenantId: string, batchId: string): Promise<MigrationBatchSummary> {
+    const now = clockNow();
+    const rows = await tx.select({
+      validTo: reasonableAdjustments.validTo,
+      recordedUntil: reasonableAdjustments.recordedUntil,
+      releasedAt: adjustmentMigrationReleases.releasedAt,
+    }).from(reasonableAdjustments)
+      .leftJoin(adjustmentMigrationReleases, and(
+        eq(adjustmentMigrationReleases.tenantId, reasonableAdjustments.tenantId),
+        eq(adjustmentMigrationReleases.adjustmentId, reasonableAdjustments.id),
+      ))
+      .where(and(
+        eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
+        eq(reasonableAdjustments.migrationBatchId, batchId as `${string}-${string}-${string}-${string}-${string}`),
+      ));
+    if (rows.length === 0) throw new NotFoundError('AdjustmentMigrationBatch', batchId);
+    const current = rows.filter((r) => r.recordedUntil === null);
+    const ended = current.filter((r) => r.validTo !== null && r.validTo <= now && r.releasedAt === null).length;
+    const released = current.filter((r) => r.releasedAt !== null).length;
+    return { batchId, total: rows.length, current: current.length, released, unreleased: current.length - released - ended, ended };
   }
 
   async listAdjustments(
@@ -574,18 +716,12 @@ export class AdjustmentService {
   }
 
   /**
-   * End an adjustment's valid period now (or immediately after it starts,
-   * if it has not started yet).
-   *
-   * A bitemporal update, like attachOutcomeDocument: the current version is
-   * closed in transaction time and a successor is recorded with the new
-   * validTo. The closed version keeps its original validTo, so a query
-   * "as recorded before the expiry" still shows what was then believed, and
-   * the expired adjustment stays visible (with its end date) for history,
-   * board packs and later reconstruction. An adjustment whose period has
-   * already ended keeps its recorded end date and gains no new version.
-   * The expired event is still published, as before: there is no scheduler
-   * that announces a natural end, so this call may be consumers' only signal.
+   * Ends an adjustment early under a named authority (ADR-034): closes the
+   * current version and writes its successor with valid_to = now (never
+   * backdated) and the withdrawal columns; withdraws or supersedes its
+   * distributions; writes the audit row in the same transaction; then
+   * publishes srs.adjustment.expired and dispatches. Idempotent by state: an
+   * adjustment that has already ended is left as it is (changed: false).
    *
    * Distributions: a row whose instruction was never published is simply
    * superseded. A row whose instruction was published — acknowledged or not,
@@ -594,104 +730,123 @@ export class AdjustmentService {
    * instruction. The rows are locked first, so a dispatcher mid-publish
    * finishes (and stamps request_published_at) before this decides.
    */
-  async expireAdjustment(adjustmentId: string, tenantId: string, actorId: string): Promise<void> {
+  async withdrawAuthorisedAdjustment(
+    tenantId: string,
+    adjustmentId: string,
+    authority: WithdrawalAuthority,
+    actor: WithdrawalActor,
+    /** Runs in the withdrawal transaction, also when it had already ended (changed: false). */
+    inTransaction?: (tx: TenantScopedDb, outcome: { changed: boolean; validTo: Date }) => Promise<void>,
+  ): Promise<WithdrawalResult> {
     const now = clockNow();
+    const reasonCode = authority.kind === 'enrolment-ended' ? 'enrolment-ended' : authority.reasonCode;
+    const replacementAdjustmentId = authority.kind === 'enrolment-ended' ? undefined : authority.replacementAdjustmentId;
+    if (authority.kind !== 'enrolment-ended') {
+      if (!(CASE_WITHDRAWAL_REASONS as readonly string[]).includes(reasonCode)) {
+        throw new ValidationError(`'${reasonCode}' is not a withdrawal reason this authority may give`, [{ field: 'withdrawalReasonCode', message: 'One of student-request, no-longer-needed, recorded-in-error, superseded' }]);
+      }
+      await this.#validateFieldValue(tenantId, 'reasonable_adjustment', 'withdrawal_reason_code', reasonCode);
+      if (reasonCode === 'superseded' && !replacementAdjustmentId) {
+        throw new ValidationError('A superseded adjustment must name its replacement', [{ field: 'replacementAdjustmentId', message: 'Required for superseded' }]);
+      }
+      if (reasonCode !== 'superseded' && replacementAdjustmentId) {
+        throw new ValidationError('Only a superseded adjustment names a replacement', [{ field: 'replacementAdjustmentId', message: 'Only with superseded' }]);
+      }
+    }
 
     const outcome = await withTenantContext(this.db, tenantId, async (tx) => {
-      const rows = await tx
-        .select()
-        .from(reasonableAdjustments)
-        .where(
-          and(
-            eq(reasonableAdjustments.id, adjustmentId as `${string}-${string}-${string}-${string}-${string}`),
-            eq(reasonableAdjustments.tenantId, tenantId as `${string}-${string}-${string}-${string}-${string}`),
-            isNull(reasonableAdjustments.recordedUntil),
-          ),
-        )
-        .for('update')
-        .limit(1);
+      const rows = await tx.select().from(reasonableAdjustments).where(and(
+        eq(reasonableAdjustments.id, adjustmentId as Uuid),
+        eq(reasonableAdjustments.tenantId, tenantId as Uuid),
+        isNull(reasonableAdjustments.recordedUntil),
+      )).for('update').limit(1);
       const current = rows[0];
       if (!current) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
 
-      const endAt = now > current.validFrom
-        ? now
-        : new Date(current.validFrom.getTime() + 1);
-      const alreadyEnded = current.validTo !== null && current.validTo <= endAt;
-
-      if (!alreadyEnded) {
-        await tx
-          .update(reasonableAdjustments)
-          .set({ recordedUntil: now })
-          .where(eq(reasonableAdjustments.versionId, current.versionId));
-
-        await tx.insert(reasonableAdjustments).values({
-          ...current,
-          versionId:     randomUUID(),
-          validTo:       endAt,
-          actorId,
-          recordedAt:    now,
-          recordedUntil: null,
-        });
+      // The way out matches the way in (ADR-034 item 1).
+      if (authority.kind === 'wellbeing-case' && current.sourceCaseId !== authority.sourceCaseId) {
+        throw new DomainError('This adjustment was not recorded from that wellbeing case', 'source-case-mismatch', 409);
+      }
+      if (authority.kind === 'approved-withdrawal' && current.provenanceCode === 'wellbeing-case') {
+        throw new DomainError('An adjustment recorded from a wellbeing case is withdrawn through its case', 'withdrawal-through-case', 409);
       }
 
-      const distributions = await tx
-        .select({
-          id: adjustmentDistributions.id,
-          statusCode: adjustmentDistributions.statusCode,
-          requestPublishedAt: adjustmentDistributions.requestPublishedAt,
-        })
-        .from(adjustmentDistributions)
-        .where(and(
-          eq(adjustmentDistributions.adjustmentId, adjustmentId as Uuid),
-          eq(adjustmentDistributions.tenantId, tenantId as Uuid),
-        ))
-        .for('update');
+      const endAt = now > current.validFrom ? now : new Date(current.validFrom.getTime() + 1);
+      if (current.validTo !== null && current.validTo <= endAt) {
+        if (inTransaction) await inTransaction(tx, { changed: false, validTo: current.validTo });
+        return { current, changed: false as const, validTo: current.validTo };
+      }
 
+      if (replacementAdjustmentId) await this.#assertReplacement(tx, tenantId, adjustmentId, current.personId, replacementAdjustmentId, now);
+
+      await tx.update(reasonableAdjustments).set({ recordedUntil: now }).where(eq(reasonableAdjustments.versionId, current.versionId));
+      await tx.insert(reasonableAdjustments).values({
+        ...current,
+        versionId: randomUUID(),
+        validTo: endAt,
+        actorId: actor.actorId,
+        recordedAt: now,
+        recordedUntil: null,
+        withdrawalAuthorityCode: authority.kind,
+        withdrawalReasonCode: reasonCode,
+        withdrawalId: authority.kind === 'approved-withdrawal' ? authority.withdrawalId as Uuid : null,
+        withdrawalEnrolmentTransitionId: authority.kind === 'enrolment-ended' ? authority.enrolmentStatusTransitionId as Uuid : null,
+        replacementAdjustmentId: (replacementAdjustmentId ?? null) as Uuid | null,
+      });
+
+      const distributions = await tx.select({
+        id: adjustmentDistributions.id,
+        statusCode: adjustmentDistributions.statusCode,
+        requestPublishedAt: adjustmentDistributions.requestPublishedAt,
+      }).from(adjustmentDistributions).where(and(
+        eq(adjustmentDistributions.adjustmentId, adjustmentId as Uuid),
+        eq(adjustmentDistributions.tenantId, tenantId as Uuid),
+      )).for('update');
       for (const d of distributions) {
         if (!['pending', 'distributed', 'failed'].includes(d.statusCode)) continue;
         if (d.requestPublishedAt === null && d.statusCode !== 'distributed') {
-          await tx
-            .update(adjustmentDistributions)
-            .set({ statusCode: 'superseded', updatedAt: now })
-            .where(eq(adjustmentDistributions.id, d.id));
+          await tx.update(adjustmentDistributions).set({ statusCode: 'superseded', updatedAt: now }).where(eq(adjustmentDistributions.id, d.id));
         } else {
-          await tx
-            .update(adjustmentDistributions)
-            .set({
-              statusCode: 'withdrawal-requested',
-              withdrawalEventId: randomUUID(),
-              withdrawalRequestedAt: now,
-              failureReason: null,
-              updatedAt: now,
-            })
-            .where(eq(adjustmentDistributions.id, d.id));
+          await tx.update(adjustmentDistributions).set({
+            statusCode: 'withdrawal-requested', withdrawalEventId: randomUUID(), withdrawalRequestedAt: now, failureReason: null, updatedAt: now,
+          }).where(eq(adjustmentDistributions.id, d.id));
         }
       }
 
-      return {
-        current,
-        endedAt: alreadyEnded ? current.validTo! : endAt,
-      };
+      const reference = authority.kind === 'wellbeing-case' ? `case ${authority.sourceCaseId}`
+        : authority.kind === 'approved-withdrawal' ? `withdrawal ${authority.withdrawalId}`
+          : `enrolment transition ${authority.enrolmentStatusTransitionId}`;
+      await this.audit.record({
+        tenantId, entityType: 'reasonable_adjustment', entityId: adjustmentId, actionType: 'update',
+        fieldName: 'valid_to', beforeValue: current.validTo?.toISOString() ?? null, afterValue: endAt.toISOString(),
+        actorType: actor.actorType, actorId: actor.actorId,
+        ...(actor.actorDisplayName ? { actorDisplayName: actor.actorDisplayName } : {}),
+        ...(actor.correlationId ? { correlationId: actor.correlationId } : {}),
+        reasonCode, reasonText: `Adjustment withdrawn: ${reasonCode} (${reference})`,
+      }, tx);
+
+      if (inTransaction) await inTransaction(tx, { changed: true, validTo: endAt });
+      return { current, changed: true as const, validTo: endAt };
     });
+
+    if (!outcome.changed) {
+      return {
+        adjustmentId, changed: false, validTo: outcome.validTo,
+        withdrawalAuthorityCode: outcome.current.withdrawalAuthorityCode, withdrawalReasonCode: outcome.current.withdrawalReasonCode,
+      };
+    }
 
     if (this.eventBus.isConnected()) {
       const payload: AdjustmentExpiredV1Payload = {
         adjustmentId,
         enrolmentId: outcome.current.enrolmentId,
         personId: outcome.current.personId,
-        expiredAt: outcome.endedAt.toISOString(),
+        expiredAt: outcome.validTo.toISOString(),
       };
-      await this.eventBus.publish(
-        EVENT_TYPES.ADJUSTMENT_EXPIRED,
-        '1.0.0',
-        tenantId,
-        actorId,
-        'sensitive',
-        payload,
-      );
+      await this.eventBus.publish(EVENT_TYPES.ADJUSTMENT_EXPIRED, '1.0.0', tenantId, actor.actorId, 'sensitive', payload);
     }
-
     await this.dispatcher.dispatchTenant(tenantId);
+    return { adjustmentId, changed: true, validTo: outcome.validTo, withdrawalAuthorityCode: authority.kind, withdrawalReasonCode: reasonCode };
   }
 
   /**
@@ -715,7 +870,8 @@ export class AdjustmentService {
     actorId:      string,
     input:        AttachOutcomeDocumentInput,
   ): Promise<{ documentId: string; checksumSha256: string }> {
-    return withTenantContext(this.db, tenantId, async (tx) => {
+    // ADR-030: check, then scan with no transaction open, then re-check and write.
+    const current = async (tx: TenantScopedDb) => {
       const rows = await tx
         .select()
         .from(reasonableAdjustments)
@@ -727,39 +883,32 @@ export class AdjustmentService {
           ),
         )
         .limit(1);
-
-      const current = rows[0];
+      const row = rows[0];
       // Not-found (rather than forbidden) for a personId/adjustmentId
       // mismatch — consistent with #ensureEnrolmentBelongsToPerson, and
       // avoids letting a caller probe which adjustment IDs exist.
-      if (!current || current.personId !== personId) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+      if (!row || row.personId !== personId) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+      return row;
+    };
+    await withTenantContext(this.db, tenantId, current);
 
-      let stored;
-      try {
-        stored = await createPostgresDocumentAdapter(tx).store({
-          tenantId,
-          ownerService: 'srs-adjustments',
-          ownerRef:     adjustmentId,
-          filename:     input.filename,
-          mimeType:     input.mimeType,
-          content:      input.content,
-          actorId,
-        });
-      } catch (err) {
-        if (err instanceof DocumentTooLargeError || err instanceof DocumentTypeNotAllowedError) {
-          throw new ValidationError(err.message);
-        }
-        throw err;
-      }
+    const scanned = await this.documents.scanUpload({
+      tenantId, ownerService: 'srs-adjustments', ownerRef: adjustmentId,
+      filename: input.filename, mimeType: input.mimeType, content: input.content, actorId,
+    });
+
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const row = await current(tx);
+      const stored = await this.documents.adapter(tx).store(scanned);
 
       const now = clockNow();
       await tx
         .update(reasonableAdjustments)
         .set({ recordedUntil: now })
-        .where(eq(reasonableAdjustments.versionId, current.versionId));
+        .where(eq(reasonableAdjustments.versionId, row.versionId));
 
       await tx.insert(reasonableAdjustments).values({
-        ...current,
+        ...row,
         versionId:         randomUUID(),
         actorId,
         recordedAt:        now,
@@ -790,11 +939,92 @@ export class AdjustmentService {
       if (!current.outcomeDocumentId) throw new NotFoundError('AdjustmentOutcomeDocument', adjustmentId);
 
       try {
-        return await createPostgresDocumentAdapter(tx).retrieve(tenantId, current.outcomeDocumentId, actorId);
+        return await this.documents.adapter(tx).retrieve(tenantId, current.outcomeDocumentId, actorId);
       } catch (err) {
         if (err instanceof DocumentNotFoundError) throw new NotFoundError('AdjustmentOutcomeDocument', adjustmentId);
         throw err;
       }
+    });
+  }
+
+  /**
+   * One distribution per target the tenant delivers to. A 'not-used' target
+   * gets none; manual and file targets are issued straight away (a task in the
+   * queue, or the next file exchange), so only connected targets wait for the
+   * dispatcher to publish an event.
+   */
+  async #createDistributions(tx: TenantScopedDb, tenantId: string, adjustmentId: string, targetSystems: string[], now: Date): Promise<void> {
+    const modes = await this.targetConfig.modesIn(tx, tenantId);
+    const delivered = targetSystems
+      .map((targetSystem) => ({ targetSystem, mode: isAdjustmentTarget(targetSystem) ? modes[targetSystem] : 'connected' }))
+      .filter((t) => t.mode !== 'not-used');
+    if (delivered.length === 0) return;
+    await tx.insert(adjustmentDistributions).values(delivered.map(({ targetSystem, mode }) => ({
+      id: randomUUID(),
+      tenantId: tenantId as `${string}-${string}-${string}-${string}-${string}`,
+      adjustmentId,
+      targetSystem,
+      fulfilmentModeCode: mode,
+      statusCode: 'pending',
+      distributedAt: null,
+      failureReason: null,
+      requestPublishedAt: mode === 'connected' ? null : now,
+      createdAt: now,
+      updatedAt: now,
+    })));
+  }
+
+  async #publishApproved(tenantId: string, actorId: string, a: {
+    adjustmentId: string; enrolmentId: string; personId: string; adjustmentTypeCode: string; scopeCode: string;
+    amount: AdjustmentAmountV1 | null; validFrom: Date; validTo: Date | null;
+  }): Promise<void> {
+    if (!this.eventBus.isConnected()) return;
+    const payload: AdjustmentApprovedV1Payload = {
+      adjustmentId: a.adjustmentId,
+      enrolmentId: a.enrolmentId,
+      personId: a.personId,
+      adjustmentTypeCode: a.adjustmentTypeCode,
+      scopeCode: a.scopeCode,
+      ...(a.amount ? { amount: { value: a.amount.value, unitCode: a.amount.unitCode } } : {}),
+      validFrom: a.validFrom.toISOString(),
+      ...(a.validTo ? { validTo: a.validTo.toISOString() } : {}),
+    };
+    await this.eventBus.publish(EVENT_TYPES.ADJUSTMENT_APPROVED, '1.0.0', tenantId, actorId, 'sensitive', payload);
+  }
+
+  /** A replacement is a different adjustment of the same student, in force now (ADR-034 item 3). */
+  async #assertReplacement(tx: TenantScopedDb, tenantId: string, adjustmentId: string, personId: string, replacementAdjustmentId: string, now: Date): Promise<void> {
+    const replacement = await tx.select({ id: reasonableAdjustments.id }).from(reasonableAdjustments).where(and(
+      eq(reasonableAdjustments.id, replacementAdjustmentId as Uuid),
+      eq(reasonableAdjustments.tenantId, tenantId as Uuid),
+      eq(reasonableAdjustments.personId, personId as Uuid),
+      isNull(reasonableAdjustments.recordedUntil),
+      or(isNull(reasonableAdjustments.validTo), gt(reasonableAdjustments.validTo, now)),
+    )).limit(1);
+    if (replacementAdjustmentId === adjustmentId || replacement.length === 0) {
+      throw new ValidationError('The replacement must be a different adjustment of the same student, in force now', [{ field: 'replacementAdjustmentId', message: 'Not a current adjustment of this student' }]);
+    }
+  }
+
+  /**
+   * The checks a withdrawal proposal makes before it is stored, without
+   * writing anything (ADR-034 item 8): the adjustment is the student's, in
+   * force, not from a wellbeing case, and any replacement is valid.
+   */
+  async prepareWithdrawal(tenantId: string, personId: string, adjustmentId: string, replacementAdjustmentId?: string): Promise<void> {
+    const now = clockNow();
+    await withTenantContext(this.db, tenantId, async (tx) => {
+      const [current] = await tx.select().from(reasonableAdjustments).where(and(
+        eq(reasonableAdjustments.id, adjustmentId as Uuid),
+        eq(reasonableAdjustments.tenantId, tenantId as Uuid),
+        isNull(reasonableAdjustments.recordedUntil),
+      )).limit(1);
+      if (!current || current.personId !== personId) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+      if (current.provenanceCode === 'wellbeing-case') {
+        throw new DomainError('An adjustment recorded from a wellbeing case is withdrawn through its case', 'withdrawal-through-case', 409);
+      }
+      if (current.validTo !== null && current.validTo <= now) throw new ConflictError('This adjustment has already ended');
+      if (replacementAdjustmentId) await this.#assertReplacement(tx, tenantId, adjustmentId, personId, replacementAdjustmentId, now);
     });
   }
 
@@ -899,7 +1129,7 @@ export class AdjustmentService {
    * Checks any version (current or historical) exists — deliberately not
    * limited to the current version. listDistributions is a read/history
    * operation and must still work after the adjustment has been expired
-   * (expireAdjustment closes the current version with no replacement row),
+   * (withdrawAuthorisedAdjustment closes the current version with no replacement row),
    * otherwise there would be no way to see that its pending distributions
    * were marked superseded.
    */
@@ -994,6 +1224,10 @@ function adjustmentToDto(row: typeof reasonableAdjustments.$inferSelect): Adjust
     recordedUntil: row.recordedUntil,
     sourceCaseId: row.sourceCaseId,
     outcomeDocumentId: row.outcomeDocumentId,
+    provenanceCode: row.provenanceCode,
+    manualProposalId: row.manualProposalId,
+    withdrawalAuthorityCode: row.withdrawalAuthorityCode,
+    withdrawalReasonCode: row.withdrawalReasonCode,
   };
 }
 

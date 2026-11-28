@@ -12,6 +12,9 @@ export const ENDPOINTS = {
   api: 'http://localhost:3000/ready',
   admin: 'http://localhost:5173',
   portal: 'http://localhost:5174',
+  // ADR-026: the apps sign in through their BFFs (apps/bff dev runs both).
+  adminBff: 'http://localhost:3010/ready',
+  portalBff: 'http://localhost:3011/ready',
   keycloak: 'http://localhost:8081/realms/srs',
 };
 
@@ -69,7 +72,7 @@ export async function preflight({ requireFreeAppPorts = false } = {}) {
   checks.push({ name: '.env', ok: existsSync('.env'), detail: existsSync('.env') ? 'present' : 'missing; copy .env.example to .env' });
 
   if (requireFreeAppPorts) {
-    for (const port of [3000, 5173, 5174]) {
+    for (const port of [3000, 3010, 3011, 5173, 5174]) {
       const open = await portOpen(port);
       checks.push({ name: `Port ${port}`, ok: !open, detail: open ? 'already in use; stop the conflicting application' : 'available' });
     }

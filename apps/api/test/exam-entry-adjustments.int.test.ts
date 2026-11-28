@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { recordApprovedAdjustment, withdrawApprovedAdjustment } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 const bus = {
@@ -149,6 +150,83 @@ describe('Delivery and withdrawal on the distribution ledger', () => {
   });
 });
 
+describe('Adjustments approved after the entries were generated (BL-058)', () => {
+  it('adds the arrangement to an unscheduled entry, and the next schedule confirms it', async () => {
+    const f = await fixture('EA-LATE', [{ title: 'Paper', durationMinutes: 120 }]);
+    const before = await generate(f);
+    expect(before.accommodations.adjustments).toEqual([]);
+
+    const { adjustmentId } = await adjust(f, 'extra-time', { value: 25, unitCode: 'percent-of-duration' });
+
+    const entry = await currentEntry(f);
+    expect(entry.accommodations.adjustments).toEqual([expect.objectContaining({ adjustmentId, applied: true })]);
+    expect(entry.accommodations.components[0]).toMatchObject({ extraMinutes: 30, totalMinutes: 150 });
+    expect((await distributions(adjustmentId))[0]).toMatchObject({ statusCode: 'pending' });
+
+    await schedule(f, '2027-12-10');
+    expect((await distributions(adjustmentId))[0]).toMatchObject({ statusCode: 'distributed' });
+  });
+
+  it('adds it to a scheduled exam not yet sat and keeps the schedule', async () => {
+    const f = await fixture('EA-LATESCH', [{ title: 'Paper', durationMinutes: 90 }]);
+    await generate(f);
+    await schedule(f, '2027-12-10');
+
+    await adjust(f, 'extra-time', { value: 25, unitCode: 'percent-of-duration' });
+
+    const entry = await currentEntry(f) as Entry & { scheduledDate: string; candidateNumber: string; roomReference: string; statusCode: string };
+    expect(entry).toMatchObject({ scheduledDate: '2027-12-10', candidateNumber: 'C-1', roomReference: 'HALL-A', statusCode: 'scheduled' });
+    expect(entry.accommodations.components[0]).toMatchObject({ extraMinutes: 23, totalMinutes: 113 });
+  });
+
+  it('combines with the arrangements the entry already carried', async () => {
+    const f = await fixture('EA-LATECOMB', [{ title: 'Paper', durationMinutes: 90 }]);
+    await adjust(f, 'extra-time', { value: 25, unitCode: 'percent-of-duration' });
+    await generate(f);
+
+    await adjust(f, 'rest-breaks', { value: 10, unitCode: 'minutes-per-hour' });
+
+    const entry = await currentEntry(f);
+    expect(entry.accommodations.adjustments).toHaveLength(2);
+    expect(entry.accommodations.components[0]).toMatchObject({ extraMinutes: 38, totalMinutes: 128 });
+  });
+
+  it('never rewrites an exam already sat, or one sat before the adjustment starts', async () => {
+    const sat = await fixture('EA-LATESAT', [{ title: 'Paper', durationMinutes: 120 }], { validFrom: '2026-09-01T00:00:00.000Z', meetingDate: '2026-11-20' });
+    await generate(sat);
+    await schedule(sat, '2026-11-01');
+    await adjust(sat, 'extra-time', { value: 25, unitCode: 'percent-of-duration' });
+    expect((await currentEntry(sat)).accommodations.adjustments).toEqual([]);
+
+    const early = await fixture('EA-LATEEARLY', [{ title: 'Paper', durationMinutes: 120 }], { validFrom: '2028-01-01T00:00:00.000Z' });
+    await generate(early);
+    await schedule(early, '2027-12-10');
+    await adjust(early, 'extra-time', { value: 25, unitCode: 'percent-of-duration' });
+    expect((await currentEntry(early)).accommodations.adjustments).toEqual([]);
+  });
+
+  it('leaves out arrangements that are not for exams, and is idempotent', async () => {
+    const f = await fixture('EA-LATEIDEM', [{ title: 'Paper', durationMinutes: 60 }]);
+    await generate(f);
+    await adjust(f, 'deadline-extension', { value: 7, unitCode: 'days' }, 'all');
+    await adjust(f, 'separate-room', undefined);
+
+    expect(await ctx.app.examEntryService.applyExamAdditions(ctx.tenantId)).toBe(0);
+    const entry = await currentEntry(f);
+    expect(entry.accommodations.adjustments.map((a) => a.adjustmentTypeCode)).toEqual(['separate-room']);
+  });
+
+  it('reports a late time adjustment with no amount as a failed exams distribution', async () => {
+    const f = await fixture('EA-LATENOAMT', [{ title: 'Paper', durationMinutes: 120 }]);
+    await generate(f);
+
+    const { adjustmentId } = await adjust(f, 'extra-time', undefined);
+
+    expect((await currentEntry(f)).accommodations.adjustments[0]).toMatchObject({ adjustmentId, applied: false });
+    expect((await distributions(adjustmentId))[0]).toMatchObject({ statusCode: 'failed' });
+  });
+});
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 interface Fixture {
@@ -197,10 +275,10 @@ async function adjust(
   amount: { value: number; unitCode: string } | undefined,
   scopeCode = 'exam',
 ): Promise<{ adjustmentId: string }> {
-  return (await post(`/api/v1/students/${f.personId}/adjustments`, {
+  return recordApprovedAdjustment(ctx, f.personId, {
     enrolmentId: f.enrolmentId, adjustmentTypeCode, scopeCode, validFrom: f.validFrom,
     ...(amount ? { amount } : {}),
-  })).json<{ adjustmentId: string }>();
+  });
 }
 
 async function generate(f: Fixture): Promise<Entry> {
@@ -243,11 +321,9 @@ async function distributions(adjustmentId: string): Promise<Array<{ distribution
 }
 
 async function expire(adjustmentId: string): Promise<void> {
-  const res = await ctx.app.inject({
-    method: 'POST', url: `/api/v1/adjustments/${adjustmentId}/expire`,
-    headers: { authorization: `Bearer ${jwt}` },
-  });
-  expect(res.statusCode).toBe(204);
+  // ADR-034: ended through its wellbeing case; the /expire route is retired.
+  const res = await withdrawApprovedAdjustment(ctx, adjustmentId);
+  expect(res.statusCode).toBe(200);
 }
 
 async function post(url: string, payload: Record<string, unknown>) {

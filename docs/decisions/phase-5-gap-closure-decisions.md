@@ -5,7 +5,7 @@
 > Context: [Academic journey gap-closure plan](../product/academic-journey-gap-closure-plan.md), Phase 5 (audiences and evidence)
 > Made by: the project's solutions-architect agent (`.claude/agents/solutions-architect.md`). Numbering continues from [Phase 4](phase-4-gap-closure-decisions.md).
 
-Each decision lists what an institution must confirm before go-live. All Phase 5 schema goes into one core migration, `0009_audiences_and_evidence.sql` (D-47).
+Each decision lists what an institution must confirm before go-live. All Phase 5 schema goes into one core migration, `0000_baseline.sql` (section `0009_audiences_and_evidence`) (D-47).
 
 ## What the review of the code found
 
@@ -36,7 +36,7 @@ These findings, checked on `main` at bf3d3e2, changed the plan's assumptions:
 
 **Why.** Principles 5 and 13; ADR-020; BP-05-005, BP-06-001/002 need explainable results.
 
-**Configurable.** `rules.builtInDefaults` = `allow` (default) or `refuse`.
+**Configurable.** `rules.builtInDefaults` = `allow` or `refuse`. Since 2026-11-22 (BL-179) an unset value means `refuse` for every tenant except a demo tenant (`demo_mode`), which allows them unless it says `refuse`. A real tenant cannot use them at all (SME-9, BL-391, 2026-11-23): setting `allow` on a tenant that is not a demo tenant is refused (422), and the engine ignores it outside development and test. A real tenant configures its rules per programme; the D-35 values ship only as a starter rule set (SME-10, BL-392).
 
 **Institution must confirm.** Whether built-in defaults are acceptable in production (recommended: `refuse`); its pass mark, classification boundaries and algorithm; which award-credit and discretion-zone rules apply.
 
@@ -130,6 +130,8 @@ These findings, checked on `main` at bf3d3e2, changed the plan's assumptions:
 
 **Reversibility.** Cheap.
 
+**Amended by [ADR-028](ADR-028-exceptional-circumstances-decision-authority.md) (2026-11-20).** The mechanism stands. Deciding is now held only by a dedicated `ec-decision-maker` role, so `exam-board-chair` and `registry-administrator` no longer decide EC. The panel-or-officer question becomes the tenant setting `ec.decisionAuthority`, which defaults to `delegated-officer`.
+
 ## D-42: Working-day calendar for statutory deadlines
 
 **Decision.** `non_working_day(tenant_id, date, division_code, description, source)` with RLS; division value set (`england-and-wales`, `scotland`, `northern-ireland`, plus tenant closures); import of the GOV.UK bank holidays JSON by upload (or worker fetch when `calendar.bankHolidays.source = gov-uk`); one `addWorkingDays(tenantId, from, n)` replaces the weekday-only arithmetic in non-registration, FOI, UCAS reconciliation and Clearing.
@@ -198,7 +200,7 @@ Scope bounds, variants, institution policy, deployment transport, production har
 
 ## D-47: Migration
 
-**Decision.** One core migration, `0009_audiences_and_evidence.sql`, journal idx 9, `when` 1785000048000, holding every Phase 5 schema change. The core set is then at 10 of 10; the next phase squashes first.
+**Decision.** One core migration, `0000_baseline.sql` (section `0009_audiences_and_evidence`), journal idx 9, `when` 1785000048000, holding every Phase 5 schema change. The core set is then at 10 of 10; the next phase squashes first.
 
 ## Build order and deferrals
 
@@ -217,7 +219,7 @@ S1 D-35 · S2 D-36 · S3 D-37 · S4 D-38 · S5 D-39 · S6 D-40 · S7 D-41, D-42,
 
 ## Implementation notes
 
-Built 2026-11-17 to 2026-11-18 in commits e1fcca0 (D-35, D-43b), 7dfcdb8 (D-36), 391e04f (D-37), 4ad71d8 (D-38), 6029afb (D-39), d0ca934 (D-40), aec92b3 (D-41), a507e52 (D-42, D-43a) and a74e450 (D-44, D-45, browser journeys). The schema is in `0009_audiences_and_evidence`, after a squash of 0008 and 0009 into `0008_registration_integrations_and_rule_depth` (60324af).
+Built 2026-11-17 to 2026-11-18 in commits e1fcca0 (D-35, D-43b), 7dfcdb8 (D-36), 391e04f (D-37), 4ad71d8 (D-38), 6029afb (D-39), d0ca934 (D-40), aec92b3 (D-41), a507e52 (D-42, D-43a) and a74e450 (D-44, D-45, browser journeys). The schema is in `0000_baseline` (section `0009_audiences_and_evidence`), after a squash of 0008 and 0009 into `0000_baseline` (section `0008_registration_integrations_and_rule_depth`) (60324af).
 
 Where the build departs from the text above, and why:
 

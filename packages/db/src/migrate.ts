@@ -2,8 +2,10 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 import { createDb } from './pool.js';
 
-const connectionString = process.env['DATABASE_URL'];
-if (!connectionString) throw new Error('DATABASE_URL is not set');
+// Migrations run as the schema owner; services connect as a login role that
+// inherits srs_app. MIGRATION_DATABASE_URL names the owner connection.
+const connectionString = process.env['MIGRATION_DATABASE_URL'] ?? process.env['DATABASE_URL'];
+if (!connectionString) throw new Error('MIGRATION_DATABASE_URL (or DATABASE_URL) is not set');
 
 const db = createDb(connectionString);
 

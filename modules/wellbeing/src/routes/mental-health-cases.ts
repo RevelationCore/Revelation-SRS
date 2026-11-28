@@ -1,6 +1,9 @@
+import { Type } from '@sinclair/typebox';
 import { requirePermission } from '@revelation-srs/auth';
 import type { FastifyInstance } from 'fastify';
 
+import { Uuid, Text, DateText, idParams } from '../http/schemas.js';
+import { sendProblem } from '../http/problem.js';
 import { withWellbeingTenantContext } from '../db/client.js';
 import {
   CLOSED_MENTAL_HEALTH_STATUSES,
@@ -51,7 +54,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
       assignedAdvisorId?:    string;
       notes?:                string;
     };
-  }>('/api/v1/mental-health-cases', MANAGE, async (request, reply) => {
+  }>('/api/v1/mental-health-cases', { ...MANAGE, schema: { tags: ['mental-health-cases'], summary: 'Open a mental health case', body: Type.Object({ personId: Uuid, presentingConcernCode: Text, riskLevelCode: Type.Optional(Type.String()), assignedAdvisorId: Type.Optional(Type.String()), notes: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const body         = request.body;
@@ -89,12 +92,12 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
 
   fastify.get<{
     Querystring: { personId?: string };
-  }>('/api/v1/mental-health-cases', READ, async (request, reply) => {
+  }>('/api/v1/mental-health-cases', { ...READ, schema: { tags: ['mental-health-cases'], summary: 'List a person\'s mental health cases', querystring: Type.Object({ personId: Type.Optional(Uuid) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const { personId } = request.query;
 
     if (!personId) {
-      return reply.code(400).send({ error: 'personId query parameter is required' });
+      return sendProblem(reply, 400, 'personId query parameter is required');
     }
 
     const cases = await withWellbeingTenantContext(
@@ -115,7 +118,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
 
   fastify.get<{
     Querystring: { statusCode?: string; riskLevelCode?: string; assignedTo?: string };
-  }>('/api/v1/mental-health-cases/caseload', READ, async (request, reply) => {
+  }>('/api/v1/mental-health-cases/caseload', { ...READ, schema: { tags: ['mental-health-cases'], summary: 'Open mental health caseload', querystring: Type.Object({ statusCode: Type.Optional(Type.String()), riskLevelCode: Type.Optional(Type.String()), assignedTo: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const { statusCode, riskLevelCode, assignedTo } = request.query;
     const cases = await withWellbeingTenantContext(
@@ -135,7 +138,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
 
   fastify.get<{
     Params: { caseId: string };
-  }>('/api/v1/mental-health-cases/:caseId', READ, async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId', { ...READ, schema: { tags: ['mental-health-cases'], summary: 'Get a mental health case', params: idParams('caseId') } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -164,7 +167,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
     );
 
     if (!result) {
-      return reply.code(404).send({ error: 'Mental health case not found' });
+      return sendProblem(reply, 404, 'Mental health case not found');
     }
 
     // Session notes are returned only via the dedicated session-notes endpoint
@@ -180,7 +183,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
   fastify.patch<{
     Params: { caseId: string };
     Body:   { statusCode: string; riskLevelCode?: string };
-  }>('/api/v1/mental-health-cases/:caseId/status', MANAGE, async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/status', { ...MANAGE, schema: { tags: ['mental-health-cases'], summary: 'Change the case status', params: idParams('caseId'), body: Type.Object({ statusCode: Text, riskLevelCode: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -227,7 +230,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
   fastify.patch<{
     Params: { caseId: string };
     Body:   { riskLevelCode: string };
-  }>('/api/v1/mental-health-cases/:caseId/risk', MANAGE, async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/risk', { ...MANAGE, schema: { tags: ['mental-health-cases'], summary: 'Change the risk level', params: idParams('caseId'), body: Type.Object({ riskLevelCode: Text }) } }, async (request, reply) => {
     const { tenantId }    = request;
     const actorId         = request.user.sub;
     const { caseId }      = request.params;
@@ -262,7 +265,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
   fastify.post<{
     Params: { caseId: string };
     Body:   { consentDate: string };
-  }>('/api/v1/mental-health-cases/:caseId/consent', MANAGE, async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/consent', { ...MANAGE, schema: { tags: ['mental-health-cases'], summary: 'Record consent', params: idParams('caseId'), body: Type.Object({ consentDate: DateText }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -305,6 +308,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
       content:        string;
     };
   }>('/api/v1/mental-health-cases/:caseId/session-notes', {
+    schema: { tags: ['mental-health-cases'], summary: 'Record a session note', params: idParams('caseId'), body: Type.Object({ practitionerId: Text, sessionDate: DateText, sessionTypeCode: Text, content: Text }) },
     preHandler: [requirePermission('mh-session-note:write')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -359,6 +363,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
   fastify.get<{
     Params: { caseId: string };
   }>('/api/v1/mental-health-cases/:caseId/session-notes', {
+    schema: { tags: ['mental-health-cases'], summary: 'List session notes', params: idParams('caseId') },
     preHandler: [requirePermission('mh-session-note:read')],
   }, async (request, reply) => {
     const { tenantId } = request;
@@ -390,7 +395,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
     );
 
     if (notes === null) {
-      return reply.code(404).send({ error: 'Mental health case not found' });
+      return sendProblem(reply, 404, 'Mental health case not found');
     }
 
     return reply.send({ items: notes, total: notes.length });
@@ -410,7 +415,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
       externalReferral?:        boolean;
       externalReferralDetails?: string;
     };
-  }>('/api/v1/mental-health-cases/:caseId/intervention-plans', MANAGE, async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/intervention-plans', { ...MANAGE, schema: { tags: ['mental-health-cases'], summary: 'Create an intervention plan', params: idParams('caseId'), body: Type.Object({ planTypeCode: Text, practitionerId: Text, sessionFrequencyCode: Type.Optional(Type.String()), plannedSessionCount: Type.Optional(Type.String()), goals: Type.Optional(Type.Array(Type.Object({ goal: Text, targetDate: Type.Optional(Type.String()) }))), reviewDate: Type.Optional(Type.String()), externalReferral: Type.Optional(Type.Boolean()), externalReferralDetails: Type.Optional(Type.String()) }) } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -459,7 +464,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
 
   fastify.get<{
     Params: { caseId: string };
-  }>('/api/v1/mental-health-cases/:caseId/intervention-plans', READ, async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/intervention-plans', { ...READ, schema: { tags: ['mental-health-cases'], summary: 'List intervention plans', params: idParams('caseId') } }, async (request, reply) => {
     const { tenantId } = request;
     const actorId      = request.user.sub;
     const { caseId }   = request.params;
@@ -488,7 +493,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
     );
 
     if (result === null) {
-      return reply.code(404).send({ error: 'Mental health case not found' });
+      return sendProblem(reply, 404, 'Mental health case not found');
     }
 
     return reply.send({ items: result.map(withPlanActions), total: result.length });
@@ -499,7 +504,7 @@ export async function mentalHealthCaseRoutes(fastify: FastifyInstance): Promise<
   fastify.patch<{
     Params: { caseId: string; planId: string };
     Body:   { statusCode: string };
-  }>('/api/v1/mental-health-cases/:caseId/intervention-plans/:planId/status', MANAGE, async (request, reply) => {
+  }>('/api/v1/mental-health-cases/:caseId/intervention-plans/:planId/status', { ...MANAGE, schema: { tags: ['mental-health-cases'], summary: 'Change a plan status', params: idParams('caseId', 'planId'), body: Type.Object({ statusCode: Text }) } }, async (request, reply) => {
     const { tenantId }   = request;
     const actorId        = request.user.sub;
     const { caseId, planId } = request.params;

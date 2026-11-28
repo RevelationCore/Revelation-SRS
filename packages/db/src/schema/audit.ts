@@ -28,7 +28,7 @@ export const auditRecords = pgTable('audit_record', {
   workflowInstanceId: text('workflow_instance_id'),
   reasonCode:         text('reason_code'),
   reasonText:         text('reason_text'),
-  // BPR-D19 (Stage 9, migration 0004_business_process_foundations): hash chain proving no row was
+  // BPR-D19 (Stage 9, migration 0000_baseline (section 0004_business_process_foundations)): hash chain proving no row was
   // inserted, altered or deleted out of sequence since the previous write
   // in the same chain (scoped by tenant_id; NULL-tenant system rows chain
   // separately). Pre-migration rows have previous_record_hash/record_hash
@@ -47,7 +47,7 @@ export type AuditActionType = 'create' | 'update' | 'delete' | 'read';
 export type AuditActorType  = 'user' | 'system' | 'integration';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BPR-D19 — audit hardening & review (Stage 9, migration 0004_business_process_foundations).
+// BPR-D19 — audit hardening & review (Stage 9, migration 0000_baseline (section 0004_business_process_foundations)).
 
 export const auditPartitionSeals = pgTable('audit_partition_seal', {
   id:           uuid('id').primaryKey().defaultRandom(),

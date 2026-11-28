@@ -68,6 +68,15 @@ interface DomainEventEnvelope<T> {
 | `srs.identity.verification-requested` | personal | `personId` | identity-service |
 | `srs.identity.verification-completed` | personal | `personId` | identity-service, admissions-adapter |
 
+### Person (`srs.person.*`)
+
+| Subject | Data class | Partition key | Consumers |
+|---|---|---|---|
+| `srs.person.merged` | personal | `survivorPersonId` | wellbeing-module, attendance-module, vle-connector |
+| `srs.person.unmerged` | personal | `survivorPersonId` | wellbeing-module, attendance-module, vle-connector |
+
+Published from the core outbox when an identity merge has moved current ownership to the survivor (ADR-031 item 7). The payload is `{ mergeId, survivorPersonId, mergedPersonId, effectiveAt }`: ids only, never names or identifiers. Consumers re-key their own records idempotently by `mergeId` (BL-358). `srs.person.unmerged` `{ mergeId, survivorPersonId, restoredPersonId, effectiveAt, reallocatedToRestored }` is published when a governed unmerge reverses the merge; consumers reverse the moves they recorded for that `mergeId` (BL-359).
+
 ### Enrolment (`srs.enrolment.*`)
 
 | Subject | Data Class | Partition Key | Consumers |
@@ -203,9 +212,9 @@ These events are published to the `SRS_EVENTS` stream but are **not part of the 
 
 ## Backlog — Not Yet Implemented
 
-These events were planned in Phase 2 but not implemented in Phases 4–6. They remain on the product roadmap but have no `EVENT_TYPES` entries and no schemas.
+These events were planned in Phase 2 but not implemented in Phases 4–6. They remain on the product roadmap but have no `EVENT_TYPES` entries and no schemas. Each group below is a row in the [backlog](../product/backlog.md) (BL-091 to BL-099).
 
-> **Not covered by this backlog**: CRM, Library, Accommodation, Estates, Online ID Verification, Student Evaluation of Teaching Software, Payroll, Research Proposals, Content Management Systems and IT Service Management are deliberately absent from the list below — they are not "planned but unbuilt". Their contracts are seeded (migration `0006_adjustments_integration_and_support` (section `0019_partner_systems_contracts`)); there is no simulator for them yet (Phase 3 D-14) — see `docs/architecture/integration-contract-catalogue.md`.
+> **Not covered by this backlog**: CRM, Library, Accommodation, Estates, Online ID Verification, Student Evaluation of Teaching Software, Payroll, Research Proposals, Content Management Systems and IT Service Management are deliberately absent from the list below — they are not "planned but unbuilt". Their contracts are seeded (migration `0000_baseline` (section `0006_adjustments_integration_and_support` / `0019_partner_systems_contracts`)); there is no simulator for them yet (Phase 3 D-14) — see `docs/architecture/integration-contract-catalogue.md`.
 
 ### Student lifecycle
 - `srs.student.hold-applied` / `srs.student.hold-released` — Account holds

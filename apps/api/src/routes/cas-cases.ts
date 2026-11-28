@@ -65,7 +65,7 @@ export function casCasesRoutes(fastify: FastifyInstance): void {
   fastify.post('/regulatory/cas-cases/:casCaseId/eligibility-checks', {
     schema: {
       params: CaseId,
-      body: Type.Object({ guidanceVersion: Type.String({ minLength: 1 }), checkTypeCode: Type.String(), resultCode: Type.String(), evidenceRef: Type.Optional(Type.String()) }),
+      body: Type.Object({ guidanceVersion: Type.String({ minLength: 1 }), checkTypeCode: Type.String(), resultCode: Type.String(), evidenceRef: Type.Optional(Type.String()), exemptionReason: Type.Optional(Type.String({ maxLength: 500 })) }),
       response: { 201: Type.Object({ checkId: Type.String() }), 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
     },
     preHandler: [requirePermission('cas:prepare')],

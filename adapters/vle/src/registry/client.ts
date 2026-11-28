@@ -4,6 +4,7 @@
 // so the connector's safety vocabulary is consistent across config and registry.
 
 export type EndpointSafetyClass = 'simulator' | 'external-test' | 'live';
+import { callCoreAsService, type ServiceTokenSource } from '@revelation-srs/service-client';
 
 export interface RegistrationInfo {
   registrationId:      string;
@@ -33,14 +34,16 @@ export class RegistrationAccessError extends Error {
 
 export class HttpSrsRegistryClient implements SrsRegistryClient {
   constructor(
-    private readonly baseUrl: string,
-    private readonly bearerToken: string,
+    private readonly baseUrl:  string,
+    private readonly tokens:   ServiceTokenSource,
+    private readonly tenantId: string,
   ) {}
 
   async getRegistration(id: string): Promise<RegistrationInfo> {
-    const res = await fetch(
+    const res = await callCoreAsService(
+      this.tokens, this.tenantId,
       `${this.baseUrl}/api/v1/integration-registrations/${encodeURIComponent(id)}`,
-      { headers: { Authorization: `Bearer ${this.bearerToken}` } },
+      {},
     );
 
     if (!res.ok) {
@@ -55,14 +58,12 @@ export class HttpSrsRegistryClient implements SrsRegistryClient {
   }
 
   async reportHealth(id: string, statusCode: string): Promise<void> {
-    const res = await fetch(
+    const res = await callCoreAsService(
+      this.tokens, this.tenantId,
       `${this.baseUrl}/api/v1/integration-registrations/${encodeURIComponent(id)}/health-check`,
       {
         method:  'POST',
-        headers: {
-          Authorization:  `Bearer ${this.bearerToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ statusCode }),
       },
     );

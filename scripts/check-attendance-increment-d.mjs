@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { readCoreMigrationSection } from './lib/core-migration-section.mjs';
+
 const root = resolve(import.meta.dirname, '..');
 const read = (path) => readFileSync(resolve(root, path), 'utf8');
 const service = read('apps/api/src/platform/engagement/engagement-policy-service.ts');
@@ -8,7 +10,7 @@ const evidenceService = read('apps/api/src/platform/engagement/engagement-servic
 const routes = read('apps/api/src/routes/engagement.ts');
 const permissions = read('packages/domain/src/permissions.ts');
 const events = read('packages/domain/src/events/index.ts');
-const migration = read('packages/db/migrations/0003_engagement_and_attendance.sql');
+const migration = readCoreMigrationSection(root, '0003_engagement_and_attendance') ?? '';
 const test = read('apps/api/test/engagement.int.test.ts');
 const openapi = JSON.parse(read('apps/api/openapi/v1.json'));
 const errors = [];

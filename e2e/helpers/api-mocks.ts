@@ -77,6 +77,8 @@ export const MOCK = {
     acceptedCurrencies:  ['GBP'],
   },
   environmentRuntime: {
+    environmentCode:     'test',
+    registered:          true,
     environment: {
       deploymentEnvironmentId: 'env-001',
       environmentCode:         'test',

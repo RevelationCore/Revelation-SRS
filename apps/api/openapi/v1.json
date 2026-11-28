@@ -1900,9 +1900,6 @@
                       }
                     }
                   },
-                  "notes": {
-                    "type": "string"
-                  },
                   "sourceCaseId": {
                     "type": "string"
                   }
@@ -1972,6 +1969,35 @@
                   ],
                   "properties": {
                     "adjustmentId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
                       "type": "string"
                     }
                   }
@@ -2115,7 +2141,11 @@
                       "recordedAt",
                       "recordedUntil",
                       "sourceCaseId",
-                      "outcomeDocumentId"
+                      "outcomeDocumentId",
+                      "provenanceCode",
+                      "manualProposalId",
+                      "withdrawalAuthorityCode",
+                      "withdrawalReasonCode"
                     ],
                     "properties": {
                       "adjustmentId": {
@@ -2217,6 +2247,39 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "provenanceCode": {
+                        "type": "string"
+                      },
+                      "manualProposalId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "withdrawalAuthorityCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "withdrawalReasonCode": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   }
@@ -2294,7 +2357,11 @@
                     "recordedAt",
                     "recordedUntil",
                     "sourceCaseId",
-                    "outcomeDocumentId"
+                    "outcomeDocumentId",
+                    "provenanceCode",
+                    "manualProposalId",
+                    "withdrawalAuthorityCode",
+                    "withdrawalReasonCode"
                   ],
                   "properties": {
                     "adjustmentId": {
@@ -2388,6 +2455,39 @@
                       ]
                     },
                     "outcomeDocumentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "provenanceCode": {
+                      "type": "string"
+                    },
+                    "manualProposalId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "withdrawalAuthorityCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "withdrawalReasonCode": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -3418,15 +3518,54 @@
         }
       }
     },
-    "/api/v1/adjustments/{adjustmentId}/expire": {
+    "/api/v1/students/{personId}/adjustments/{adjustmentId}/withdrawal": {
       "post": {
-        "operationId": "createAdjustmentsByAdjustmentIdExpire",
+        "operationId": "createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawal",
         "tags": [
           "adjustments"
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "sourceCaseId",
+                  "withdrawalReasonCode"
+                ],
+                "properties": {
+                  "sourceCaseId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "withdrawalReasonCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "replacementAdjustmentId": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "parameters": [
           {
             "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "format": "uuid",
               "type": "string"
             },
             "in": "path",
@@ -3434,12 +3573,144 @@
             "required": true
           }
         ],
-        "x-publication-class": "workflow",
+        "x-publication-class": "integration",
         "responses": {
-          "204": {
-            "description": "Default Response"
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "adjustmentId",
+                    "validTo",
+                    "withdrawalAuthorityCode",
+                    "withdrawalReasonCode",
+                    "changed"
+                  ],
+                  "properties": {
+                    "adjustmentId": {
+                      "type": "string"
+                    },
+                    "validTo": {
+                      "type": "string"
+                    },
+                    "withdrawalAuthorityCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "withdrawalReasonCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "changed": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -3634,6 +3905,2089 @@
         "x-publication-class": "integration",
         "responses": {
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/adjustment-proposals": {
+      "post": {
+        "operationId": "createStudentsByPersonIdAdjustmentProposals",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "enrolmentId",
+                  "adjustmentTypeCode",
+                  "scopeCode",
+                  "validFrom",
+                  "manualReasonCode",
+                  "externalReference"
+                ],
+                "properties": {
+                  "enrolmentId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "adjustmentTypeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "scopeCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "validFrom": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "validTo": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "unitCode"
+                    ],
+                    "properties": {
+                      "value": {
+                        "exclusiveMinimum": 0,
+                        "maximum": 999999.99,
+                        "type": "number"
+                      },
+                      "unitCode": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "manualReasonCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "externalReference": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "Where the decision is held, e.g. the disability service case number. An identifier, never narrative.",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalId",
+                    "statusCode"
+                  ],
+                  "properties": {
+                    "proposalId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-proposals": {
+      "get": {
+        "operationId": "getAdjustmentProposals",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "proposalId",
+                      "personId",
+                      "enrolmentId",
+                      "adjustmentTypeCode",
+                      "scopeCode",
+                      "amount",
+                      "validFrom",
+                      "validTo",
+                      "manualReasonCode",
+                      "externalReference",
+                      "statusCode",
+                      "proposedBy",
+                      "proposedAt",
+                      "workflowInstanceId",
+                      "decidedBy",
+                      "decidedAt",
+                      "decisionReason",
+                      "adjustmentId"
+                    ],
+                    "properties": {
+                      "proposalId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "enrolmentId": {
+                        "type": "string"
+                      },
+                      "adjustmentTypeCode": {
+                        "type": "string"
+                      },
+                      "scopeCode": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "value",
+                              "unitCode"
+                            ],
+                            "properties": {
+                              "value": {
+                                "exclusiveMinimum": 0,
+                                "maximum": 999999.99,
+                                "type": "number"
+                              },
+                              "unitCode": {
+                                "minLength": 1,
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "validFrom": {
+                        "type": "string"
+                      },
+                      "validTo": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "manualReasonCode": {
+                        "type": "string"
+                      },
+                      "externalReference": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "proposedBy": {
+                        "type": "string"
+                      },
+                      "proposedAt": {
+                        "type": "string"
+                      },
+                      "workflowInstanceId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decidedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decidedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decisionReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "adjustmentId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-proposals/{proposalId}": {
+      "get": {
+        "operationId": "getAdjustmentProposalsByProposalId",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalId",
+                    "personId",
+                    "enrolmentId",
+                    "adjustmentTypeCode",
+                    "scopeCode",
+                    "amount",
+                    "validFrom",
+                    "validTo",
+                    "manualReasonCode",
+                    "externalReference",
+                    "statusCode",
+                    "proposedBy",
+                    "proposedAt",
+                    "workflowInstanceId",
+                    "decidedBy",
+                    "decidedAt",
+                    "decisionReason",
+                    "adjustmentId"
+                  ],
+                  "properties": {
+                    "proposalId": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "enrolmentId": {
+                      "type": "string"
+                    },
+                    "adjustmentTypeCode": {
+                      "type": "string"
+                    },
+                    "scopeCode": {
+                      "type": "string"
+                    },
+                    "amount": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "unitCode"
+                          ],
+                          "properties": {
+                            "value": {
+                              "exclusiveMinimum": 0,
+                              "maximum": 999999.99,
+                              "type": "number"
+                            },
+                            "unitCode": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "validFrom": {
+                      "type": "string"
+                    },
+                    "validTo": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "manualReasonCode": {
+                      "type": "string"
+                    },
+                    "externalReference": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "proposedBy": {
+                      "type": "string"
+                    },
+                    "proposedAt": {
+                      "type": "string"
+                    },
+                    "workflowInstanceId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "adjustmentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-proposals/{proposalId}/decision": {
+      "post": {
+        "operationId": "createAdjustmentProposalsByProposalIdDecision",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "decisionCode"
+                ],
+                "properties": {
+                  "decisionCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approved"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "rejected"
+                        ]
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "maxLength": 500,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "proposalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalId",
+                    "statusCode",
+                    "adjustmentId",
+                    "decisionStatus"
+                  ],
+                  "properties": {
+                    "proposalId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "adjustmentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalId",
+                    "statusCode",
+                    "adjustmentId",
+                    "decisionStatus"
+                  ],
+                  "properties": {
+                    "proposalId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "adjustmentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-migration-batches/{batchId}": {
+      "get": {
+        "operationId": "getAdjustmentMigrationBatchesByBatchId",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "batchId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "batchId",
+                    "total",
+                    "current",
+                    "released",
+                    "unreleased",
+                    "ended"
+                  ],
+                  "properties": {
+                    "batchId": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "current": {
+                      "type": "integer"
+                    },
+                    "released": {
+                      "type": "integer"
+                    },
+                    "unreleased": {
+                      "type": "integer"
+                    },
+                    "ended": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-migration-batches/{batchId}/release": {
+      "post": {
+        "operationId": "createAdjustmentMigrationBatchesByBatchIdRelease",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "expectedCount",
+                  "reconciliationReference"
+                ],
+                "properties": {
+                  "expectedCount": {
+                    "minimum": 0,
+                    "description": "The number of current adjustments the legacy report shows for this batch",
+                    "type": "integer"
+                  },
+                  "reconciliationReference": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "The reference of the legacy report the count was checked against. An identifier, never narrative.",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "batchId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "released",
+                    "alreadyReleased",
+                    "ended"
+                  ],
+                  "properties": {
+                    "released": {
+                      "type": "integer"
+                    },
+                    "alreadyReleased": {
+                      "type": "integer"
+                    },
+                    "ended": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/students/{personId}/adjustments/{adjustmentId}/withdrawal-proposals": {
+      "post": {
+        "operationId": "createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawalProposals",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "withdrawalReasonCode",
+                  "externalReference"
+                ],
+                "properties": {
+                  "withdrawalReasonCode": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "externalReference": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "Where the evidence is held, e.g. the student's written request or the review record. An identifier, never narrative.",
+                    "type": "string"
+                  },
+                  "replacementAdjustmentId": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "personId",
+            "required": true
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "adjustmentId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "withdrawalId",
+                    "statusCode"
+                  ],
+                  "properties": {
+                    "withdrawalId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-withdrawals": {
+      "get": {
+        "operationId": "getAdjustmentWithdrawals",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "statusCode",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "withdrawalId",
+                      "adjustmentId",
+                      "personId",
+                      "withdrawalReasonCode",
+                      "externalReference",
+                      "replacementAdjustmentId",
+                      "statusCode",
+                      "proposedBy",
+                      "proposedAt",
+                      "workflowInstanceId",
+                      "decidedBy",
+                      "decidedAt",
+                      "decisionReason",
+                      "withdrawnAt"
+                    ],
+                    "properties": {
+                      "withdrawalId": {
+                        "type": "string"
+                      },
+                      "adjustmentId": {
+                        "type": "string"
+                      },
+                      "personId": {
+                        "type": "string"
+                      },
+                      "withdrawalReasonCode": {
+                        "type": "string"
+                      },
+                      "externalReference": {
+                        "type": "string"
+                      },
+                      "replacementAdjustmentId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "proposedBy": {
+                        "type": "string"
+                      },
+                      "proposedAt": {
+                        "type": "string"
+                      },
+                      "workflowInstanceId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decidedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decidedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "decisionReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "withdrawnAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-withdrawals/{withdrawalId}": {
+      "get": {
+        "operationId": "getAdjustmentWithdrawalsByWithdrawalId",
+        "tags": [
+          "adjustments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "withdrawalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "withdrawalId",
+                    "adjustmentId",
+                    "personId",
+                    "withdrawalReasonCode",
+                    "externalReference",
+                    "replacementAdjustmentId",
+                    "statusCode",
+                    "proposedBy",
+                    "proposedAt",
+                    "workflowInstanceId",
+                    "decidedBy",
+                    "decidedAt",
+                    "decisionReason",
+                    "withdrawnAt"
+                  ],
+                  "properties": {
+                    "withdrawalId": {
+                      "type": "string"
+                    },
+                    "adjustmentId": {
+                      "type": "string"
+                    },
+                    "personId": {
+                      "type": "string"
+                    },
+                    "withdrawalReasonCode": {
+                      "type": "string"
+                    },
+                    "externalReference": {
+                      "type": "string"
+                    },
+                    "replacementAdjustmentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "proposedBy": {
+                      "type": "string"
+                    },
+                    "proposedAt": {
+                      "type": "string"
+                    },
+                    "workflowInstanceId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "withdrawnAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/adjustment-withdrawals/{withdrawalId}/decision": {
+      "post": {
+        "operationId": "createAdjustmentWithdrawalsByWithdrawalIdDecision",
+        "tags": [
+          "adjustments"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "decisionCode"
+                ],
+                "properties": {
+                  "decisionCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "approved"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "rejected"
+                        ]
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "maxLength": 500,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "withdrawalId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "withdrawalId",
+                    "statusCode",
+                    "adjustmentId",
+                    "withdrawnAt",
+                    "decisionStatus"
+                  ],
+                  "properties": {
+                    "withdrawalId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "adjustmentId": {
+                      "type": "string"
+                    },
+                    "withdrawnAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "withdrawalId",
+                    "statusCode",
+                    "adjustmentId",
+                    "withdrawnAt",
+                    "decisionStatus"
+                  ],
+                  "properties": {
+                    "withdrawalId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "adjustmentId": {
+                      "type": "string"
+                    },
+                    "withdrawnAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decisionStatus": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -36000,6 +38354,430 @@
                     },
                     "detail": {
                       "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/identity-resolution/cases/{caseId}/proposal": {
+      "put": {
+        "operationId": "replaceIdentityResolutionCasesByCaseIdProposal",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "survivorPersonId",
+                  "mergedPersonId"
+                ],
+                "properties": {
+                  "survivorPersonId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "mergedPersonId": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "factChoices": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "survivor"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "merged"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "identifierResolutions": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "object",
+                      "required": [
+                        "keep",
+                        "reason"
+                      ],
+                      "properties": {
+                        "keep": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "survivor"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "merged"
+                              ]
+                            }
+                          ]
+                        },
+                        "reason": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "twoAccountsConfirmed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalId",
+                    "version",
+                    "survivorPersonId",
+                    "mergedPersonId",
+                    "factChoices",
+                    "identifierResolutions",
+                    "twoAccountsConfirmed",
+                    "proposedBy",
+                    "proposedAt",
+                    "identifierConflicts"
+                  ],
+                  "properties": {
+                    "proposalId": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "survivorPersonId": {
+                      "type": "string"
+                    },
+                    "mergedPersonId": {
+                      "type": "string"
+                    },
+                    "factChoices": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "identifierResolutions": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "keep",
+                          "reason"
+                        ],
+                        "properties": {
+                          "keep": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "twoAccountsConfirmed": {
+                      "type": "boolean"
+                    },
+                    "proposedBy": {
+                      "type": "string"
+                    },
+                    "proposedAt": {
+                      "type": "string"
+                    },
+                    "identifierConflicts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "identifierClass",
+                          "survivorValues",
+                          "mergedValues",
+                          "resolved"
+                        ],
+                        "properties": {
+                          "identifierClass": {
+                            "type": "string"
+                          },
+                          "survivorValues": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "mergedValues": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "resolved": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getIdentityResolutionCasesByCaseIdProposal",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "caseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "proposalId",
+                    "version",
+                    "survivorPersonId",
+                    "mergedPersonId",
+                    "factChoices",
+                    "identifierResolutions",
+                    "twoAccountsConfirmed",
+                    "proposedBy",
+                    "proposedAt",
+                    "identifierConflicts"
+                  ],
+                  "properties": {
+                    "proposalId": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "survivorPersonId": {
+                      "type": "string"
+                    },
+                    "mergedPersonId": {
+                      "type": "string"
+                    },
+                    "factChoices": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "identifierResolutions": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "keep",
+                          "reason"
+                        ],
+                        "properties": {
+                          "keep": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "twoAccountsConfirmed": {
+                      "type": "boolean"
+                    },
+                    "proposedBy": {
+                      "type": "string"
+                    },
+                    "proposedAt": {
+                      "type": "string"
+                    },
+                    "identifierConflicts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "identifierClass",
+                          "survivorValues",
+                          "mergedValues",
+                          "resolved"
+                        ],
+                        "properties": {
+                          "identifierClass": {
+                            "type": "string"
+                          },
+                          "survivorValues": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "mergedValues": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "resolved": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
                     }
                   }
                 }
@@ -36020,9 +38798,11 @@
           "content": {
             "application/json": {
               "schema": {
+                "additionalProperties": false,
                 "type": "object",
                 "required": [
-                  "decisionTypeCode"
+                  "decisionTypeCode",
+                  "reason"
                 ],
                 "properties": {
                   "decisionTypeCode": {
@@ -36047,7 +38827,13 @@
                       }
                     ]
                   },
-                  "survivorPersonId": {
+                  "proposalVersion": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "minLength": 1,
+                    "maxLength": 2000,
                     "type": "string"
                   }
                 }
@@ -36085,6 +38871,72 @@
               }
             }
           },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": {
             "description": "Default Response",
             "content": {
@@ -36108,6 +38960,43 @@
                     },
                     "detail": {
                       "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
                     }
                   }
                 }
@@ -36137,6 +39026,10 @@
                     },
                     "detail": {
                       "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
                     }
                   }
                 }
@@ -36192,6 +39085,883 @@
                   "properties": {
                     "linkId": {
                       "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/identity-merges/{mergeId}/unmerge-cases": {
+      "post": {
+        "operationId": "createIdentityMergesByMergeIdUnmergeCases",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "mergeId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "unmergeCaseId"
+                  ],
+                  "properties": {
+                    "unmergeCaseId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/identity-unmerge-cases/{unmergeCaseId}": {
+      "get": {
+        "operationId": "getIdentityUnmergeCasesByUnmergeCaseId",
+        "tags": [
+          "governance"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "unmergeCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "unmergeCaseId",
+                    "mergeId",
+                    "survivorPersonId",
+                    "restoredPersonId",
+                    "statusCode",
+                    "proposalVersion",
+                    "allocations",
+                    "postMergeRecords",
+                    "openedBy",
+                    "proposedBy",
+                    "decidedBy"
+                  ],
+                  "properties": {
+                    "unmergeCaseId": {
+                      "type": "string"
+                    },
+                    "mergeId": {
+                      "type": "string"
+                    },
+                    "survivorPersonId": {
+                      "type": "string"
+                    },
+                    "restoredPersonId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "proposalVersion": {
+                      "type": "integer"
+                    },
+                    "allocations": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "survivor"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "restored"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "postMergeRecords": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "table",
+                          "column",
+                          "rowKey"
+                        ],
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "table": {
+                            "type": "string"
+                          },
+                          "column": {
+                            "type": "string"
+                          },
+                          "rowKey": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "openedBy": {
+                      "type": "string"
+                    },
+                    "proposedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/identity-unmerge-cases/{unmergeCaseId}/proposal": {
+      "put": {
+        "operationId": "replaceIdentityUnmergeCasesByUnmergeCaseIdProposal",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "allocations"
+                ],
+                "properties": {
+                  "allocations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "survivor"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "restored"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "unmergeCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "unmergeCaseId",
+                    "mergeId",
+                    "survivorPersonId",
+                    "restoredPersonId",
+                    "statusCode",
+                    "proposalVersion",
+                    "allocations",
+                    "postMergeRecords",
+                    "openedBy",
+                    "proposedBy",
+                    "decidedBy"
+                  ],
+                  "properties": {
+                    "unmergeCaseId": {
+                      "type": "string"
+                    },
+                    "mergeId": {
+                      "type": "string"
+                    },
+                    "survivorPersonId": {
+                      "type": "string"
+                    },
+                    "restoredPersonId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "proposalVersion": {
+                      "type": "integer"
+                    },
+                    "allocations": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "survivor"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "restored"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "postMergeRecords": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "table",
+                          "column",
+                          "rowKey"
+                        ],
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "table": {
+                            "type": "string"
+                          },
+                          "column": {
+                            "type": "string"
+                          },
+                          "rowKey": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "openedBy": {
+                      "type": "string"
+                    },
+                    "proposedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/identity-unmerge-cases/{unmergeCaseId}/decision": {
+      "post": {
+        "operationId": "createIdentityUnmergeCasesByUnmergeCaseIdDecision",
+        "tags": [
+          "governance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "decisionTypeCode",
+                  "reason"
+                ],
+                "properties": {
+                  "decisionTypeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "unmerge"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "reject"
+                        ]
+                      }
+                    ]
+                  },
+                  "proposalVersion": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "unmergeCaseId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "workflow",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "unmergeCaseId",
+                    "mergeId",
+                    "survivorPersonId",
+                    "restoredPersonId",
+                    "statusCode",
+                    "proposalVersion",
+                    "allocations",
+                    "postMergeRecords",
+                    "openedBy",
+                    "proposedBy",
+                    "decidedBy"
+                  ],
+                  "properties": {
+                    "unmergeCaseId": {
+                      "type": "string"
+                    },
+                    "mergeId": {
+                      "type": "string"
+                    },
+                    "survivorPersonId": {
+                      "type": "string"
+                    },
+                    "restoredPersonId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "proposalVersion": {
+                      "type": "integer"
+                    },
+                    "allocations": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "survivor"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "restored"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "postMergeRecords": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "table",
+                          "column",
+                          "rowKey"
+                        ],
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "table": {
+                            "type": "string"
+                          },
+                          "column": {
+                            "type": "string"
+                          },
+                          "rowKey": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "openedBy": {
+                      "type": "string"
+                    },
+                    "proposedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "decidedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {}
                     }
                   }
                 }
@@ -44083,6 +47853,12 @@
                                     "enum": [
                                       "intermission"
                                     ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "resumption"
+                                    ]
                                   }
                                 ]
                               },
@@ -44198,6 +47974,12 @@
                           "type": "string",
                           "enum": [
                             "intermission"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "resumption"
                           ]
                         }
                       ]
@@ -47917,6 +51699,10 @@
                   },
                   "evidenceRef": {
                     "type": "string"
+                  },
+                  "exemptionReason": {
+                    "maxLength": 500,
+                    "type": "string"
                   }
                 }
               }
@@ -50101,6 +53887,12 @@
                       },
                       "legalFamilyName": {
                         "type": "string"
+                      },
+                      "mergedFrom": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -57789,6 +61581,24 @@
         ],
         "x-publication-class": "public",
         "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "markId"
+                  ],
+                  "properties": {
+                    "markId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "201": {
             "description": "Default Response",
             "content": {
@@ -72550,6 +76360,8 @@
                 "schema": {
                   "type": "object",
                   "required": [
+                    "environmentCode",
+                    "registered",
                     "environment",
                     "releaseVersion",
                     "imageDigest",
@@ -72558,53 +76370,66 @@
                     "featureFlags"
                   ],
                   "properties": {
+                    "environmentCode": {
+                      "type": "string"
+                    },
+                    "registered": {
+                      "type": "boolean"
+                    },
                     "environment": {
-                      "type": "object",
-                      "required": [
-                        "deploymentEnvironmentId",
-                        "environmentCode",
-                        "displayName",
-                        "environmentTypeCode",
-                        "productionLike",
-                        "liveIntegrationsAllowed",
-                        "configuration",
-                        "active",
-                        "createdAt",
-                        "updatedAt"
-                      ],
-                      "properties": {
-                        "deploymentEnvironmentId": {
-                          "type": "string"
-                        },
-                        "environmentCode": {
-                          "type": "string"
-                        },
-                        "displayName": {
-                          "type": "string"
-                        },
-                        "environmentTypeCode": {
-                          "type": "string"
-                        },
-                        "productionLike": {
-                          "type": "boolean"
-                        },
-                        "liveIntegrationsAllowed": {
-                          "type": "boolean"
-                        },
-                        "configuration": {
+                      "anyOf": [
+                        {
                           "type": "object",
-                          "additionalProperties": {}
+                          "required": [
+                            "deploymentEnvironmentId",
+                            "environmentCode",
+                            "displayName",
+                            "environmentTypeCode",
+                            "productionLike",
+                            "liveIntegrationsAllowed",
+                            "configuration",
+                            "active",
+                            "createdAt",
+                            "updatedAt"
+                          ],
+                          "properties": {
+                            "deploymentEnvironmentId": {
+                              "type": "string"
+                            },
+                            "environmentCode": {
+                              "type": "string"
+                            },
+                            "displayName": {
+                              "type": "string"
+                            },
+                            "environmentTypeCode": {
+                              "type": "string"
+                            },
+                            "productionLike": {
+                              "type": "boolean"
+                            },
+                            "liveIntegrationsAllowed": {
+                              "type": "boolean"
+                            },
+                            "configuration": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            },
+                            "active": {
+                              "type": "boolean"
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            }
+                          }
                         },
-                        "active": {
-                          "type": "boolean"
-                        },
-                        "createdAt": {
-                          "type": "string"
-                        },
-                        "updatedAt": {
-                          "type": "string"
+                        {
+                          "type": "null"
                         }
-                      }
+                      ]
                     },
                     "releaseVersion": {
                       "type": "string"
@@ -72668,35 +76493,6 @@
                           }
                         }
                       }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
-                  "properties": {
-                    "type": {
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "number"
-                    },
-                    "detail": {
-                      "type": "string"
                     }
                   }
                 }
@@ -78174,7 +81970,7 @@
           "Admin",
           "Privacy"
         ],
-        "description": "Run a data retention sweep for the tenant. In dry-run mode (default), identifies eligible persons and returns counts without making changes. Set dryRun=false to apply irreversible anonymisation.",
+        "description": "Dry run of a data retention sweep for the tenant: identifies eligible persons and returns counts without making changes. dryRun=false is refused (409); disposal needs an approved plan (POST /admin/retention/plans).",
         "parameters": [
           {
             "schema": {
@@ -78257,6 +82053,30 @@
                                 "enum": [
                                   "skipped-award-hold"
                                 ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "skipped-hold"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "skipped-restriction"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "skipped-open-request"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "skipped-schedule"
+                                ]
                               }
                             ]
                           },
@@ -78265,6 +82085,1061 @@
                           }
                         }
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/retention/plans": {
+      "post": {
+        "operationId": "createAdminRetentionPlans",
+        "summary": "Prepare a retention disposal plan",
+        "tags": [
+          "Admin",
+          "Privacy"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "planId",
+                    "statusCode",
+                    "preparedBy",
+                    "preparedAt",
+                    "approvedBy",
+                    "approvedAt",
+                    "rejectedBy",
+                    "rejectionReason",
+                    "executedBy",
+                    "executedAt",
+                    "personIds"
+                  ],
+                  "properties": {
+                    "planId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "preparedBy": {
+                      "type": "string"
+                    },
+                    "preparedAt": {
+                      "type": "string"
+                    },
+                    "approvedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "approvedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rejectedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rejectionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "executedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "executedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "personIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "getAdminRetentionPlans",
+        "summary": "List retention disposal plans",
+        "tags": [
+          "Admin",
+          "Privacy"
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "planId",
+                      "statusCode",
+                      "preparedBy",
+                      "preparedAt",
+                      "approvedBy",
+                      "approvedAt",
+                      "rejectedBy",
+                      "rejectionReason",
+                      "executedBy",
+                      "executedAt",
+                      "personIds"
+                    ],
+                    "properties": {
+                      "planId": {
+                        "type": "string"
+                      },
+                      "statusCode": {
+                        "type": "string"
+                      },
+                      "preparedBy": {
+                        "type": "string"
+                      },
+                      "preparedAt": {
+                        "type": "string"
+                      },
+                      "approvedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "approvedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "rejectedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "rejectionReason": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "executedBy": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "executedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "personIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/retention/plans/{planId}": {
+      "get": {
+        "operationId": "getAdminRetentionPlansByPlanId",
+        "summary": "Get a retention disposal plan",
+        "tags": [
+          "Admin",
+          "Privacy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "planId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "planId",
+                    "statusCode",
+                    "preparedBy",
+                    "preparedAt",
+                    "approvedBy",
+                    "approvedAt",
+                    "rejectedBy",
+                    "rejectionReason",
+                    "executedBy",
+                    "executedAt",
+                    "personIds"
+                  ],
+                  "properties": {
+                    "planId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "preparedBy": {
+                      "type": "string"
+                    },
+                    "preparedAt": {
+                      "type": "string"
+                    },
+                    "approvedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "approvedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rejectedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rejectionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "executedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "executedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "personIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/retention/plans/{planId}/approve": {
+      "post": {
+        "operationId": "createAdminRetentionPlansByPlanIdApprove",
+        "summary": "Approve a retention disposal plan (not its preparer)",
+        "tags": [
+          "Admin",
+          "Privacy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "planId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "planId",
+                    "statusCode",
+                    "preparedBy",
+                    "preparedAt",
+                    "approvedBy",
+                    "approvedAt",
+                    "rejectedBy",
+                    "rejectionReason",
+                    "executedBy",
+                    "executedAt",
+                    "personIds"
+                  ],
+                  "properties": {
+                    "planId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "preparedBy": {
+                      "type": "string"
+                    },
+                    "preparedAt": {
+                      "type": "string"
+                    },
+                    "approvedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "approvedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rejectedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rejectionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "executedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "executedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "personIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/retention/plans/{planId}/reject": {
+      "post": {
+        "operationId": "createAdminRetentionPlansByPlanIdReject",
+        "summary": "Reject a retention disposal plan (not its preparer)",
+        "tags": [
+          "Admin",
+          "Privacy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "planId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "planId",
+                    "statusCode",
+                    "preparedBy",
+                    "preparedAt",
+                    "approvedBy",
+                    "approvedAt",
+                    "rejectedBy",
+                    "rejectionReason",
+                    "executedBy",
+                    "executedAt",
+                    "personIds"
+                  ],
+                  "properties": {
+                    "planId": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "type": "string"
+                    },
+                    "preparedBy": {
+                      "type": "string"
+                    },
+                    "preparedAt": {
+                      "type": "string"
+                    },
+                    "approvedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "approvedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rejectedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rejectionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "executedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "executedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "personIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/retention/plans/{planId}/execute": {
+      "post": {
+        "operationId": "createAdminRetentionPlansByPlanIdExecute",
+        "summary": "Execute an approved retention disposal plan (irreversible)",
+        "tags": [
+          "Admin",
+          "Privacy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "planId",
+            "required": true
+          }
+        ],
+        "x-publication-class": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "planId",
+                    "executedAt",
+                    "anonymised",
+                    "certificates"
+                  ],
+                  "properties": {
+                    "planId": {
+                      "type": "string"
+                    },
+                    "executedAt": {
+                      "type": "string"
+                    },
+                    "anonymised": {
+                      "type": "number"
+                    },
+                    "certificates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "personId",
+                          "certificateRef"
+                        ],
+                        "properties": {
+                          "personId": {
+                            "type": "string"
+                          },
+                          "certificateRef": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
                     }
                   }
                 }
@@ -78452,6 +83327,35 @@
                   ],
                   "properties": {
                     "findingId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
                       "type": "string"
                     }
                   }

@@ -5,11 +5,16 @@ import { startTestApp, type TestApp } from './helpers/test-app.js';
 let ctx: TestApp;
 let jwt: string;
 let dpoJwt: string;
+let preparerJwt: string;
+let deciderJwt: string;
 
 beforeAll(async () => {
   ctx    = await startTestApp();
   jwt    = await ctx.makeJwt();
   dpoJwt = await ctx.makeJwt({ roles: ['dpo'] });
+  // ADR-031: one officer prepares, another decides.
+  preparerJwt = await ctx.makeJwt({ sub: 'officer-preparer', roles: ['identity-resolution-officer'] });
+  deciderJwt  = await ctx.makeJwt({ sub: 'officer-decider', roles: ['identity-resolution-officer'] });
 }, 120_000);
 
 afterAll(async () => { await ctx?.teardown(); });
@@ -26,15 +31,15 @@ async function createPerson(legalFirstName: string, legalFamilyName: string): Pr
 }
 
 describe('Identity resolution & correction case (BPR-D17)', () => {
-  it('opens a case, adds a candidate, and requires an explicit decision to merge', async () => {
+  it('opens a case, adds a candidate, and merges only by a decision someone else takes (ADR-031)', async () => {
     const survivorId = await createPerson('Jordan', 'Smith');
     const duplicateId = await createPerson('Jordan', 'Smyth');
 
     const openCase = await ctx.app.inject({
       method: 'POST',
       url: '/api/v1/identity-resolution/cases',
-      headers: { authorization: `Bearer ${dpoJwt}` },
-      payload: { subjectPersonId: duplicateId, ownerId: 'dpo-01' },
+      headers: { authorization: `Bearer ${preparerJwt}` },
+      payload: { subjectPersonId: duplicateId, ownerId: 'officer-01' },
     });
     expect(openCase.statusCode).toBe(201);
     const { identityResolutionCaseId } = openCase.json<{ identityResolutionCaseId: string }>();
@@ -42,35 +47,44 @@ describe('Identity resolution & correction case (BPR-D17)', () => {
     const candidate = await ctx.app.inject({
       method: 'POST',
       url: `/api/v1/identity-resolution/cases/${identityResolutionCaseId}/candidates`,
-      headers: { authorization: `Bearer ${dpoJwt}` },
+      headers: { authorization: `Bearer ${preparerJwt}` },
       payload: { candidatePersonId: survivorId, matchScore: 0.92, matchReasonCode: 'name-dob' },
     });
     expect(candidate.statusCode).toBe(201);
 
-    // A merge decision without a survivor is rejected — the candidate score alone never decides.
-    const badDecision = await ctx.app.inject({
+    // The candidate score alone never decides: there is no proposal yet.
+    const noProposal = await ctx.app.inject({
       method: 'POST',
       url: `/api/v1/identity-resolution/cases/${identityResolutionCaseId}/decision`,
-      headers: { authorization: `Bearer ${dpoJwt}` },
-      payload: { decisionTypeCode: 'merge' },
+      headers: { authorization: `Bearer ${deciderJwt}` },
+      payload: { decisionTypeCode: 'merge', proposalVersion: 1, reason: 'Same person' },
     });
-    expect(badDecision.statusCode).toBe(422);
+    expect(noProposal.statusCode).toBe(409);
+
+    const proposal = await ctx.app.inject({
+      method: 'PUT',
+      url: `/api/v1/identity-resolution/cases/${identityResolutionCaseId}/proposal`,
+      headers: { authorization: `Bearer ${preparerJwt}` },
+      payload: { survivorPersonId: survivorId, mergedPersonId: duplicateId },
+    });
+    expect(proposal.statusCode, proposal.body).toBe(200);
 
     const decision = await ctx.app.inject({
       method: 'POST',
       url: `/api/v1/identity-resolution/cases/${identityResolutionCaseId}/decision`,
-      headers: { authorization: `Bearer ${dpoJwt}` },
-      payload: { decisionTypeCode: 'merge', survivorPersonId: survivorId },
+      headers: { authorization: `Bearer ${deciderJwt}` },
+      payload: { decisionTypeCode: 'merge', proposalVersion: 1, reason: 'Same date of birth and address' },
     });
-    expect(decision.statusCode).toBe(201);
+    expect(decision.statusCode, decision.body).toBe(201);
 
+    // A merge is never made through the links route.
     const link = await ctx.app.inject({
       method: 'POST',
       url: '/api/v1/identity-resolution/links',
-      headers: { authorization: `Bearer ${dpoJwt}` },
+      headers: { authorization: `Bearer ${preparerJwt}` },
       payload: { sourcePersonId: duplicateId, targetPersonId: survivorId, linkTypeCode: 'merged-into' },
     });
-    expect(link.statusCode).toBe(201);
+    expect(link.statusCode).toBe(400);
   });
 
   it('opens a data correction case for a person', async () => {
@@ -91,7 +105,7 @@ describe('Identity resolution & correction case (BPR-D17)', () => {
     const openCase = await ctx.app.inject({
       method: 'POST',
       url: '/api/v1/identity-resolution/cases',
-      headers: { authorization: `Bearer ${dpoJwt}` },
+      headers: { authorization: `Bearer ${preparerJwt}` },
       payload: { subjectPersonId: subjectId, ownerId: 'dpo-02' },
     });
     expect(openCase.statusCode).toBe(201);

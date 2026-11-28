@@ -1,3 +1,5 @@
+import { adjustmentAmountProblem } from '@revelation-srs/domain';
+
 import type { ImportPayload } from '../contracts/payload.js';
 
 import type { ValidationIssue, ValidationReport, RecordCounts, IssueSeverity } from './types.js';
@@ -11,6 +13,7 @@ const KNOWN_MODES       = new Set(['full-time', 'part-time', 'distance', 'sandwi
 const KNOWN_ADDR_TYPES  = new Set(['home', 'term', 'correspondence']);
 const KNOWN_ADJ_TYPES   = new Set(['extra-time', 'separate-room', 'deadline-extension', 'reader', 'scribe', 'rest-breaks']);
 const KNOWN_ADJ_SCOPES  = new Set(['all', 'exam', 'coursework', 'attendance']);
+const KNOWN_AMOUNT_UNITS = new Set(['percent-of-duration', 'minutes-per-hour', 'days']);
 const KNOWN_COMP_TYPES  = new Set(['exam', 'coursework', 'practical', 'portfolio', 'presentation']);
 const KNOWN_REG_STATUSES = new Set(['registered', 'withdrawn', 'completed']);
 
@@ -262,6 +265,28 @@ export function validatePayload(
         { externalId: adj.externalId, field: 'scopeCode' }));
     }
 
+    // The same amount rules as the SRS's own write path (BL-385).
+    if (adj.amount !== undefined) {
+      const problem = adjustmentAmountProblem(adj.adjustmentTypeCode, adj.amount);
+      if (problem) {
+        issues.push(issue('error', 'INVALID_VALUE', 'adjustment',
+          `Adjustment ${adj.externalId}: ${problem.message}`,
+          { externalId: adj.externalId, field: problem.field }));
+      } else if (!KNOWN_AMOUNT_UNITS.has(adj.amount.unitCode)) {
+        issues.push(issue('warning', 'VALUE_SET_MAPPING_FAILURE', 'adjustment',
+          `Unknown amount unitCode '${adj.amount.unitCode}' for adjustment ${adj.externalId}`,
+          { externalId: adj.externalId, field: 'amount.unitCode' }));
+      }
+    }
+
+    // Free text is not carried into core (ADR-017, BL-243): it is where the
+    // previous system's diagnosis or narrative ends up.
+    if ('notes' in adj && (adj as { notes?: unknown }).notes != null) {
+      issues.push(issue('warning', 'SPECIAL_CATEGORY_DATA', 'adjustment',
+        `Adjustment ${adj.externalId}: notes are not imported. Keep the narrative in the wellbeing or disability case records.`,
+        { externalId: adj.externalId, field: 'notes' }));
+    }
+
     // Bitemporal window check
     if (adj.validTo !== undefined && adj.validTo <= adj.validFrom) {
       issues.push(issue('error', 'BITEMPORAL_INVALID_WINDOW', 'adjustment',
@@ -314,6 +339,15 @@ export function validatePayload(
       infoCount,
     },
   };
+}
+
+/** Add issues found while loading, and recount the summary. */
+export function addIssues(report: ValidationReport, found: readonly ValidationIssue[]): void {
+  report.issues.push(...found);
+  report.summary.errorCount   = report.issues.filter(i => i.severity === 'error').length;
+  report.summary.warningCount = report.issues.filter(i => i.severity === 'warning').length;
+  report.summary.infoCount    = report.issues.filter(i => i.severity === 'info').length;
+  report.summary.hasErrors    = report.summary.errorCount > 0;
 }
 
 export function updateCounts(

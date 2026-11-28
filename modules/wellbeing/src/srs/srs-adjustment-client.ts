@@ -2,7 +2,8 @@
  * SRS adjustment handoff client — wraps the F-WELL-SIS-01 POST endpoint.
  *
  * POST /api/v1/students/:personId/adjustments
- * Body: { enrolmentId, adjustmentTypeCode, scopeCode, validFrom, validTo?, amount?, notes?, sourceCaseId? }
+ * Body: { enrolmentId, adjustmentTypeCode, scopeCode, validFrom, validTo?, amount?, sourceCaseId? }
+ * No free text: the outcome is the minimum the SRS needs (ADR-017, BL-243).
  * Headers: { X-Idempotency-Key }
  * Returns: 201 { adjustmentId }
  *
@@ -11,7 +12,11 @@
  * repeated during retry, SRS will return the same adjustmentId.
  */
 
+import { callCoreAsService, type ServiceTokenSource } from '@revelation-srs/auth';
+
 export interface SubmitAdjustmentInput {
+  /** The tenant the hand-off is for: picks that tenant's client (ADR-029). */
+  tenantId:           string;
   idempotencyKey:     string;
   personId:           string;
   enrolmentId:        string;
@@ -19,7 +24,6 @@ export interface SubmitAdjustmentInput {
   scopeCode:          string;
   validFrom:          string;
   validTo?:           string;
-  notes?:             string;
   /** Structured amount, e.g. { value: 25, unitCode: 'percent-of-duration' }. */
   amount?:            { value: number; unitCode: string };
   /** This wellbeing module case's logical id — carried through so the
@@ -56,7 +60,7 @@ export interface SrsAdjustmentClient {
 export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
   constructor(
     private readonly srsApiUrl: string,
-    private readonly authToken: string,
+    private readonly tokens: ServiceTokenSource,
   ) {}
 
   async submitAdjustment(input: SubmitAdjustmentInput): Promise<SubmitAdjustmentResult> {
@@ -67,16 +71,14 @@ export class SrsAdjustmentHttpClient implements SrsAdjustmentClient {
       scopeCode:          input.scopeCode,
       validFrom:          input.validFrom,
       ...(input.validTo !== undefined ? { validTo: input.validTo } : {}),
-      ...(input.notes   !== undefined ? { notes:   input.notes }   : {}),
       ...(input.amount  !== undefined ? { amount:  input.amount }  : {}),
       ...(input.sourceCaseId !== undefined ? { sourceCaseId: input.sourceCaseId } : {}),
     };
 
-    const res = await fetch(url, {
+    const res = await callCoreAsService(this.tokens, input.tenantId, url, {
       method:  'POST',
       headers: {
         'content-type':      'application/json',
-        'authorization':     `Bearer ${this.authToken}`,
         'x-idempotency-key': input.idempotencyKey,
       },
       body: JSON.stringify(body),

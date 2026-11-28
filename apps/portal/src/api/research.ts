@@ -1,4 +1,6 @@
-import { api, ApiError } from './client.js';
+import { bffFetch } from '@revelation-srs/ui';
+
+import { api, ApiError, SRS_BASE } from './client.js';
 
 /** Supervisor, review panel and examiner self-service (Phase 5 D-40). */
 export interface ResearchAssignments {
@@ -40,12 +42,10 @@ export const declareReviewConflict = (personId: string, memberId: string, confli
 export const declareExaminerConflict = (personId: string, caseId: string, appointmentId: string, conflictTypeCode: string) =>
   api.post(`${base(personId)}/examinations/${caseId}/appointments/${appointmentId}/conflict`, { conflictTypeCode });
 
-const token = () => localStorage.getItem('srs_portal_token');
-const root = () => import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
+const root = () => SRS_BASE;
 
 async function postForm<T>(path: string, form: FormData): Promise<T> {
-  const t = token();
-  const res = await fetch(`${root()}${path}`, { method: 'POST', headers: t ? { Authorization: `Bearer ${t}` } : {}, body: form });
+  const res = await bffFetch(`${root()}${path}`, { method: 'POST', headers: {}, body: form });
   if (!res.ok) {
     let message = `Upload failed (${res.status})`;
     try { const body = await res.json() as { detail?: string }; if (body.detail) message = body.detail; } catch { /* not JSON */ }
@@ -69,8 +69,7 @@ export function submitSupervisorReport(personId: string, reviewId: string, file:
 
 /** Downloads a file the API logs access to, and hands it to the browser. */
 export async function downloadFile(path: string, filename: string): Promise<void> {
-  const t = token();
-  const res = await fetch(`${root()}${path}`, { headers: t ? { Authorization: `Bearer ${t}` } : {} });
+  const res = await bffFetch(`${root()}${path}`, { headers: {} });
   if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement('a');

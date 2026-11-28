@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { ExamTimingsPage } from '../src/pages/ExamTimingsPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 
 function handlers(saved: { body: unknown }) {
   return [

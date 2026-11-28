@@ -42,7 +42,7 @@ export function auditReviewRoutes(fastify: FastifyInstance): void {
         querystring: Type.Object({ statusCode: Type.Optional(Type.String()) }),
         response: { 200: Type.Array(AuditReviewCaseSchema) },
       },
-      preHandler: [requirePermission('audit-log:read')],
+      preHandler: [requirePermission('audit-review:manage')],
     },
     async (request, reply) => {
       const { statusCode } = request.query as { statusCode?: string };
@@ -55,7 +55,7 @@ export function auditReviewRoutes(fastify: FastifyInstance): void {
     '/audit-review/cases',
     {
       schema: { body: OpenReviewCaseBody, response: { 201: Type.Object({ auditReviewCaseId: Type.String() }) } },
-      preHandler: [requirePermission('audit-log:read')],
+      preHandler: [requirePermission('audit-review:manage')],
     },
     async (request, reply) => {
       const { ownerId } = request.body as { ownerId: string };
@@ -70,14 +70,14 @@ export function auditReviewRoutes(fastify: FastifyInstance): void {
       schema: {
         params: Type.Object({ caseId: Type.String() }),
         body: AddFindingBody,
-        response: { 201: Type.Object({ findingId: Type.String() }), 404: ErrorSchema },
+        response: { 201: Type.Object({ findingId: Type.String() }), 403: ErrorSchema, 404: ErrorSchema },
       },
-      preHandler: [requirePermission('audit-log:read')],
+      preHandler: [requirePermission('audit-review:manage')],
     },
     async (request, reply) => {
       const { caseId } = request.params as { caseId: string };
       const body = request.body as { auditRecordId: string; findingTypeCode: string; description?: string };
-      const findingId = await fastify.auditReviewService.addFinding(request.tenantId, caseId, body);
+      const findingId = await fastify.auditReviewService.addFinding(request.tenantId, caseId, body, request.user.sub);
       await reply.code(201).send({ findingId });
     },
   );
@@ -86,7 +86,7 @@ export function auditReviewRoutes(fastify: FastifyInstance): void {
     '/audit-review/seal',
     {
       schema: { body: SealPartitionBody, response: { 201: Type.Object({ sealId: Type.String() }) } },
-      preHandler: [requirePermission('retention:enforce')],
+      preHandler: [requirePermission('audit:seal')],
     },
     async (request, reply) => {
       const { rangeStart, rangeEnd } = request.body as { rangeStart: string; rangeEnd: string };

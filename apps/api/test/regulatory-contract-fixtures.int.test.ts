@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { recordRequiredCasChecks } from './helpers/cas.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 let ctx: TestApp;
@@ -146,7 +147,8 @@ describe('Regulatory contract fixtures', () => {
     const post = (url: string, as: string, payload?: Record<string, unknown>) =>
       ctx.app.inject({ method: 'POST', url: `/api/v1${url}`, headers: { authorization: `Bearer ${as}` }, ...(payload ? { payload } : {}) });
     const casCaseId = (await post(`/enrolments/${enrolmentId}/regulatory/cas-cases`, officer)).json<{ casCaseId: string }>().casCaseId;
-    await post(`/regulatory/cas-cases/${casCaseId}/eligibility-checks`, officer, { guidanceVersion: '10/2026', checkTypeCode: 'genuine-student', resultCode: 'pass' });
+    // BL-198: every mandatory check type, not one.
+    await recordRequiredCasChecks(ctx, casCaseId, officer);
     await post(`/regulatory/cas-cases/${casCaseId}/preparation`, officer);
     await post(`/regulatory/cas-cases/${casCaseId}/approval`, approver);
     const exported = (await post('/regulatory/cas-cases/sms-export', officer))

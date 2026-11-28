@@ -9,12 +9,16 @@ import { createVleDb } from './client.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function main(): Promise<void> {
-  const databaseUrl = process.env['DATABASE_URL'];
-  if (!databaseUrl) throw new Error('DATABASE_URL is not set');
+  // Migrations run as the schema owner (MIGRATION_DATABASE_URL); the adapter
+  // itself connects as a login role that inherits srs_app.
+  const databaseUrl = process.env['MIGRATION_DATABASE_URL'] ?? process.env['DATABASE_URL'];
+  if (!databaseUrl) throw new Error('MIGRATION_DATABASE_URL (or DATABASE_URL) is not set');
   const db = createVleDb(databaseUrl);
 
   const migrationsDir = join(__dirname, '../../migrations');
-  for (const file of ['0000_vle_foundations.sql', '0001_adjustment_instructions.sql']) {
+  // Every migration in the journal, in order, so a new file cannot be missed.
+  const journal = JSON.parse(await readFile(join(migrationsDir, 'meta', '_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> };
+  for (const file of journal.entries.map((e) => `${e.tag}.sql`)) {
     const migrationSql = await readFile(join(migrationsDir, file), 'utf8');
     await db.execute(sql.raw(migrationSql));
   }

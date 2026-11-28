@@ -111,10 +111,11 @@ describe('Stage 2 — event registry completeness', () => {
     expect(registry.events.length).toBeGreaterThan(0);
   });
 
-  it('registry.json contains 62 published events and 6 internal events', () => {
+  // 64 since srs.person.merged and srs.person.unmerged (ADR-031, BL-355, BL-359).
+  it('registry.json contains 64 published events and 6 internal events', () => {
     const published = registry.events.filter(e => e.status === 'published');
     const internal  = registry.events.filter(e => e.status === 'internal');
-    expect(published.length).toBe(62);
+    expect(published.length).toBe(64);
     expect(internal.length).toBe(6);
   });
 
@@ -230,7 +231,7 @@ describe('Stage 2 — schema file structure', () => {
   it('all 62 domain-specific schema files exist on disk', async () => {
     const found = await readdir(SCHEMA_ROOT, { recursive: true });
     const jsonFiles = found.filter(f => (f).endsWith('v1.json') && f !== 'envelope.v1.json');
-    expect(jsonFiles.length).toBe(62);
+    expect(jsonFiles.length).toBe(64); // srs.person.merged and .unmerged (BL-355, BL-359)
   });
 });
 

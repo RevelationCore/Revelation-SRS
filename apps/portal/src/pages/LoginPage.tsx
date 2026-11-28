@@ -1,8 +1,8 @@
 import { type FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth, startLogin } from '../auth/AuthContext.js';
-import { Spinner, type TokenSet } from '@revelation-srs/ui';
+import { useAuth } from '../auth/AuthContext.js';
+import { Spinner } from '@revelation-srs/ui';
 
 const DEMO_USERS = [
   {
@@ -26,9 +26,12 @@ const DEMO_USERS = [
 ] as const;
 
 const DEV_AUTH = import.meta.env.VITE_DEV_AUTH === 'true';
+/** Sign-in goes through this app's BFF (ADR-026); VITE_SSO=false hides it where no Keycloak runs. */
+const SSO = import.meta.env.VITE_SSO !== 'false';
 
 export function LoginPage() {
-  const { token, isReady, config, login } = useAuth();
+  const { authenticated, isReady, signIn, devLogin } = useAuth();
+  const config = SSO;
   const navigate = useNavigate();
   const { t }    = useTranslation();
   const [starting, setStarting] = useState(false);
@@ -40,7 +43,7 @@ export function LoginPage() {
   const [rawToken, setRawToken] = useState('');
 
   // Redirect if already authenticated
-  if (isReady && token) {
+  if (isReady && authenticated) {
     navigate('/dashboard', { replace: true });
     return null;
   }
@@ -50,7 +53,8 @@ export function LoginPage() {
     setStarting(true);
     setError('');
     try {
-      await startLogin(config);
+      await Promise.resolve();
+      signIn(new URLSearchParams(window.location.search).get('returnTo') ?? '/dashboard');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start login');
       setStarting(false);
@@ -59,7 +63,7 @@ export function LoginPage() {
 
   // ── Dev JWT-paste fallback (VITE_DEV_AUTH=true only) ─────────────────────
 
-  function handlePasteSubmit(e: FormEvent) {
+  async function handlePasteSubmit(e: FormEvent) {
     e.preventDefault();
     const trimmed = rawToken.trim();
     if (!trimmed) { setError('Paste a valid Bearer token.'); return; }
@@ -67,8 +71,8 @@ export function LoginPage() {
       setError('Token does not look like a valid JWT.');
       return;
     }
-    const ts: TokenSet = { accessToken: trimmed, refreshToken: '', expiresIn: 3600 };
-    login(ts);
+    // A BFF development session (POST /bff/dev/session; development and test only).
+    if (!(await devLogin(trimmed))) { setError('The BFF refused the token (development sessions are off).'); return; }
     navigate('/dashboard', { replace: true });
   }
 
@@ -107,7 +111,7 @@ export function LoginPage() {
             {error && <p className="text-sm text-center text-danger-600">{error}</p>}
           </div>
         ) : DEV_AUTH ? (
-          <form onSubmit={handlePasteSubmit} className="space-y-4">
+          <form onSubmit={(e) => void handlePasteSubmit(e)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
                 {t('auth.devTokenLabel')}
@@ -130,7 +134,7 @@ export function LoginPage() {
           </form>
         ) : (
           <p className="text-sm text-center text-neutral-500">
-            Keycloak is not configured. Set <code className="font-mono">VITE_KEYCLOAK_URL</code> to enable sign-in.
+            Single sign-on is turned off (<code className="font-mono">VITE_SSO=false</code>).
           </p>
         )}
       </div>

@@ -118,6 +118,27 @@ describe('Regulatory downstream trigger processing', () => {
   });
 });
 
+describe('SLC change of circumstances (BL-214, F3)', () => {
+  it('suspension and the return from it reach SLC, the return as a resumption', async () => {
+    const personId = await createPerson();
+    const enrolment = await ctx.app.inject({
+      method: 'POST', url: '/api/v1/enrolments', headers: { authorization: `Bearer ${jwt}` },
+      payload: { personId, modeOfStudyCode: 'full-time', academicYearOfEntry: '2027-28', startDate: '2027-09-20', fundingSourceCode: 'slc', slcReference: 'TRIG-SLC-RES' },
+    });
+    const enrolmentId = enrolment.json<{ enrolmentId: string }>().enrolmentId;
+    const generate = async () => (await ctx.app.inject({ method: 'POST', url: '/api/v1/regulatory/slc/confirmations/generate', headers: { authorization: `Bearer ${jwt}` } }))
+      .json<{ payload: { confirmations: Array<{ enrolmentId: string; confirmationType: string }> } }>().payload.confirmations
+      .filter((c) => c.enrolmentId === enrolmentId).map((c) => c.confirmationType);
+    expect(await generate()).toEqual(['enrolment']);
+
+    await ctx.db.execute(sql`UPDATE enrolment SET valid_from = now() - interval '2 days' WHERE id = ${enrolmentId}::uuid AND recorded_until IS NULL`);
+    await ctx.app.enrolmentService.transitionStatus(enrolmentId, ctx.tenantId, 'suspended', new Date(Date.now() - 86_400_000), 'registry-officer-1');
+    expect(await generate()).toEqual(['intermission']);
+    await ctx.app.enrolmentService.transitionStatus(enrolmentId, ctx.tenantId, 'enrolled', new Date(Date.now() - 1000), 'registry-officer-1');
+    expect(await generate()).toEqual(['resumption']);
+  });
+});
+
 async function createPerson(): Promise<string> {
   const student = await ctx.app.inject({
     method: 'POST',

@@ -97,6 +97,8 @@ export function studentRoutes(fastify: FastifyInstance): void {
             studentNumber:  Type.String(),
             legalFirstName:  Type.String(),
             legalFamilyName: Type.String(),
+            // ADR-031 item 6: merged-away people the search matched.
+            mergedFrom:      Type.Optional(Type.Array(Type.String())),
           })),
         },
       },

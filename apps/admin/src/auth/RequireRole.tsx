@@ -14,7 +14,7 @@ interface RequireRoleProps {
  * making a decision so server-side rendering and hard refreshes work correctly.
  */
 export function RequireRole({ roles, children }: RequireRoleProps) {
-  const { token, roles: userRoles, isReady } = useAuth();
+  const { authenticated, roles: userRoles, isReady } = useAuth();
 
   if (!isReady) {
     return (
@@ -24,7 +24,7 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
     );
   }
 
-  if (!token) return <Navigate to="/login" replace />;
+  if (!authenticated) return <Navigate to="/login" replace />;
 
   const allowed = roles.some(r => userRoles.includes(r));
   if (!allowed) return <Navigate to="/403" replace />;

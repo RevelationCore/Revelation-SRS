@@ -325,7 +325,7 @@ export class NonRegistrationService implements RegistrationLapseHandler {
           statusCaseId: await this.#withdrawalFor(tenantId, c.subjectId, decision.id),
         } : null,
         decisionAllowedFrom: first ? new Date(first.contactedAt.getTime() + policy.noticeDays * DAY_MS) : null,
-        ukviReportDueBy: flags.includes('sponsored') || (await this.#hasUkviAlert(tenantId, c.subjectId)) ? await addWorkingDaysFor(this.db, tenantId, period.closesAt, 10) : null,
+        ukviReportDueBy: flags.includes('sponsored') || (await this.#hasUkviAlert(tenantId, c.subjectId)) ? await addWorkingDaysFor(this.db, tenantId, period.closesAt, 10, 'statutory') : null,
         subject: data.subjects.get(c.subjectId),
       });
     }

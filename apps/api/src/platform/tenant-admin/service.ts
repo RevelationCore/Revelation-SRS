@@ -8,7 +8,7 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { ConflictError, NotFoundError } from '@revelation-srs/domain';
+import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import { assertChangeAfterCurrentVersion } from '../bitemporal-guard.js';
 import { clockNow } from '../clock.js';
@@ -126,7 +126,29 @@ export class TenantAdminService {
     const current = await this.getTenant(tenantId);
     if (!current) throw new NotFoundError('Tenant', tenantId);
 
+    // SME-9 (BL-391): a production tenant never uses the built-in rule
+    // defaults; only a demo tenant may allow them.
+    const rules = patch['rules'];
+    if (typeof rules === 'object' && rules !== null && (rules as Record<string, unknown>)['builtInDefaults'] === 'allow') {
+      const [row] = await this.db.select({ demoMode: tenants.demoMode }).from(tenants)
+        .where(eq(tenants.id, tenantId as `${string}-${string}-${string}-${string}-${string}`)).limit(1);
+      if (row?.demoMode !== true) {
+        throw new ValidationError("rules.builtInDefaults = 'allow' is only for demo tenants: configure the pass-mark, boundary and algorithm rules for each programme instead", [
+          { field: 'rules.builtInDefaults', message: "Must be 'refuse' (or unset) on a tenant that is not a demo tenant" },
+        ]);
+      }
+    }
+
     const configuration = { ...current.configuration, ...patch };
+    // F-5 (BL-182): a sponsor-licence holder must check every entrant's right
+    // to study, so 'none' needs the tenant to record that it holds no licence.
+    const rts = configuration['rightToStudy'] as Record<string, unknown> | undefined;
+    const ukvi = configuration['ukvi'] as Record<string, unknown> | undefined;
+    if (rts?.['scope'] === 'none' && ukvi?.['holdsSponsorLicence'] !== false) {
+      throw new ValidationError("rightToStudy.scope = 'none' is only for an institution with no sponsor licence: set ukvi.holdsSponsorLicence to false, or use 'all' or 'sponsored'", [
+        { field: 'rightToStudy.scope', message: "A sponsor-licence holder checks right to study; 'none' needs ukvi.holdsSponsorLicence = false" },
+      ]);
+    }
     await this.updateTenant(tenantId, { configuration });
     return configuration;
   }

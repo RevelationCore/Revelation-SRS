@@ -251,3 +251,15 @@ async function seedClassificationRules(): Promise<void> {
     description: 'Standard UK HE classification boundaries',
   });
 }
+
+describe('who may confer (BL-279)', () => {
+  it('a tenant administrator may not; a conferment authority may', async () => {
+    const missing = '00000000-0000-4000-8000-000000000279';
+    const tenantAdmin = await ctx.makeJwt({ roles: ['tenant-administrator'] });
+    expect((await call('POST', `/award-recommendations/${missing}/conferment`, tenantAdmin, { confermentDate: '2026-07-15', authorityRef: 'Senate 2026/07' })).statusCode).toBe(403);
+    const authority = await ctx.makeJwt({ sub: 'senate-delegate-2', roles: ['conferment-authority'] });
+    // Past the permission check: the recommendation does not exist.
+    expect((await call('POST', `/award-recommendations/${missing}/conferment`, authority, { confermentDate: '2026-07-15', authorityRef: 'Senate 2026/07' })).statusCode).toBe(404);
+  });
+});
+

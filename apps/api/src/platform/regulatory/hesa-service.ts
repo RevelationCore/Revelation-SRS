@@ -196,9 +196,10 @@ export class HesaService {
       ? await this.#loadRecordsByPersonId(amendmentOfId, tenantId)
       : new Map<string, typeof hesaStudentReturnRecords.$inferSelect>();
 
+    const crosswalk = await this.#modeCrosswalk(tenantId);
     await withTenantContext(this.db, tenantId, async (tx) => {
       for (const source of sourceRows) {
-        const payload = mapStudentToHesa(source);
+        const payload = mapStudentToHesa(source, crosswalk.toHesa);
         const amendmentDiff = amendmentOfId
           ? diffHesaPayload(originalRecordsByPersonId.get(source.person_id)?.recordPayload, payload)
           : null;
@@ -227,7 +228,7 @@ export class HesaService {
   async validateReturn(returnId: string, tenantId: string, actorId: string): Promise<HesaValidationResult> {
     await this.#requireReturn(returnId, tenantId);
     const records = await this.#getRecords(returnId, tenantId);
-    const result = validateHesaRecords(records);
+    const result = validateHesaRecords(records, (await this.#modeCrosswalk(tenantId)).hesaCodes);
     const now = clockNow();
 
     await withTenantContext(this.db, tenantId, async (tx) => {
@@ -613,6 +614,24 @@ export class HesaService {
     return Promise.all(rows.map((row) => this.#toDto(row, tenantId)));
   }
 
+  /**
+   * F-05 (BL-307): the SRS mode of study to HESA MODE crosswalk, from each
+   * mode-of-study-code member's source_metadata.hesaModeOfStudy, and the codes
+   * the hesa-mode-of-study value set allows. Platform and tenant members.
+   */
+  async #modeCrosswalk(tenantId: string): Promise<{ toHesa: Map<string, string>; hesaCodes: Set<string> }> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.execute(sql`
+      SELECT vs.set_code, m.code, m.source_metadata->>'hesaModeOfStudy' AS hesa
+      FROM value_set_member m JOIN value_set vs ON vs.id = m.value_set_id
+      WHERE vs.set_code IN ('mode-of-study-code', 'hesa-mode-of-study')
+        AND (m.tenant_id IS NULL OR m.tenant_id = ${tenantId}::uuid)
+        AND (m.active_to IS NULL OR m.active_to > now())`)) as unknown as Array<{ set_code: string; code: string; hesa: string | null }>;
+    return {
+      toHesa: new Map(rows.filter((r) => r.set_code === 'mode-of-study-code' && r.hesa).map((r) => [r.code, r.hesa!])),
+      hesaCodes: new Set(rows.filter((r) => r.set_code === 'hesa-mode-of-study').map((r) => r.code)),
+    };
+  }
+
   async #loadSourceRows(tenantId: string, academicYear: string): Promise<HesaSourceRow[]> {
     return withTenantContext(this.db, tenantId, async (tx) => {
       // One row per enrolment; grouped into one HesaSourceRow per person below.
@@ -826,7 +845,7 @@ export class HesaService {
 type HesaReturnRecord = typeof hesaStudentReturnRecords.$inferSelect;
 type HesaRecordPayload = Record<string, unknown>;
 
-function mapStudentToHesa(source: HesaSourceRow): HesaRecordPayload {
+function mapStudentToHesa(source: HesaSourceRow, modeToHesa: ReadonlyMap<string, string>): HesaRecordPayload {
   // Use the first enrolment for top-level HESA fields; all enrolments are listed under _enrolments.
   const primaryEnrolment = source.enrolments[0]!;
   return {
@@ -839,7 +858,8 @@ function mapStudentToHesa(source: HesaSourceRow): HesaRecordPayload {
     BIRTHDTE: source.date_of_birth,
     SEXID: source.gender_code,
     NATION: source.nationality_code,
-    MODE: mapMode(primaryEnrolment.mode_of_study_code),
+    // F-05 (BL-307): from the value-set crosswalk; an unmapped mode is null and fails validation.
+    MODE: modeToHesa.get(primaryEnrolment.mode_of_study_code) ?? null,
     MSTUFEE: primaryEnrolment.fee_band_code,
     YEARPRG: 1,
     QUALAID: primaryEnrolment.qualification_type_code,
@@ -851,7 +871,7 @@ function mapStudentToHesa(source: HesaSourceRow): HesaRecordPayload {
   };
 }
 
-function validateHesaRecords(records: HesaReturnRecord[]): HesaValidationResult {
+function validateHesaRecords(records: HesaReturnRecord[], hesaModeCodes: ReadonlySet<string>): HesaValidationResult {
   const errors: HesaValidationResult['errors'] = [];
   const warnings: HesaValidationResult['warnings'] = [];
 
@@ -868,8 +888,8 @@ function validateHesaRecords(records: HesaReturnRecord[]): HesaValidationResult 
       errors.push({ field: 'BIRTHDTE', enrolmentId, message: 'Student must be at least 16 years old' });
     }
 
-    if (!mode || !['01', '02', '03', '04'].includes(mode)) {
-      errors.push({ field: 'MODE', enrolmentId, message: 'Mode of study must map to a valid HESA MODE code' });
+    if (!mode || !hesaModeCodes.has(mode)) {
+      errors.push({ field: 'MODE', enrolmentId, message: 'Mode of study must map to a code in the hesa-mode-of-study value set' });
     }
 
     if (typeof year !== 'number' || year < 1) {
@@ -951,16 +971,6 @@ function getPayloadString(payload: unknown, key: string): string | null {
   if (!payload || typeof payload !== 'object') return null;
   const value = (payload as Record<string, unknown>)[key];
   return typeof value === 'string' && value.length > 0 ? value : null;
-}
-
-function mapMode(modeOfStudyCode: string): string {
-  switch (modeOfStudyCode) {
-    case 'full-time': return '01';
-    case 'part-time': return '02';
-    case 'distance': return '03';
-    case 'sandwich': return '04';
-    default: return modeOfStudyCode;
-  }
 }
 
 function ageAt(birthDate: Date, at: Date): number {

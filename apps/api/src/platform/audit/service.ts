@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 import { and, desc, eq, gt, isNull } from 'drizzle-orm';
-import { auditRecords, auditPartitionSeals } from '@revelation-srs/db';
+import { auditRecords, auditPartitionSeals, withTenantContext } from '@revelation-srs/db';
 import type { AuditActionType, AuditActorType, Db, TenantScopedDb } from '@revelation-srs/db';
 
 import { clockNow } from '../clock.js';
@@ -50,9 +50,10 @@ export interface AuditEntry {
  * Must be called for every write operation and for reads of sensitive /
  * special-category data as defined by the data subject register.
  *
- * The audit table has no RLS - it is written by the application role using
- * a dedicated INSERT privilege, and read only by the system-administrator
- * role (BYPASSRLS).
+ * Row-level security keeps each tenant's audit trail to that tenant, and the
+ * platform (NULL-tenant) chain to work done outside any tenant context. The
+ * application role may insert and read audit rows but never update, delete
+ * or truncate them.
  */
 export class AuditService {
   constructor(private readonly db: Db) {}
@@ -64,7 +65,7 @@ export class AuditService {
     opts: { limit?: number; before?: string } = {},
   ): Promise<AuditLogEntryDto[]> {
     const limit = Math.min(opts.limit ?? 50, 200);
-    const rows = await this.db
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx
       .select()
       .from(auditRecords)
       .where(
@@ -76,7 +77,7 @@ export class AuditService {
         ),
       )
       .orderBy(desc(auditRecords.occurredAt))
-      .limit(limit);
+      .limit(limit));
 
     return rows.map((r) => ({
       id:                 r.id,
@@ -152,7 +153,11 @@ export class AuditService {
       });
     };
 
+    // A tenant's rows are written in that tenant's context; the platform
+    // (NULL-tenant) chain only outside any tenant context (see the RLS
+    // policies in migration 0001_security_and_tenant_isolation).
     if (outerTx) await write(outerTx);
+    else if (tenantId) await withTenantContext(this.db, tenantId, write);
     else await this.db.transaction(write);
   }
 
@@ -164,30 +169,32 @@ export class AuditService {
    * seal simply marks the range as historical/legacy in that case.
    */
   async sealPartition(tenantId: string, rangeStart: Date, rangeEnd: Date, sealedBy: string): Promise<string> {
-    const lastRow = await this.db.select({ recordHash: auditRecords.recordHash })
-      .from(auditRecords)
-      .where(and(
-        eq(auditRecords.tenantId, tenantId as Uuid),
-        gt(auditRecords.occurredAt, rangeStart),
-      ))
-      .orderBy(desc(auditRecords.occurredAt))
-      .limit(1);
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const lastRow = await tx.select({ recordHash: auditRecords.recordHash })
+        .from(auditRecords)
+        .where(and(
+          eq(auditRecords.tenantId, tenantId as Uuid),
+          gt(auditRecords.occurredAt, rangeStart),
+        ))
+        .orderBy(desc(auditRecords.occurredAt))
+        .limit(1);
 
-    const sealHash = createHash('sha256').update(JSON.stringify({
-      tenantId, rangeStart: rangeStart.toISOString(), rangeEnd: rangeEnd.toISOString(),
-      lastRecordHash: lastRow[0]?.recordHash ?? 'legacy-unsealed',
-    })).digest('hex');
+      const sealHash = createHash('sha256').update(JSON.stringify({
+        tenantId, rangeStart: rangeStart.toISOString(), rangeEnd: rangeEnd.toISOString(),
+        lastRecordHash: lastRow[0]?.recordHash ?? 'legacy-unsealed',
+      })).digest('hex');
 
-    const id = randomUUID();
-    await this.db.insert(auditPartitionSeals).values({
-      id,
-      tenantId: tenantId as Uuid,
-      rangeStart,
-      rangeEnd,
-      sealHash,
-      sealedAt: clockNow(),
-      sealedBy,
+      const id = randomUUID();
+      await tx.insert(auditPartitionSeals).values({
+        id,
+        tenantId: tenantId as Uuid,
+        rangeStart,
+        rangeEnd,
+        sealHash,
+        sealedAt: clockNow(),
+        sealedBy,
+      });
+      return id;
     });
-    return id;
   }
 }

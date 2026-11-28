@@ -14,10 +14,12 @@ import type { DomainEventEnvelope } from '@revelation-srs/domain';
 import { EVENT_TYPES } from '@revelation-srs/domain';
 import type { ConsumerMessages, JetStreamClient, JetStreamManager, NatsConnection } from 'nats';
 import { AckPolicy, connect, DeliverPolicy, JSONCodec, ReplayPolicy } from 'nats';
+import { natsConnectOptions } from '@revelation-srs/auth';
 import type { Logger } from 'pino';
 
 import type { WellbeingDb, WellbeingTx } from '../db/client.js';
 import { withWellbeingTenantContext } from '../db/client.js';
+import { handlePersonMerged, handlePersonUnmerged } from '../projections/person-merge.js';
 import { CONSUMER_GROUP, isAlreadyProcessed, markProcessed } from '../repositories/event-log-repository.js';
 import {
   handleStudentEnrolled,
@@ -55,6 +57,9 @@ const SUBSCRIBED_SUBJECTS = [
   EVENT_TYPES.CIRCUMSTANCES_EC_UPDATED,
   EVENT_TYPES.REGULATORY_UKVI_VISA_STATUS_UPDATED,
   EVENT_TYPES.REGULATORY_UKVI_COMPLIANCE_ALERT,
+  // ADR-031 item 7 (BL-358).
+  EVENT_TYPES.PERSON_MERGED,
+  EVENT_TYPES.PERSON_UNMERGED,
 ] as const;
 
 export class WellbeingEventConsumer {
@@ -69,7 +74,7 @@ export class WellbeingEventConsumer {
   ) {}
 
   async connect(): Promise<void> {
-    this.nc = await connect({ servers: this.natsUrl });
+    this.nc = await connect(natsConnectOptions(this.natsUrl));
     this.log.info({ natsUrl: this.natsUrl }, 'Wellbeing NATS consumer connected');
     await this.ensureConsumer(this.nc);
   }
@@ -173,7 +178,13 @@ export class WellbeingEventConsumer {
       });
       this.log.info({ consumer: CONSUMER_NAME }, 'Durable consumer created');
     } catch {
-      // Consumer already exists (normal on restart).
+      // Consumer already exists (normal on restart). Bring its filter up to
+      // date, or a subject added since it was created would never arrive.
+      try {
+        await jsm.consumers.update(STREAM_NAME, CONSUMER_NAME, { filter_subjects: [...SUBSCRIBED_SUBJECTS] });
+      } catch (err) {
+        this.log.warn({ err, consumer: CONSUMER_NAME }, 'Could not update the consumer filter');
+      }
       this.log.debug({ consumer: CONSUMER_NAME }, 'Consumer already exists — re-attaching');
     }
   }
@@ -215,6 +226,12 @@ export async function routeToHandler(
       return handleUkviVisaStatusUpdated(tx, envelope as DomainEventEnvelope<any>);
     case EVENT_TYPES.REGULATORY_UKVI_COMPLIANCE_ALERT:
       return handleUkviComplianceAlertRaised(tx, envelope as DomainEventEnvelope<any>);
+    case EVENT_TYPES.PERSON_MERGED:
+      await handlePersonMerged(tx, envelope as DomainEventEnvelope<any>);
+      return;
+    case EVENT_TYPES.PERSON_UNMERGED:
+      await handlePersonUnmerged(tx, envelope as DomainEventEnvelope<any>);
+      return;
     default:
       // Unknown subject — silently skip; event_log records it for observability.
       break;

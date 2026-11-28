@@ -1,10 +1,11 @@
 import type { Db } from '@revelation-srs/db';
 
 import type { ImportPayload } from '../contracts/payload.js';
-import { validatePayload, updateCounts } from '../validation/index.js';
+import { validatePayload, updateCounts, addIssues } from '../validation/index.js';
 import type { ValidationReport } from '../validation/types.js';
 
 import { IdMap } from './id-map.js';
+import { ImportLog } from './import-log.js';
 import {
   importIdentity,
   importCatalogue,
@@ -17,11 +18,15 @@ import {
 export interface ImportOptions {
   dryRun:   boolean;
   tenantId: string;
+  /** The adjustment migration batch to record (ADR-033 item 7); generated when omitted. */
+  batchId?: string;
 }
 
 export interface ImportResult {
   report:  ValidationReport;
   idMap?:  IdMap;
+  /** The batch the imported adjustments belong to; released for distribution separately. */
+  adjustmentBatchId?: string;
 }
 
 /**
@@ -36,8 +41,11 @@ export interface ImportResult {
  *   6. adjustments + exceptional circumstances
  *
  * With `dryRun: true`, validation runs but no rows are written to the database.
- * With `dryRun: false`, the import runs inside a single transaction; any phase
- * failure causes a full rollback.
+ * With `dryRun: false`, the import runs inside a single transaction, each row
+ * in its own savepoint. A row the database refuses is not loaded, is counted
+ * as failed and is reported as an error issue with the reason, and rows that
+ * refer to it are reported as unresolved (BL-385); the rows that did load are
+ * committed. Any other failure rolls the whole import back.
  */
 export async function runImport(
   db: Db,
@@ -56,29 +64,24 @@ export async function runImport(
   }
 
   const idMap = new IdMap();
+  const log = new ImportLog();
 
+  let adjustmentBatchId: string | undefined;
   await db.transaction(async (tx) => {
-    const p1 = await importIdentity(tx as unknown as Db, opts.tenantId, payload, idMap);
-    updateCounts(report, 'person', p1.loaded, p1.failed);
-
-    const p2 = await importCatalogue(tx as unknown as Db, opts.tenantId, payload, idMap);
-    updateCounts(report, 'programme',      p2.loaded, p2.failed);
-    updateCounts(report, 'module',         p2.loaded, p2.failed);
-    updateCounts(report, 'moduleOffering', p2.loaded, p2.failed);
-
-    const p3 = await importEnrolments(tx as unknown as Db, opts.tenantId, payload, idMap);
-    updateCounts(report, 'enrolment', p3.loaded, p3.failed);
-
-    const p4 = await importRegistrations(tx as unknown as Db, opts.tenantId, payload, idMap);
-    updateCounts(report, 'moduleRegistration', p4.loaded, p4.failed);
-
-    const p5 = await importAssessment(tx as unknown as Db, opts.tenantId, payload, idMap);
-    updateCounts(report, 'mark', p5.loaded, p5.failed);
-
-    const p6 = await importAdjustments(tx as unknown as Db, opts.tenantId, payload, idMap);
-    updateCounts(report, 'adjustment', p6.loaded, p6.failed);
-    updateCounts(report, 'exceptionalCircumstance', p6.loaded, p6.failed);
+    const t = tx as unknown as Db;
+    await importIdentity(t, opts.tenantId, payload, idMap, log);
+    await importCatalogue(t, opts.tenantId, payload, idMap, log);
+    await importEnrolments(t, opts.tenantId, payload, idMap, log);
+    await importRegistrations(t, opts.tenantId, payload, idMap, log);
+    await importAssessment(t, opts.tenantId, payload, idMap, log);
+    ({ batchId: adjustmentBatchId } = await importAdjustments(t, opts.tenantId, payload, idMap, log, opts.batchId));
   });
 
-  return { report, idMap };
+  for (const entity of log.entities()) {
+    const c = log.counts(entity);
+    updateCounts(report, entity, c.loaded, c.failed);
+  }
+  addIssues(report, log.issues);
+
+  return { report, idMap, ...(adjustmentBatchId ? { adjustmentBatchId } : {}) };
 }

@@ -7,6 +7,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // ADR-026: /bff is this app's backend-for-frontend (apps/bff dev runs both).
+    proxy: { '/bff': { target: 'http://localhost:3010', changeOrigin: false } },
   },
   resolve: {
     alias: {

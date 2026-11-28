@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { NonRegistrationPage } from '../src/pages/NonRegistrationPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const base = {
   caseId: 'nr-1', statusCode: 'under-review', enrolmentId: 'e-1', confirmationId: 'c-1', academicYear: '2027-28', periodClosesAt: '2027-10-15T00:00:00Z', openedAt: '2027-10-15T00:00:00Z',
   flags: ['sponsored', 'results-pending'], contactAttempts: [{ evidenceId: 'ev-1', channelCode: 'phone', reference: 'Call log 1', contactedAt: '2027-10-16T00:00:00Z', contactedBy: 'u' }],

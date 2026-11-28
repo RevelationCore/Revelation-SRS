@@ -173,7 +173,7 @@ export function circumstancesRoutes(fastify: FastifyInstance): void {
         body: EcBody,
         response: { 201: Type.Object({ exceptionalCircumstancesId: Type.String(), determinationId: Type.Optional(Type.String()) }), 404: ErrorSchema, 422: ErrorSchema },
       },
-      preHandler: [requirePermission('circumstances:write')],
+      preHandler: [requireAnyPermission('circumstances:write', 'circumstances:record-determined')]  // ADR-029: or the wellbeing service,
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };

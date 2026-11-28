@@ -8,7 +8,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { AddAddressPage } from '../src/pages/AddAddressPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ADDRESS_ID = 'address-001';
 
 const valueSet = { setCode: 'student_address.address_type_code', displayName: 'Address type', members: [{ code: 'term-time', displayLabel: 'Term-time', description: null, sortOrder: 1 }] };

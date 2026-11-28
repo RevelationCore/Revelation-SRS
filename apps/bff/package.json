@@ -1,0 +1,33 @@
+{
+  "name": "@revelation-srs/bff",
+  "version": "0.0.1",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "description": "Backend-for-frontend (ADR-026): keeps OAuth tokens server-side behind an HTTP-only session cookie, one instance per SPA.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch --env-file-if-exists=../../.env src/dev.ts",
+    "start": "node dist/main.js",
+    "test": "vitest run --reporter=verbose --passWithNoTests",
+    "test:int": "vitest run --reporter=verbose --config vitest.int.config.ts --passWithNoTests",
+    "migrate": "tsx --env-file-if-exists=../../.env src/migrate.ts"
+  },
+  "dependencies": {
+    "@revelation-srs/service-client": "workspace:*",
+    "@revelation-srs/telemetry": "workspace:*",
+    "fastify": "^5.12.8",
+    "jose": "^5.10.0",
+    "pino": "^9.14.0",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^12.2.1",
+    "@types/node": "^22.20.5",
+    "pino-pretty": "^13.2.0",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.12"
+  }
+}

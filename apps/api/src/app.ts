@@ -1,3 +1,5 @@
+import { httpServerMetrics } from '@revelation-srs/telemetry';
+import { createDocumentScanner, loadDocumentScannerConfig, type DocumentScanner } from '@revelation-srs/documents';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
@@ -5,14 +7,20 @@ import rateLimiter from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { trace } from '@opentelemetry/api';
-import { jwtPlugin, tenantContextPlugin } from '@revelation-srs/auth';
+import { assertSecureAuthConfig, jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
 import { createDb } from '@revelation-srs/db';
 import type { DomainError } from '@revelation-srs/domain';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
+import { createApiDocumentStore, type ApiDocumentStore } from './platform/documents/document-store.js';
+import { documentProblem } from './platform/documents/problems.js';
 import type { Config } from './config.js';
+import { AdjustmentProposalService } from './platform/adjustments/adjustment-proposal-service.js';
 import { AdjustmentService } from './platform/adjustments/adjustment-service.js';
+import { AdjustmentWithdrawalService } from './platform/adjustments/adjustment-withdrawal-service.js';
+import { IdentityUnmergeService } from './platform/identity/identity-unmerge-service.js';
+import { PersonRedirectResolver } from './platform/identity/person-redirects.js';
 import { AdjustmentDistributionDispatcher } from './platform/adjustments/distribution-dispatcher.js';
 import { AdjustmentTargetConfigService } from './platform/adjustments/target-config.js';
 import { AdjustmentTaskNoticeService } from './platform/adjustments/task-notices.js';
@@ -120,6 +128,8 @@ import { studentRoutes } from './routes/students.js';
 import { tenantAdminRoutes } from './routes/tenant-admin.js';
 import { valueSetsRoutes } from './routes/value-sets.js';
 import { globalisationRoutes } from './routes/globalisation.js';
+import { adjustmentProposalRoutes } from './routes/adjustment-proposals.js';
+import { adjustmentWithdrawalRoutes } from './routes/adjustment-withdrawals.js';
 import { adjustmentRoutes } from './routes/adjustments.js';
 import { deliveryRoutes, inboundRoutes } from './routes/delivery.js';
 import { supportRoutes } from './routes/support.js';
@@ -237,6 +247,9 @@ function classifyOperation(method: string, url: string): string {
   if (path.includes('/feature-flags') && (path.includes('/assignments') || path.includes('/evaluation-preview'))) return 'admin';
   if (path.startsWith('/integration-contracts') || path.startsWith('/integration-registrations') || path.startsWith('/integration-exchanges')) return 'admin';
 
+  // ADR-034: the wellbeing case's withdrawal hand-off is integration, not the /withdraw workflow command.
+  if (/^\/students\/[^/]+\/adjustments\/[^/]+\/withdrawal$/.test(path)) return 'integration';
+
   // Workflow — commands that trigger state machine transitions
   const WORKFLOW_ACTIONS = [
     '/transitions', '/withdraw', '/graduation',
@@ -258,12 +271,14 @@ function classifyOperation(method: string, url: string): string {
   if (m === 'PATCH' && path.includes('/publish')) return 'workflow';
   if (m === 'POST' && path.includes('/signoff')) return 'workflow';
   if (m === 'POST' && path.includes('/identity-resolution')) return 'workflow';
+  if ((m === 'POST' || m === 'PUT') && (path.includes('/identity-merges') || path.includes('/identity-unmerge-cases'))) return 'workflow';
   if ((m === 'POST' || m === 'PATCH') && path.includes('/rights-requests')) return 'workflow';
   if ((m === 'POST' || m === 'PATCH') && path.includes('/rights-restrictions')) return 'workflow';
   if (m === 'POST' && path.includes('/retention-schedules')) return 'workflow';
   if (m === 'POST' && path.includes('/retention-assignments')) return 'workflow';
   if (m === 'POST' && path.includes('/audit-review')) return 'workflow';
   if (m === 'POST' && path.includes('/data-pack')) return 'workflow';
+  if (m === 'POST' && (path.includes('/adjustment-proposals') || path.includes('/adjustment-migration-batches') || path.includes('/adjustment-withdrawals'))) return 'workflow';
 
   // Reporting — regulatory submission data and read-only compliance extracts
   if (path.includes('/regulatory/')) return 'reporting';
@@ -287,8 +302,10 @@ function classifyOperation(method: string, url: string): string {
  */
 export async function buildApp(
   config: Config,
-  overrides: { eventBus?: IntegrationBusPublisher; temporalGateway?: TemporalGateway } = {},
+  overrides: { eventBus?: IntegrationBusPublisher; temporalGateway?: TemporalGateway; documentScanner?: DocumentScanner } = {},
 ): Promise<FastifyInstance> {
+  assertSecureAuthConfig('srs-api', config.nodeEnv, config);
+
   const serializers = {
     req(req: { method: string; url: string; headers: Record<string, string | string[] | undefined> }) {
       return {
@@ -312,7 +329,12 @@ export async function buildApp(
         },
     genReqId: () => crypto.randomUUID(),
     disableRequestLogging: false,
+    // Behind the ingress, req.ip is otherwise the ingress pod, and every
+    // per-IP limit becomes one budget shared by all callers (BL-168).
+    trustProxy: config.trustProxy ?? false,
   });
+  // ADR-035: request durations by route template, served on the metrics port.
+  httpServerMetrics(fastify);
 
   // Inject OTel traceId into every Fastify log line for log-trace correlation.
   fastify.addHook('onRequest', (req, _reply, done) => {
@@ -340,11 +362,22 @@ export async function buildApp(
 
   // - Platform infrastructure -
 
-  const db         = createDb(config.databaseUrl);
+  const db         = createDb(config.databaseUrl, {
+    statementTimeoutMs:         config.dbStatementTimeoutMs ?? 30_000,
+    idleInTransactionTimeoutMs: config.dbIdleInTransactionTimeoutMs ?? 60_000,
+  });
   const audit      = new AuditService(db);
-  const rules      = new RulesEngine(db);
+  const rules      = new RulesEngine(db, { nodeEnv: config.nodeEnv, log: fastify.log });
   const valueSets  = new ValueSetService(db);
   const eventBus   = overrides.eventBus ?? new IntegrationBusPublisher(config.natsUrl);
+  // ADR-030: every upload is scanned before it is stored. The configuration
+  // is explicit: clamd by default, noop only in development and test.
+  const documentStore = createApiDocumentStore(
+    db,
+    overrides.documentScanner ?? createDocumentScanner(config.nodeEnv, config.documentScanner ?? loadDocumentScannerConfig()),
+    fastify.log,
+  );
+  fastify.decorate('documentStore', documentStore);
   const featureFlags = new FeatureFlagService(db);
   const triggerRules = new TriggerRuleEvaluator(db, featureFlags);
   const workflowBridge = new WorkflowBridgeService(db, audit, eventBus);
@@ -397,10 +430,40 @@ export async function buildApp(
     fastify.log.warn({ err, ...context }, 'Adjustment instruction not yet published; it stays due for the reconcile loop');
   });
   const adjustmentTargets = new AdjustmentTargetConfigService(db, valueSets);
-  const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher, adjustmentTargets);
+  const adjustments = new AdjustmentService(db, eventBus, valueSets, adjustmentDispatcher, adjustmentTargets, documentStore, audit);
   const businessCases = new BusinessCaseService(db);
   const auditReview = new AuditReviewService(db, businessCases);
-  const identityResolution = new IdentityResolutionService(db, businessCases);
+  const identityResolution = new IdentityResolutionService(db, businessCases, audit, deliveries);
+  fastify.decorate('identityUnmergeService', new IdentityUnmergeService(db, businessCases, audit, deliveries));
+  // ADR-031 items 6 and 9 (BL-356): old, merged-away ids are resolved at the edge.
+  const personRedirects = new PersonRedirectResolver(db);
+  fastify.decorate('personRedirectResolver', personRedirects);
+  fastify.addHook('preHandler', async (request, reply) => {
+    if (!request.tenantId || !request.user) return;
+    // A token naming a merged person reads the survivor; self-service routes keep using srsPersonId.
+    if (request.user.srsPersonId) {
+      const survivor = await personRedirects.current(request.tenantId, request.user.srsPersonId);
+      if (survivor) {
+        request.user.srsPersonIdAsIssued = request.user.srsPersonId;
+        request.user.srsPersonId = survivor;
+        request.log.info({ srsPersonIdAsIssued: request.user.srsPersonIdAsIssued, srsPersonId: survivor }, 'Token person id resolved to merge survivor');
+      }
+    }
+    // A staff route naming a merged-away person: GET is redirected, a write is refused, never silently redirected.
+    const personId = (request.params as Record<string, unknown> | undefined)?.['personId'];
+    if (typeof personId !== 'string') return;
+    const survivor = await personRedirects.current(request.tenantId, personId);
+    if (!survivor) return;
+    const problem = {
+      type: 'https://srs.example.com/errors/person-merged', title: 'Person merged', status: request.method === 'GET' ? 307 : 409,
+      detail: `This person was merged into ${survivor}; use that id`, instance: request.url, survivorPersonId: survivor,
+    };
+    if (request.method === 'GET') {
+      await reply.code(307).header('Location', request.url.split(personId).join(survivor)).type('application/problem+json').send(problem);
+      return;
+    }
+    await reply.code(409).type('application/problem+json').send(problem);
+  });
   const engagementOutcomes = new EngagementOutcomeService(db, eventBus);
   const exceptionalCircumstances = new ExceptionalCircumstancesService(db, eventBus);
   const misconduct = new MisconductService(db, valueSets, eventBus);
@@ -408,7 +471,7 @@ export async function buildApp(
   const awards      = new AwardService(db, eventBus, rules, enrolments);
   const conferment = new ConfermentService(db, valueSets, enrolments, awards);
   // Rendered with pdfmake and signed by the configured signer (Phase 3 D-20).
-  const awardDocuments = new AwardDocumentService(db, valueSets, businessCases, signerFromEnv(), new PdfmakeRenderer(), config.publicApiUrl ?? `http://localhost:${config.port}`);
+  const awardDocuments = new AwardDocumentService(db, valueSets, documentStore, businessCases, signerFromEnv(), new PdfmakeRenderer(), config.publicApiUrl ?? `http://localhost:${config.port}`);
   const graduation = new GraduationService(db);
   const boards = new BoardService(db, eventBus, valueSets, awards, featureFlags, rules);
   const boardAuthority = new BoardAuthorityService(db);
@@ -481,6 +544,16 @@ export async function buildApp(
   const regulatoryCollectionService = new RegulatoryCollectionService(db);
   const foi = new FoiService(db, valueSets);
   const examEntries = new ExamEntryService(db, eventBus, regulatoryExchanges, adjustments);
+  // ADR-033 (BL-378): case-less adjustments, approved by a second person.
+  const adjustmentProposals = new AdjustmentProposalService(db, adjustments, valueSets, featureFlags, workflowBridge, examEntries, reviewExecution, fastify.log);
+  adjustmentProposals.registerWorkflowEffects(reviewActivities);
+  fastify.decorate('adjustmentProposalService', adjustmentProposals);
+  // ADR-034 (BL-408): early withdrawals of manual, migrated and legacy adjustments.
+  const adjustmentWithdrawals = new AdjustmentWithdrawalService(db, adjustments, valueSets, workflowBridge, examEntries, reviewExecution, fastify.log);
+  adjustmentWithdrawals.registerWorkflowEffects(reviewActivities);
+  fastify.decorate('adjustmentWithdrawalService', adjustmentWithdrawals);
+  // ADR-034 item 7: an ended enrolment ends its adjustments (the worker sweep is the guarantee).
+  enrolments.onTerminalStatus((tenantId) => adjustmentWithdrawals.withdrawForEndedEnrolments(tenantId));
   const pgrSupervision = new SupervisionService(db, businessCases, regulatoryExchanges, deliveries);
   const pgrProgressReview = new ProgressReviewService(db, businessCases, regulatoryExchanges, valueSets);
   const pgrExamination = new ExaminationService(db, businessCases, valueSets);
@@ -558,7 +631,7 @@ export async function buildApp(
   fastify.decorate('applicationService', applications);
   // A person bound to an application gets an applicant account (D-38, D-39).
   applications.useAccountRequests((tenantId, personId, changeKey) => requestAccountAccess(deliveries, db, tenantId, { personId, changeKey }));
-  fastify.decorate('applicantPortalService', new ApplicantPortalService(db, applications, valueSets));
+  fastify.decorate('applicantPortalService', new ApplicantPortalService(db, applications, valueSets, documentStore));
   fastify.decorate('employmentService', employment);
   fastify.decorate('businessCaseService', businessCases);
   fastify.decorate('identityResolutionService', identityResolution);
@@ -604,7 +677,7 @@ export async function buildApp(
   fastify.decorate('progressReviewService', pgrProgressReview);
   fastify.decorate('examinationService', pgrExamination);
   pgrExamination.useAccountRequests((tenantId, personId, changeKey) => requestAccountAccess(deliveries, db, tenantId, { personId, changeKey }));
-  fastify.decorate('researchStaffService', new ResearchStaffService(db, pgrProgressReview, pgrExamination));
+  fastify.decorate('researchStaffService', new ResearchStaffService(db, pgrProgressReview, pgrExamination, documentStore));
   fastify.decorate('completionService', pgrCompletion);
   fastify.decorate('localeService',       localeService);
   fastify.decorate('currencyService',     currencyService);
@@ -654,16 +727,22 @@ export async function buildApp(
     keyGenerator: (req) => req.tenantId ?? req.ip,
   });
 
-  await fastify.register(jwtPlugin, {
-    secret:  config.jwtSecret,
-    ...(config.keycloakJwksUrl ? { jwksUrl: config.keycloakJwksUrl } : {}),
-  });
+  await fastify.register(jwtPlugin, jwtPluginOptions(config, 'srs-api'));
   await fastify.register(tenantContextPlugin);
 
   // - Global error handler -
 
   fastify.setErrorHandler((err, req, reply) => {
-    const error = err as Error & Partial<DomainError> & { statusCode?: number; fields?: unknown };
+    // ADR-030: the document store's errors, mapped once here rather than by each caller.
+    const doc = documentProblem(err);
+    if (doc) {
+      if (doc.retryAfter) void reply.header('Retry-After', String(doc.retryAfter));
+      void reply.code(doc.status).send({
+        type: `https://srs.example.com/errors/${doc.type}`, title: doc.title, status: doc.status, detail: doc.detail, instance: req.url, correlationId: req.id,
+      });
+      return;
+    }
+    const error = err as Error & Partial<DomainError> & { statusCode?: number; fields?: unknown; retryAfterSeconds?: number };
     const isDomain = typeof error.code === 'string' && typeof error.statusCode === 'number';
     const status   = isDomain ? error.statusCode! : (error.statusCode ?? 500);
 
@@ -671,11 +750,14 @@ export async function buildApp(
       req.log.error({ err }, 'Unhandled error');
     }
 
+    // A 503 domain error (ServiceUnavailableError) says what is unavailable; any other 5xx stays generic.
+    const unavailable = isDomain && status === 503;
+    if (unavailable && error.retryAfterSeconds) void reply.header('Retry-After', String(error.retryAfterSeconds));
     void reply.code(status).send({
       type:          `https://srs.example.com/errors/${isDomain ? error.code : 'internal-error'}`,
-      title:         status >= 500 ? 'Internal Server Error' : error.message,
+      title:         status >= 500 && !unavailable ? 'Internal Server Error' : error.message,
       status,
-      detail:        status < 500 ? error.message : 'An unexpected error occurred',
+      detail:        status < 500 || unavailable ? error.message : 'An unexpected error occurred',
       instance:      req.url,
       correlationId: req.id,
       ...(isDomain && error.fields
@@ -756,6 +838,11 @@ export async function buildApp(
       ['/adjustments',               'adjustments'],
       ['/adjustment-tasks',          'adjustments'],
       ['/adjustment-targets',        'adjustments'],
+      ['/adjustment-proposals',      'adjustments'],
+      ['/adjustment-migration-batches', 'adjustments'],
+      ['/adjustment-withdrawals',    'adjustments'],
+      ['/identity-merges',           'governance'],
+      ['/identity-unmerge-cases',    'governance'],
       ['/delivery-',                 'integration-registry'],
       ['/inbound',                   'integration-registry'],
       ['/support-',                  'students'],
@@ -880,6 +967,8 @@ export async function buildApp(
   await fastify.register(healthRoutes);
   await fastify.register(valueSetsRoutes,           { prefix: '/api/v1' });
   await fastify.register(adjustmentRoutes,          { prefix: '/api/v1' });
+  await fastify.register(adjustmentProposalRoutes,  { prefix: '/api/v1' });
+  await fastify.register(adjustmentWithdrawalRoutes, { prefix: '/api/v1' });
   await fastify.register(deliveryRoutes,            { prefix: '/api/v1' });
   await fastify.register(inboundRoutes,             { prefix: '/api/v1' });
   await fastify.register(supportRoutes,             { prefix: '/api/v1' });
@@ -896,7 +985,10 @@ export async function buildApp(
   await fastify.register(applicationRoutes,         { prefix: '/api/v1' });
   await fastify.register(applicantPortalRoutes,     { prefix: '/api/v1' });
   await fastify.register(engagementOutcomeRoutes,   { prefix: '/api/v1' });
-  await fastify.register(engagementProxyRoutes,     { prefix: '/api/v1' });
+  await fastify.register(engagementProxyRoutes,     {
+    prefix: '/api/v1',
+    ...(config.engagementProxyTimeoutMs !== undefined ? { timeoutMs: config.engagementProxyTimeoutMs } : {}),
+  });
   await fastify.register(circumstancesRoutes,       { prefix: '/api/v1' });
   await fastify.register(examBoardRoutes,           { prefix: '/api/v1' });
   await fastify.register(boardAuthorityRoutes,      { prefix: '/api/v1' });
@@ -957,6 +1049,7 @@ export async function buildApp(
 // Fastify module augmentation for decorated properties
 declare module 'fastify' {
   interface FastifyInstance {
+    documentStore: ApiDocumentStore;
     db:               ReturnType<typeof createDb>;
     config:           Config;
     audit:            AuditService;
@@ -992,6 +1085,10 @@ declare module 'fastify' {
     markService: MarkService;
     moderationService: ModerationService;
     adjustmentService: AdjustmentService;
+    adjustmentProposalService: AdjustmentProposalService;
+    adjustmentWithdrawalService: AdjustmentWithdrawalService;
+    personRedirectResolver: PersonRedirectResolver;
+    identityUnmergeService: IdentityUnmergeService;
     adjustmentDispatcher: AdjustmentDistributionDispatcher;
     adjustmentTargetConfigService: AdjustmentTargetConfigService;
     adjustmentTaskNoticeService: AdjustmentTaskNoticeService;

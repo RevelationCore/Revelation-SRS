@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { SupportEmploymentTab } from '../src/pages/SupportEmploymentTab.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 
 const instalment = (over: Record<string, unknown>) => ({
   instalmentId: 'inst-1', awardId: 'award-1', paymentTypeCode: 'stipend', currencyCode: 'GBP', amountMinorUnits: 180000,

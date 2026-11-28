@@ -1,6 +1,7 @@
 // OTel must be bootstrapped before any other import.
 import './telemetry.js';
 
+import { assertNatsCredentials } from '@revelation-srs/auth';
 import pino from 'pino';
 
 import { loadConfig } from './config.js';
@@ -9,9 +10,10 @@ import { AttendanceEventConsumer } from './consumers/consumer.js';
 import { createAttendanceDb } from './db/client.js';
 
 const config  = loadConfig();
+assertNatsCredentials('srs-attendance', config.nodeEnv);
 const log     = pino({ level: config.logLevel });
 const fastify = await buildApp(config);
-const db      = createAttendanceDb(config.databaseUrl);
+const db      = createAttendanceDb(config.databaseUrl, { statementTimeoutMs: 30_000, idleInTransactionTimeoutMs: 60_000 });
 const consumer = new AttendanceEventConsumer(config.natsUrl, db, log);
 
 const shutdown = async (signal: string): Promise<void> => {

@@ -1,11 +1,12 @@
 /**
  * Rendering, signing and public verification of award documents (Phase 3 D-20, D-21).
  */
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
 
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { DEV_PUBLIC_VERIFY_IP_KEY } from '../src/config.js';
 import { verifyDetached } from '../src/platform/progression/document-signer.js';
 
 import { startTestApp, type TestApp } from './helpers/test-app.js';
@@ -93,7 +94,10 @@ describe('verification without an account (D-21)', () => {
 
     const logged = (await ctx.db.execute(sql`SELECT requester_ip_hash, method_code FROM document_verification WHERE requested_by = 'public' AND document_issue_id = ${issue.documentIssueId}`)) as unknown as Array<{ requester_ip_hash: string; method_code: string }>;
     expect(logged.map((l) => l.method_code).sort()).toEqual(['code', 'file']);
-    expect(logged.every((l) => /^[0-9a-f]{64}$/.test(l.requester_ip_hash))).toBe(true);
+    // An HMAC under the configured key (BL-184), not a hash with a published salt.
+    const expected = createHmac('sha256', DEV_PUBLIC_VERIFY_IP_KEY).update('127.0.0.1').digest('hex');
+    expect(logged.map((l) => l.requester_ip_hash)).toEqual([expected, expected]);
+    expect(logged[0]?.requester_ip_hash).not.toBe(createHash('sha256').update('srs-public-verify:127.0.0.1').digest('hex'));
   });
 
   it('the institution can withhold the facts; a staff lookup by name and date of birth needs consent', async () => {

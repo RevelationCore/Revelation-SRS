@@ -249,17 +249,13 @@ describe('Reasonable adjustments (SRS-side)', () => {
     expect(rows.length).toBeLessThan(50);
   });
 
-  it('all adjustment notes carry DEMO prefix', async () => {
+  it('adjustments carry no free-text notes, as in production (BL-243)', async () => {
     const rows = await db
       .select({ notes: reasonableAdjustments.notes })
       .from(reasonableAdjustments)
-      .where(eq(reasonableAdjustments.tenantId, DEMO_TENANT_ID))
-      .limit(30);
-    for (const r of rows) {
-      if (r.notes) {
-        expect(r.notes).toContain('DEMO - ');
-      }
-    }
+      .where(eq(reasonableAdjustments.tenantId, DEMO_TENANT_ID));
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.filter((r) => r.notes !== null)).toEqual([]);
   });
 
   it('all adjustments are unlocked (no valid_to)', async () => {

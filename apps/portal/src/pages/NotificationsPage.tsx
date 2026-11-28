@@ -4,11 +4,10 @@ import { Spinner, Problem, EmptyState, formatDate, PageHeader, Button } from '@r
 import { useAuth } from '../auth/AuthContext.js';
 import { getNotifications, markNotificationRead, type NotificationItem } from '../api/notifications.js';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
 
 export function NotificationsPage() {
   const { t }     = useTranslation();
-  const { token } = useAuth();
+  const { authenticated } = useAuth();
 
   const [items,   setItems]   = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,15 +30,17 @@ export function NotificationsPage() {
 
   // SSE stream — prepend live events, deduplicate by id
   useEffect(() => {
-    if (!token) return;
+    if (!authenticated) return;
 
     const ctrl = new AbortController();
     abortRef.current = ctrl;
 
     void (async () => {
       try {
-        const resp = await fetch(`${API_BASE}/api/v1/notifications/stream`, {
-          headers:  { Authorization: `Bearer ${token}` },
+        // Through the BFF (ADR-026): the session cookie authenticates the stream.
+        const resp = await fetch('/bff/srs/api/v1/notifications/stream', {
+          credentials: 'same-origin',
+          headers:  { Accept: 'text/event-stream' },
           signal:   ctrl.signal,
         });
 
@@ -81,7 +82,7 @@ export function NotificationsPage() {
       ctrl.abort();
       abortRef.current = null;
     };
-  }, [token]);
+  }, [authenticated]);
 
   const handleMarkRead = useCallback(async (id: string) => {
     try {

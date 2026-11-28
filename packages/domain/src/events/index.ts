@@ -27,6 +27,8 @@ export * from './adjustment/distribution-requested.v1.js';
 export * from './adjustment/distribution-withdrawal-requested.v1.js';
 export * from './adjustment/distributed.v1.js';
 export * from './adjustment/expired.v1.js';
+export * from './person/merged.v1.js';
+export * from './person/unmerged.v1.js';
 export * from './delivery/requested.v1.js';
 export * from './circumstances/exceptional-circumstances-flagged.v1.js';
 export * from './circumstances/exceptional-circumstances-updated.v1.js';
@@ -93,6 +95,10 @@ export const EVENT_TYPES = {
   ADJUSTMENT_APPROVED:                      'srs.adjustment.approved',
   ADJUSTMENT_DISTRIBUTED:                   'srs.adjustment.distributed',
   ADJUSTMENT_EXPIRED:                       'srs.adjustment.expired',
+  // ADR-031 item 7: an identity merge moved ownership to the survivor.
+  PERSON_MERGED:                            'srs.person.merged',
+  // ADR-031 item 10: a merge was reversed.
+  PERSON_UNMERGED:                          'srs.person.unmerged',
   ADJUSTMENT_DISTRIBUTION_REQUESTED:        'srs.adjustment.distribution-requested',
   ADJUSTMENT_DISTRIBUTION_WITHDRAWAL_REQUESTED: 'srs.adjustment.distribution-withdrawal-requested',
   DELIVERY_REQUESTED:                       'srs.delivery.requested',

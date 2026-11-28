@@ -1,0 +1,205 @@
+# ── ClamAV (ADR-030): malware scanning of uploads ──────────────────────────────
+# clamd as a cluster service, called with INSTREAM over TCP 3310 by srs-api,
+# srs-worker and srs-wellbeing only (NetworkPolicy allow-ingress-to-clamav).
+# A cluster service rather than sidecars: clamd needs 3-4 GiB for signatures.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: srs-clamav
+  namespace: revelation-srs
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: srs-clamav-config
+  namespace: revelation-srs
+data:
+  clamd.conf: |
+    # ADR-030 item 6: every value explicit.
+    Foreground yes
+    LogTime yes
+    LogClean no
+    PidFile /run/clamav/clamd.pid
+    DatabaseDirectory /var/lib/clamav
+    TemporaryDirectory /tmp/clamd
+    LeaveTemporaryFiles no
+    TCPSocket 3310
+    # No TCPAddr: listen on every address, IPv4 and IPv6 (the image probe connects to localhost).
+    LocalSocket /run/clamav/clamd.sock
+    StreamMaxLength 20M
+    MaxFileSize 20M
+    MaxScanSize 100M
+    MaxRecursion 17
+    AlertExceedsMax yes
+    AlertEncrypted yes
+    AlertOLE2Macros yes
+    AlertBrokenExecutables yes
+    HeuristicAlerts yes
+    ScanPDF yes
+    ScanOLE2 yes
+    ConcurrentDatabaseReload yes
+    MaxThreads 10
+    MaxQueue 40
+    ReadTimeout 30
+    CommandReadTimeout 5
+  freshclam.conf: |
+    # ADR-030 item 9: official mirror by default; an overlay may set PrivateMirror.
+    Foreground yes
+    LogTime yes
+    DatabaseDirectory /var/lib/clamav
+    DatabaseOwner clamav
+    DatabaseMirror database.clamav.net
+    Checks 12
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srs-clamav
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-clamav
+    app.kubernetes.io/component: malware-scanner
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-clamav
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: srs-clamav
+        app.kubernetes.io/component: malware-scanner
+    spec:
+      serviceAccountName: srs-clamav
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100      # the image's clamav user
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-clamav
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-clamav
+      initContainers:
+        # Seed the writable signature volume from the image, so a pod is ready
+        # without waiting on the mirror; freshclam then keeps it current.
+        - name: seed-signatures
+          image: clamav/clamav:1.5
+          command: ["sh", "-c", "cp -a /var/lib/clamav/. /seed/"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: signatures
+              mountPath: /seed
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+      containers:
+        - name: clamd
+          image: clamav/clamav:1.5
+          command: ["/init-unprivileged"]
+          ports:
+            - name: clamd
+              containerPort: 3310
+              protocol: TCP
+          env:
+            - name: FRESHCLAM_CHECKS
+              value: "12"
+            - name: CLAMD_STARTUP_TIMEOUT
+              value: "1800"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 500m
+              memory: 3Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi   # ConcurrentDatabaseReload holds two signature sets during a reload
+          startupProbe:
+            exec:
+              command: ["clamdcheck.sh"]
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: ["clamdcheck.sh"]
+            periodSeconds: 15
+            timeoutSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["clamdcheck.sh"]
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 4
+          volumeMounts:
+            - name: signatures
+              mountPath: /var/lib/clamav
+            - name: run
+              mountPath: /run/clamav
+            - name: tmp
+              mountPath: /tmp
+            # INSTREAM spools to a temporary file: keep evidence off node disk.
+            - name: scan-tmp
+              mountPath: /tmp/clamd
+            - name: config
+              mountPath: /etc/clamav/clamd.conf
+              subPath: clamd.conf
+            - name: config
+              mountPath: /etc/clamav/freshclam.conf
+              subPath: freshclam.conf
+      volumes:
+        - name: signatures
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: scan-tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi
+        - name: config
+          configMap:
+            name: srs-clamav-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: srs-clamav
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-clamav
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: srs-clamav
+  ports:
+    - name: clamd
+      port: 3310
+      targetPort: clamd
+      protocol: TCP

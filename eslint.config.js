@@ -19,6 +19,17 @@ const sharedTsRules = {
 };
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
+// The deployed NATS requires nkey auth (BL-337).
+const NATS_CONNECT = {
+  selector: 'CallExpression[callee.name="connect"] > ObjectExpression:first-child:has(Property[key.name="servers"])',
+  message: 'Use connect(natsConnectOptions(url)) so the connection carries the NATS credentials.',
+};
+// ADR-030: system content is stored unscanned, so only the award renderer may make it.
+const SYSTEM_CONTENT = {
+  selector: 'CallExpression[callee.property.name="systemContent"]',
+  message: 'Uploads are scanned (documentStore.scanUpload); systemContent is for server-rendered award documents only (ADR-030).',
+};
+
 export default [
   { ignores: ['**/dist/**', '**/node_modules/**', '**/*.js', '**/*.cjs', '**/*.mjs', '**/*.d.ts'] },
   {
@@ -74,6 +85,64 @@ export default [
       // are a separate, much larger concern than this pass's scope.
       'react-hooks/rules-of-hooks':  'error',
       'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+  // Connectors stay independently replaceable (ADR-032): the only workspace
+  // packages they import at runtime are leaf packages with no workspace
+  // dependencies: the client package, and the telemetry bootstrap every
+  // service runs (ADR-035).
+  {
+    files: ['adapters/*/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          regex: '^@revelation-srs/(?!service-client$|telemetry$|domain$)',
+          message: 'Connectors import only @revelation-srs/service-client, @revelation-srs/telemetry (and domain types); see ADR-032 and ADR-035.',
+        }],
+      }],
+    },
+  },
+  // Every outbound HTTP call from a service is time-bounded (BL-011, P-09):
+  // services call fetchWithTimeout, never bare fetch.
+  {
+    files: ['apps/api/src/**/*.ts', 'apps/bff/src/**/*.ts', 'modules/*/src/**/*.ts', 'adapters/*/src/**/*.ts', 'packages/auth/src/**/*.ts', 'packages/db/src/**/*.ts', 'packages/documents/src/**/*.ts', 'packages/workflow/src/**/*.ts'],
+    rules: {
+      'no-restricted-globals': ['error', { name: 'fetch', message: 'Use fetchWithTimeout (@revelation-srs/auth) so the call has a timeout.' }],
+      // NATS credentials (BL-337) and scanning (ADR-030).
+      'no-restricted-syntax': ['error', NATS_CONNECT, SYSTEM_CONTENT],
+    },
+  },
+  // ADR-030: only the award-document renderer stores unscanned (system) content.
+  {
+    files: ['apps/api/src/platform/progression/award-document-service.ts'],
+    rules: { 'no-restricted-syntax': ['error', NATS_CONNECT] },
+  },
+  // ADR-030: services never build a no-op scanner themselves; configuration
+  // (createDocumentScanner) chooses it, and refuses it outside development and test.
+  {
+    files: ['apps/api/src/**/*.ts', 'modules/*/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{ name: '@revelation-srs/documents', importNames: ['NoopScanner'], message: 'Set DOCUMENT_SCANNER=noop (development and test only) instead; see ADR-030.' }],
+      }],
+    },
+  },
+  // ADR-026 (BL-160): the browser holds no token, so the SPAs keep nothing in
+  // web storage. One preferences.ts per app may hold non-secret UI preferences.
+  {
+    files: ['apps/admin/src/**/*.{ts,tsx}', 'apps/portal/src/**/*.{ts,tsx}', 'packages/ui/src/**/*.{ts,tsx}'],
+    ignores: ['**/preferences.ts'],
+    rules: {
+      'no-restricted-globals': ['error',
+        { name: 'localStorage', message: 'No web storage in the SPAs (ADR-026); non-secret UI preferences go in preferences.ts.' },
+        { name: 'sessionStorage', message: 'No web storage in the SPAs (ADR-026); non-secret UI preferences go in preferences.ts.' },
+        { name: 'indexedDB', message: 'No web storage in the SPAs (ADR-026).' },
+      ],
+      'no-restricted-properties': ['error',
+        { object: 'window', property: 'localStorage', message: 'No web storage in the SPAs (ADR-026).' },
+        { object: 'window', property: 'sessionStorage', message: 'No web storage in the SPAs (ADR-026).' },
+        { object: 'window', property: 'indexedDB', message: 'No web storage in the SPAs (ADR-026).' },
+      ],
     },
   },
 ];

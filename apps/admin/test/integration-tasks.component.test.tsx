@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { IntegrationTasksPage } from '../src/pages/IntegrationTasksPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 
 const libraryTask = {
   deliveryItemId: 'item-001',
@@ -69,7 +69,7 @@ describe('integration tasks', () => {
       roles: ['registry-administrator'], route: '/operations/integration-tasks?tab=systems',
     });
 
-    expect(screen.getByRole('tab', { name: 'Adjustments' })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Adjustments' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Other systems' })).toHaveAttribute('aria-selected', 'true');
     const row = (await screen.findByText('Sam Patel')).closest('tr')!;
     expect(within(row).getByText('Grant library access from 2026-09-21 (enrolment enrolled)')).toBeInTheDocument();
@@ -129,7 +129,7 @@ describe('integration tasks', () => {
     server.use(...handlers({ tasks: [] }));
     renderWithProviders(<IntegrationTasksPage />, { roles: ['engagement-officer'] });
 
-    expect(screen.getByRole('tab', { name: 'Adjustments' })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Adjustments' })).toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: 'Other systems' })).not.toBeInTheDocument();
   });
 });

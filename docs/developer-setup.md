@@ -208,3 +208,19 @@ If port 3000, 5432, or 4222 is already in use, stop the conflicting service or e
 
 **`pnpm dev` shows `cannot find module`**
 Run `pnpm build` once to compile shared packages before starting watch mode.
+
+**`pnpm migrate` fails with `relation ... already exists` (42P07)**
+The local database was created before the core migrations were squashed into `0000_baseline` on 2026-11-19, so the baseline is being applied over the old tables. Rebuild the local database. This deletes its data, including Keycloak's, which re-imports the realm when it starts:
+
+```bash
+docker stop srs-keycloak
+docker exec srs-postgres psql -U srs -d postgres \
+  -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='srs' AND pid<>pg_backend_pid();" \
+  -c "DROP DATABASE srs;" -c "CREATE DATABASE srs OWNER srs;"
+for f in infra/compose/init/*.sql; do docker exec -i srs-postgres psql -U srs -d srs -q < "$f"; done
+docker start srs-keycloak
+pnpm evaluate          # migrations, demo data, personas and the apps
+```
+
+**Demo personas sign in but see no data**
+The personas' `tenant_id` in Keycloak must be the loaded demo tenant's id. `pnpm setup:keycloak` sets it from the database (or from `KEYCLOAK_TENANT_ID`); run it again after recreating the demo tenant.

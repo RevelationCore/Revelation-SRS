@@ -4,7 +4,6 @@ import { ErrorBoundary } from '@revelation-srs/ui';
 import { RequireAuth } from './auth/RequireAuth.js';
 import { Layout } from './components/Layout.js';
 import { LoginPage } from './pages/LoginPage.js';
-import { CallbackPage } from './pages/CallbackPage.js';
 import { AccessibilityStatementPage } from './pages/AccessibilityStatementPage.js';
 import { ForbiddenPage } from './pages/ForbiddenPage.js';
 import { NotFoundPage } from './pages/NotFoundPage.js';
@@ -49,7 +48,6 @@ export function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/login"    element={<LoginPage />} />
-        <Route path="/callback" element={<CallbackPage />} />
         <Route path="/403"      element={<ForbiddenPage />} />
 
         {/* Protected routes inside Layout */}

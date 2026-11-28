@@ -15,7 +15,7 @@ export const auditLog = w.table('audit_log', {
   tenantId:     uuid('tenant_id').notNull(),
   actorId:      text('actor_id').notNull(),
   actionCode:   text('action_code').notNull(),    // read | write | export
-  resourceType: text('resource_type').notNull(),  // disability-case | dsa-entitlement | evidence
+  resourceType: text('resource_type').notNull(),  // disability-case | dsa-entitlement | evidence | ec-claim | …
   resourceId:   uuid('resource_id').notNull(),
   personId:     uuid('person_id').notNull(),
   context:      jsonb('context').notNull().$type<Record<string, unknown>>().default({}),

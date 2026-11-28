@@ -46,7 +46,8 @@ test('a board decides on the pack it is shown, after verifying it (D-36)', async
 });
 
 test('an EC outcome is decided by someone other than its proposer (D-41)', async ({ page }) => {
-  await injectAdminAuth(page, ['exam-board-chair']);
+  // ADR-028 (BL-169): deciding EC claims is the ec-decision-maker's alone.
+  await injectAdminAuth(page, ['ec-decision-maker']);
   await mockApiRoutes(page);
   let decided = false;
   await page.route('**/api/v1/ec-determinations?statusCode=proposed', (r) => r.fulfill({ json: decided ? [] : [{

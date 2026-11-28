@@ -9,9 +9,11 @@
   "resetPasswordAllowed":   false,
   "editUsernameAllowed":    false,
   "bruteForceProtected":    false,
-  "accessTokenLifespan":    28800,
-  "ssoSessionIdleTimeout":  28800,
-  "ssoSessionMaxLifespan":  86400,
+  "accessTokenLifespan":    300,
+  "revokeRefreshToken":     true,
+  "refreshTokenMaxReuse":   0,
+  "ssoSessionIdleTimeout":  1800,
+  "ssoSessionMaxLifespan":  36000,
 
   "components": {
     "org.keycloak.userprofile.UserProfileProvider": [
@@ -48,7 +50,15 @@
       { "name": "pgr-administrator",       "composite": false },
       { "name": "pgr-director",            "composite": false },
       { "name": "applicant",               "composite": false },
-      { "name": "pgr-examiner",            "composite": false }
+      { "name": "pgr-examiner",            "composite": false },
+      { "name": "ec-case-officer",         "composite": false },
+      { "name": "ec-decision-maker",       "composite": false },
+      { "name": "wellbeing-service",       "composite": false },
+      { "name": "vle-connector-service",       "composite": false },
+      { "name": "identity-resolution-officer",       "composite": false },
+      { "name": "adjustment-approver",       "composite": false },
+      { "name": "adjustment-proposer",       "composite": false },
+      { "name": "conferment-authority",       "composite": false }
     ]
   },
 
@@ -56,26 +66,60 @@
     {
       "clientId":              "srs-admin",
       "name":                  "SRS Administration Portal",
-      "description":           "Revelation SRS staff-facing admin portal (PKCE public client)",
+      "description":           "ADR-026: the staff-facing admin portal's backend-for-frontend (confidential client). The secret here is for development only; deployments set it from OpenBao.",
       "enabled":               true,
-      "publicClient":          true,
+      "publicClient":          false,
+      "clientAuthenticatorType": "client-secret",
+      "secret":                "dev-admin-bff-secret",
       "standardFlowEnabled":   true,
       "implicitFlowEnabled":   false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled":    false,
-      "frontchannelLogout":        true,
+      "frontchannelLogout":        false,
       "redirectUris": [
-        "http://localhost:5173/callback",
-        "http://localhost:5173/*"
+        "http://localhost:5173/bff/auth/callback"
       ],
-      "webOrigins": [
-        "http://localhost:5173",
-        "+"
-      ],
+      "webOrigins": [],
       "attributes": {
-        "pkce.code.challenge.method": "S256"
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/",
+        "backchannel.logout.url": "http://host.docker.internal:3010/bff/auth/backchannel-logout",
+        "backchannel.logout.session.required": "true"
       },
       "protocolMappers": [
+        {
+          "name": "audience-srs-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience-srs-wellbeing",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-wellbeing",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience-srs-attendance",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-attendance",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
         {
           "name":             "realm-roles",
           "protocol":         "openid-connect",
@@ -123,26 +167,60 @@
     {
       "clientId":              "srs-portal",
       "name":                  "SRS Student Portal",
-      "description":           "Revelation SRS student-facing portal (PKCE public client)",
+      "description":           "ADR-026: the student portal's backend-for-frontend (confidential client). The secret here is for development only; deployments set it from OpenBao.",
       "enabled":               true,
-      "publicClient":          true,
+      "publicClient":          false,
+      "clientAuthenticatorType": "client-secret",
+      "secret":                "dev-portal-bff-secret",
       "standardFlowEnabled":   true,
       "implicitFlowEnabled":   false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled":    false,
-      "frontchannelLogout":        true,
+      "frontchannelLogout":        false,
       "redirectUris": [
-        "http://localhost:5174/callback",
-        "http://localhost:5174/*"
+        "http://localhost:5174/bff/auth/callback"
       ],
-      "webOrigins": [
-        "http://localhost:5174",
-        "+"
-      ],
+      "webOrigins": [],
       "attributes": {
-        "pkce.code.challenge.method": "S256"
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5174/",
+        "backchannel.logout.url": "http://host.docker.internal:3011/bff/auth/backchannel-logout",
+        "backchannel.logout.session.required": "true"
       },
       "protocolMappers": [
+        {
+          "name": "audience-srs-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience-srs-wellbeing",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-wellbeing",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience-srs-attendance",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "srs-attendance",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
         {
           "name":             "realm-roles",
           "protocol":         "openid-connect",
@@ -183,6 +261,122 @@
             "userinfo.token.claim": "false",
             "id.token.claim":       "false",
             "access.token.claim":   "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "srs-wellbeing-svc-00000000-0000-0000-0000-000000000001",
+      "name": "Wellbeing service (demo tenant)",
+      "description": "ADR-029: the wellbeing service's client-credentials client for one tenant. Development only uses a client secret; staging and production use private_key_jwt.",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-wellbeing-service-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "fullScopeAllowed": false,
+      "attributes": {
+        "access.token.lifespan": "300",
+        "client_credentials.use_refresh_token": "false"
+      },
+      "defaultClientScopes": [],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "audience-srs-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "srs-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "false",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "realm_roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "tenant-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "tenant_id",
+            "claim.value": "00000000-0000-0000-0000-000000000001",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "srs-vle-svc-00000000-0000-0000-0000-000000000001",
+      "name": "VLE connector (demo tenant)",
+      "description": "ADR-032: the VLE connector's client-credentials client for one tenant. Development only uses a client secret; staging and production use private_key_jwt.",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-vle-connector-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "fullScopeAllowed": false,
+      "attributes": {
+        "access.token.lifespan": "300",
+        "client_credentials.use_refresh_token": "false"
+      },
+      "defaultClientScopes": [],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "audience-srs-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "srs-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "false",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "realm_roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "tenant-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "tenant_id",
+            "claim.value": "00000000-0000-0000-0000-000000000001",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
           }
         }
       ]
@@ -310,6 +504,27 @@
       "credentials": [{ "type": "password", "value": "Demo-2026!", "temporary": false }],
       "attributes":  { "tenant_id": ["00000000-0000-0000-0000-000000000001"], "personaId": ["persona-02-0000-4000-8000-000000000006"] },
       "realmRoles":  ["registry-administrator", "tenant-administrator"]
+    },
+    {
+      "username": "service-account-srs-wellbeing-svc-00000000-0000-0000-0000-000000000001",
+      "enabled": true,
+      "serviceAccountClientId": "srs-wellbeing-svc-00000000-0000-0000-0000-000000000001",
+      "realmRoles": [
+        "wellbeing-service"
+      ]
+    },
+    {
+      "username": "service-account-srs-vle-svc-00000000-0000-0000-0000-000000000001",
+      "enabled": true,
+      "serviceAccountClientId": "srs-vle-svc-00000000-0000-0000-0000-000000000001",
+      "realmRoles": [
+        "vle-connector-service"
+      ]
     }
+  ],
+
+  "scopeMappings": [
+    { "client": "srs-wellbeing-svc-00000000-0000-0000-0000-000000000001", "roles": ["wellbeing-service"] },
+    { "client": "srs-vle-svc-00000000-0000-0000-0000-000000000001", "roles": ["vle-connector-service"] }
   ]
 }

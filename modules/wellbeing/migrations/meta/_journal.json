@@ -15,6 +15,27 @@
       "when": 1786000000000,
       "tag": "0001_adjustment_production_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786001000000,
+      "tag": "0002_row_level_security_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786002000000,
+      "tag": "0003_document_scanning",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786003000000,
+      "tag": "0004_person_merge",
+      "breakpoints": true
     }
   ]
 }

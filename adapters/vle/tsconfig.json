@@ -9,6 +9,7 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../../packages/domain" }
+    { "path": "../../packages/domain" },
+    { "path": "../../packages/service-client" }
   ]
 }

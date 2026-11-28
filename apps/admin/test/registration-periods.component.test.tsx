@@ -8,7 +8,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { RegistrationPeriodDetailPage, RegistrationPeriodsPage } from '../src/pages/RegistrationPeriodsPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const period = {
   periodId: 'rp-1', academicYear: '2027-28', programmeId: null, opensAt: '2027-06-01T00:00:00Z', closesAt: '2027-09-30T00:00:00Z', reminderAt: null,
   periodTypeCode: 'annual', openedBy: 'u', closedAt: null, closedBy: null, counts: { pending: 1, confirmed: 3, lapsed: 0 }, termsVersion: '2027.1',

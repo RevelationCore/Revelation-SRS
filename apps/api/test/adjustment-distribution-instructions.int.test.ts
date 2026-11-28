@@ -1,3 +1,5 @@
+import { createHash, randomUUID } from 'node:crypto';
+
 /**
  * AJ-21 finding 1 — per-target adjustment instructions.
  *
@@ -14,6 +16,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher, PublishOptions } from '../src/platform/integration-bus/publisher.js';
 
+import { wellbeingServiceJwt, withdrawApprovedAdjustment } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -130,8 +133,8 @@ describe('Structured amount', () => {
     const f = await createFixture(`AMT-${adjustmentTypeCode}-${amount.unitCode}`);
     const res = await ctx.app.inject({
       method: 'POST', url: `/api/v1/students/${f.personId}/adjustments`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: { enrolmentId: f.enrolmentId, adjustmentTypeCode, scopeCode: 'exam', validFrom: '2027-09-01T00:00:00.000Z', amount },
+      headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+      payload: { sourceCaseId: randomUUID(),  enrolmentId: f.enrolmentId, adjustmentTypeCode, scopeCode: 'exam', validFrom: '2027-09-01T00:00:00.000Z', amount },
     });
     expect(res.statusCode).toBe(422);
   });
@@ -140,8 +143,8 @@ describe('Structured amount', () => {
     const f = await createFixture('AMT103');
     const res = await ctx.app.inject({
       method: 'POST', url: `/api/v1/students/${f.personId}/adjustments`,
-      headers: { authorization: `Bearer ${jwt}` },
-      payload: {
+      headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+      payload: { sourceCaseId: randomUUID(), 
         enrolmentId: f.enrolmentId, adjustmentTypeCode: 'extra-time', scopeCode: 'exam',
         validFrom: '2027-09-01T00:00:00.000Z', amount: { value: 0, unitCode: 'percent-of-duration' },
       },
@@ -151,13 +154,12 @@ describe('Structured amount', () => {
 });
 
 describe('distribution-requested instructions', () => {
-  it('publishes one instruction per target, addressed by subject, without notes', async () => {
+  it('publishes one instruction per target, addressed by subject, with no free text', async () => {
     const f = await createFixture('INS101');
     const { adjustmentId } = await record(f, {
       adjustmentTypeCode: 'extra-time', scopeCode: 'all',
       amount: { value: 15, unitCode: 'minutes-per-hour' },
       validTo: '2028-07-31T00:00:00.000Z',
-      notes: 'Diagnosis detail that must not reach target systems',
     });
 
     const instructions = eventsOf(REQUESTED).filter((e) => e.payload['adjustmentId'] === adjustmentId);
@@ -179,7 +181,8 @@ describe('distribution-requested instructions', () => {
         validFrom: '2027-09-01T00:00:00.000Z',
         validTo: '2028-07-31T00:00:00.000Z',
       });
-      expect(JSON.stringify(instruction.payload)).not.toContain('Diagnosis');
+      // Core refuses notes (BL-243); the instruction has no field for them either.
+      expect(instruction.payload).not.toHaveProperty('notes');
       expect(row.requestPublishedAt).not.toBeNull();
       expect(row.statusCode).toBe('pending');
     }
@@ -406,17 +409,18 @@ async function createFixture(code: string): Promise<Fixture> {
 
 async function record(
   f: Fixture,
-  body: { adjustmentTypeCode: string; scopeCode: string; amount?: { value: number; unitCode: string }; validTo?: string; notes?: string },
+  body: { adjustmentTypeCode: string; scopeCode: string; amount?: { value: number; unitCode: string }; validTo?: string },
   idempotencyKey?: string,
   expectedStatus = 201,
 ): Promise<{ adjustmentId: string }> {
   const res = await ctx.app.inject({
     method: 'POST', url: `/api/v1/students/${f.personId}/adjustments`,
     headers: {
-      authorization: `Bearer ${jwt}`,
+      authorization: `Bearer ${await wellbeingServiceJwt(ctx)}`,
       ...(idempotencyKey ? { 'x-idempotency-key': idempotencyKey } : {}),
     },
-    payload: { enrolmentId: f.enrolmentId, validFrom: '2027-09-01T00:00:00.000Z', ...body },
+    // A replay carries the same approving case, as the wellbeing outbox would.
+    payload: { sourceCaseId: idempotencyKey ? uuidFor(idempotencyKey) : randomUUID(), enrolmentId: f.enrolmentId, validFrom: '2027-09-01T00:00:00.000Z', ...body },
   });
   expect(res.statusCode, res.body).toBe(expectedStatus);
   return res.json<{ adjustmentId: string }>();
@@ -432,13 +436,18 @@ async function listDistributions(adjustmentId: string): Promise<DistributionWire
 }
 
 async function expire(adjustmentId: string): Promise<void> {
-  const res = await ctx.app.inject({
-    method: 'POST', url: `/api/v1/adjustments/${adjustmentId}/expire`,
-    headers: { authorization: `Bearer ${jwt}` },
-  });
-  expect(res.statusCode).toBe(204);
+  // ADR-034: ended through its wellbeing case; the /expire route is retired.
+  const res = await withdrawApprovedAdjustment(ctx, adjustmentId);
+  expect(res.statusCode).toBe(200);
 }
 
 function post(url: string, payload: unknown) {
   return ctx.app.inject({ method: 'POST', url, headers: { authorization: `Bearer ${integrationJwt}` }, payload });
 }
+
+/** A stable case id for an idempotency key, so a replay is the same request. */
+function uuidFor(key: string): string {
+  const h = createHash('sha256').update(key).digest('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+

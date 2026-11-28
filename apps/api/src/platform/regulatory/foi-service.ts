@@ -72,7 +72,7 @@ export class FoiService {
     if (!input.requestReference.trim()) throw new ValidationError('FOI request reference is required');
     if (!input.description.trim()) throw new ValidationError('FOI request description is required');
     const receivedDate = parseIsoDate(input.receivedDate, 'receivedDate');
-    const statutoryDeadlineDate = await addWorkingDaysFor(this.db, tenantId, receivedDate, 20);
+    const statutoryDeadlineDate = await addWorkingDaysFor(this.db, tenantId, receivedDate, 20, 'statutory');
     const requestId = randomUUID();
     const now = clockNow();
 

@@ -24,7 +24,11 @@ export function IntegrationTasksPage() {
   const requested = searchParams.get('tab');
   const initial: Tab = requested === 'systems' && canSystems ? 'systems'
     : canAdjustments ? 'adjustments' : 'systems';
-  const [tab, setTab] = useState<Tab>(initial);
+  // Derived each render until the user picks a tab: the session (and so the
+  // roles) can arrive after the first render (ADR-026).
+  const [picked, setPicked] = useState<Tab | null>(null);
+  const tab = picked ?? initial;
+  const setTab = (t: Tab) => setPicked(t);
 
   return (
     <div>

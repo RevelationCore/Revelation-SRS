@@ -1,0 +1,322 @@
+# ── Backends-for-frontend (ADR-026) ──────────────────────────────────────────
+# One per SPA, each a confidential Keycloak client. The SPA's nginx proxies
+# /bff/ here; the browser holds only an HTTP-only session cookie. Back-channel
+# logout is reached by Keycloak on the cluster network, never through nginx.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: srs-bff-config
+  namespace: revelation-srs
+data:
+  # Per deployment: the overlay (or the operator) replaces these.
+  OIDC_ISSUER: "https://auth.example.com/realms/srs"
+  ADMIN_ORIGIN: "https://admin.example.com"
+  PORTAL_ORIGIN: "https://portal.example.com"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: srs-admin-bff
+  namespace: revelation-srs
+  annotations:
+    openbao.org/role: "srs-admin-bff"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srs-admin-bff
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-admin-bff
+    app.kubernetes.io/component: bff
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-admin-bff
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: srs-admin-bff
+        app.kubernetes.io/component: bff
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "srs-admin-bff"
+        # The BFF's own database role (srs_bff: the bff schema only).
+        vault.hashicorp.com/agent-inject-secret-db: "database/creds/srs-bff"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "database/creds/srs-bff" -}}
+          postgresql://{{ .Data.username }}:{{ .Data.password }}@postgres:5432/srs
+          {{- end }}
+        # The confidential client's secret and the session encryption keys (kid:base64, newest first).
+        vault.hashicorp.com/agent-inject-secret-client: "kv/data/srs/bff/admin"
+        vault.hashicorp.com/agent-inject-template-client: |
+          {{- with secret "kv/data/srs/bff/admin" -}}
+          {{ .Data.data.client_secret }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-session-keys: "kv/data/srs/bff/admin"
+        vault.hashicorp.com/agent-inject-template-session-keys: |
+          {{- with secret "kv/data/srs/bff/admin" -}}
+          {{ .Data.data.session_keys }}
+          {{- end }}
+    spec:
+      serviceAccountName: srs-admin-bff
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-admin-bff
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-admin-bff
+      containers:
+        - name: bff
+          image: ghcr.io/revelation-srs/bff:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3010
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3010"
+            - name: BFF_CLIENT_ID
+              value: srs-admin
+            - name: BFF_APP_ORIGIN
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-bff-config
+                  key: ADMIN_ORIGIN
+            - name: OIDC_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-bff-config
+                  key: OIDC_ISSUER
+            - name: OIDC_INTERNAL_URL
+              value: http://keycloak:8080/realms/srs
+            - name: BFF_UPSTREAM_SRS
+              value: http://srs-api:3000
+            - name: BFF_UPSTREAM_WELLBEING
+              value: http://srs-wellbeing:3002
+          command:
+            - /bin/sh
+            - -c
+            - |
+              export DATABASE_URL="$(cat /vault/secrets/db)"
+              export BFF_CLIENT_SECRET="$(cat /vault/secrets/client)"
+              export BFF_SESSION_KEYS="$(cat /vault/secrets/session-keys)"
+              exec node dist/main.js
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+          readinessProbe:
+            # Gated on its database only, like the API (ADR-026 Consequences).
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: srs-admin-bff
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-admin-bff
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: srs-admin-bff
+  ports:
+    - name: http
+      port: 3010
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: srs-portal-bff
+  namespace: revelation-srs
+  annotations:
+    openbao.org/role: "srs-portal-bff"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: srs-portal-bff
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-portal-bff
+    app.kubernetes.io/component: bff
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: srs-portal-bff
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: srs-portal-bff
+        app.kubernetes.io/component: bff
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "srs-portal-bff"
+        # The BFF's own database role (srs_bff: the bff schema only).
+        vault.hashicorp.com/agent-inject-secret-db: "database/creds/srs-bff"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "database/creds/srs-bff" -}}
+          postgresql://{{ .Data.username }}:{{ .Data.password }}@postgres:5432/srs
+          {{- end }}
+        # The confidential client's secret and the session encryption keys (kid:base64, newest first).
+        vault.hashicorp.com/agent-inject-secret-client: "kv/data/srs/bff/portal"
+        vault.hashicorp.com/agent-inject-template-client: |
+          {{- with secret "kv/data/srs/bff/portal" -}}
+          {{ .Data.data.client_secret }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-session-keys: "kv/data/srs/bff/portal"
+        vault.hashicorp.com/agent-inject-template-session-keys: |
+          {{- with secret "kv/data/srs/bff/portal" -}}
+          {{ .Data.data.session_keys }}
+          {{- end }}
+    spec:
+      serviceAccountName: srs-portal-bff
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-portal-bff
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-portal-bff
+      containers:
+        - name: bff
+          image: ghcr.io/revelation-srs/bff:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3010
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3010"
+            - name: BFF_CLIENT_ID
+              value: srs-portal
+            - name: BFF_APP_ORIGIN
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-bff-config
+                  key: PORTAL_ORIGIN
+            - name: OIDC_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: srs-bff-config
+                  key: OIDC_ISSUER
+            - name: OIDC_INTERNAL_URL
+              value: http://keycloak:8080/realms/srs
+            - name: BFF_UPSTREAM_SRS
+              value: http://srs-api:3000
+            - name: BFF_UPSTREAM_WELLBEING
+              value: http://srs-wellbeing:3002
+          command:
+            - /bin/sh
+            - -c
+            - |
+              export DATABASE_URL="$(cat /vault/secrets/db)"
+              export BFF_CLIENT_SECRET="$(cat /vault/secrets/client)"
+              export BFF_SESSION_KEYS="$(cat /vault/secrets/session-keys)"
+              exec node dist/main.js
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+          readinessProbe:
+            # Gated on its database only, like the API (ADR-026 Consequences).
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: srs-portal-bff
+  namespace: revelation-srs
+  labels:
+    app.kubernetes.io/name: srs-portal-bff
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: srs-portal-bff
+  ports:
+    - name: http
+      port: 3010
+      targetPort: http
+      protocol: TCP

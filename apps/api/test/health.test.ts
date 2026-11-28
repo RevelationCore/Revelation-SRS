@@ -7,14 +7,13 @@ const TEST_CONFIG: Config = {
   port:             3001,
   logLevel:         'silent',
   nodeEnv:          'test',
+  documentScanner:  { mode: 'noop', clamdPort: 3310, timeoutMs: 30_000, maxConcurrency: 4 },
   databaseUrl:      'postgres://srs:srs@localhost:5432/srs_test',
   natsUrl:          'nats://localhost:4222',
   temporalAddress:  'localhost:7233',
   jwtSecret:        'test-secret-for-unit-tests',
   keycloakJwksUrl:  undefined,
   corsOrigins:      ['http://localhost:5173'],
-  otelEndpoint:     undefined,
-  otelServiceName:  'srs-api-test',
 };
 
 let app: Awaited<ReturnType<typeof buildApp>>;
@@ -62,10 +61,12 @@ describe('GET /ready', () => {
 });
 
 describe('GET /metrics', () => {
-  it('does not require authentication', async () => {
+  // ADR-035: metrics are served on the dedicated port 9464 (packages/telemetry),
+  // never on the main port an Ingress routes to.
+  it('is not served on the main port', async () => {
     const res = await app.inject({ method: 'GET', url: '/metrics' });
-    expect(res.statusCode).not.toBe(401);
-    expect(res.body).toContain('srs_api_uptime_seconds');
+    expect(res.statusCode).not.toBe(200);
+    expect(res.body).not.toContain('# TYPE');
   });
 });
 

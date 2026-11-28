@@ -4,6 +4,7 @@ import { context, propagation } from '@opentelemetry/api';
 import type { DomainEventEnvelope, DataClassification } from '@revelation-srs/domain';
 import type { JetStreamClient, NatsConnection, MsgHdrs } from 'nats';
 import { connect, JSONCodec, headers as natsHeaders } from 'nats';
+import { natsConnectOptions } from '@revelation-srs/auth';
 
 import { clockNow } from '../clock.js';
 
@@ -41,7 +42,7 @@ export class IntegrationBusPublisher {
   constructor(private readonly natsUrl: string) {}
 
   async connect(): Promise<void> {
-    this.nc = await connect({ servers: this.natsUrl });
+    this.nc = await connect(natsConnectOptions(this.natsUrl));
     this.js = this.nc.jetstream();
     await this.ensureStream();
   }

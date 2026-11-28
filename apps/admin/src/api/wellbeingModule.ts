@@ -1,6 +1,6 @@
-import { createApiClient, ApiError } from '@revelation-srs/ui';
+import { bffFetch, createApiClient, ApiError } from '@revelation-srs/ui';
 
-import { getStoredToken, clearToken } from './client.js';
+import { signInAgain } from './client.js';
 
 export { ApiError };
 
@@ -10,16 +10,10 @@ export { ApiError };
 // admin app talks to directly for adjustment-case workflow, while core
 // SRS is only ever shown the minimum-necessary distributed outcome once a
 // case is approved (see AdjustmentsPage-adjacent reads in students.ts).
-const wellbeingBaseUrl = import.meta.env.VITE_WELLBEING_API_URL ?? 'http://localhost:3002';
+const wellbeingBaseUrl = '/bff/wellbeing';
 
-export const wellbeingApi = createApiClient({
-  baseUrl:        wellbeingBaseUrl,
-  getToken:       getStoredToken,
-  onUnauthorized: () => {
-    clearToken();
-    window.location.href = '/login';
-  },
-});
+// Through this app's BFF (ADR-026), which adds the access token.
+export const wellbeingApi = createApiClient({ baseUrl: wellbeingBaseUrl, onUnauthorized: signInAgain });
 
 // ── Evidence upload/download ────────────────────────────────────────────────
 //
@@ -35,17 +29,14 @@ export async function uploadEvidence(
   const form = new FormData();
   form.append('evidenceTypeCode', evidenceTypeCode);
   form.append('file', file);
-
-  const token = getStoredToken();
-  const res = await fetch(`${wellbeingBaseUrl}/api/v1/adjustment-cases/${caseId}/evidence`, {
+  const res = await bffFetch(`${wellbeingBaseUrl}/api/v1/adjustment-cases/${caseId}/evidence`, {
     method:  'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: {},
     body:    form,
   });
 
   if (res.status === 401) {
-    clearToken();
-    window.location.href = '/login';
+    signInAgain();
     throw new ApiError(401, 'Unauthorized');
   }
   if (!res.ok) {
@@ -66,9 +57,8 @@ export function evidenceDownloadUrl(caseId: string, evidenceId: string): string 
 }
 
 export async function downloadEvidence(caseId: string, evidenceId: string): Promise<Blob> {
-  const token = getStoredToken();
-  const res = await fetch(evidenceDownloadUrl(caseId, evidenceId), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  const res = await bffFetch(evidenceDownloadUrl(caseId, evidenceId), {
+    headers: {},
   });
   if (!res.ok) throw new ApiError(res.status, `Download failed (${res.status})`);
   return res.blob();

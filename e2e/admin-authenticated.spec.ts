@@ -2,7 +2,7 @@
  * Stage 8 — Authenticated admin page rendering + WCAG 2.1 AA axe scans.
  *
  * Each test:
- *  1. Injects a valid staff JWT into localStorage before the page loads.
+ *  1. Answers /bff/session for a staff user before the page loads (ADR-026: no token in the browser).
  *  2. Mocks all /api/v1/** routes to return safe empty responses.
  *  3. Navigates to the route and waits for the page heading to appear.
  *  4. Runs axe and asserts zero violations.
@@ -66,10 +66,15 @@ const PAGES: [string, string | RegExp][] = [
   ['/operations/integrations',     'Integration operations'],
 ];
 
+// Routes the default staff session may not open; each is visited as the role that may (BL-287).
+const ROLES_FOR: Record<string, string[]> = {
+  '/governance/audit-review': ['dpo'],
+};
+
 test.describe('Admin — authenticated page rendering and axe scans', () => {
   for (const [route, heading] of PAGES) {
     test(`${route} renders and passes axe`, async ({ page }) => {
-      await injectAdminAuth(page);
+      await injectAdminAuth(page, ROLES_FOR[route]);
       await mockApiRoutes(page);
 
       await page.goto(`${ADMIN}${route}`);

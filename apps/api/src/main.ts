@@ -1,10 +1,16 @@
 // OTel must be bootstrapped before any other import so instrumentation patches load first.
 import './telemetry.js';
 
-import { loadConfig } from './config.js';
+import { assertNatsCredentials } from '@revelation-srs/auth';
+import { assertDocumentScannerConfig, loadDocumentScannerConfig } from '@revelation-srs/documents';
+
+import { assertPublicVerifyIpKey, loadConfig } from './config.js';
 import { buildApp } from './app.js';
 
 const config = loadConfig();
+assertNatsCredentials('srs-api', config.nodeEnv);
+assertDocumentScannerConfig('srs-api', config.nodeEnv, config.documentScanner ?? loadDocumentScannerConfig());
+assertPublicVerifyIpKey('srs-api', config.nodeEnv, config.publicVerifyIpKey);
 const app    = await buildApp(config);
 
 // Connect event bus (non-blocking on startup failure in dev to allow health check to pass)

@@ -53,11 +53,14 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
   let ctx:    TestWellbeingApp;
   let ecStub: SrsEcStubClient;
   let jwt:    string;
+  // ADR-028: a different person, holding ec-decision-maker, decides the claim.
+  let deciderJwt: string;
 
   beforeAll(async () => {
     ecStub = new SrsEcStubClient();
     ctx    = await startTestApp({ srsEcClient: ecStub });
     jwt    = ctx.makeJwt();
+    deciderJwt = ctx.makeJwt({ sub: 'ec-decider-001', roles: ['ec-decision-maker'] });
   });
 
   afterAll(() => ctx.teardown());
@@ -190,7 +193,6 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
         url:     `/api/v1/ec-claims/${claimId}/evidence-reviews`,
         headers: { authorization: `Bearer ${jwt}` },
         payload: {
-          reviewerId:         'reviewer-001',
           reviewedAt:         '2025-10-15T14:00:00Z',
           evidenceStatusCode: 'pending',
           reviewNotes:        'Awaiting GP letter.',
@@ -219,7 +221,6 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
         url:     `/api/v1/ec-claims/${claimId}/evidence-reviews`,
         headers: { authorization: `Bearer ${jwt}` },
         payload: {
-          reviewerId:         'reviewer-001',
           reviewedAt:         '2025-10-20T09:00:00Z',
           evidenceStatusCode: 'sufficient',
         },
@@ -246,9 +247,8 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
       const res = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${claimId}/determine`,
-        headers: { authorization: `Bearer ${jwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload: {
-          authorisedById:    'panel-chair-001',
           determinationCode: 'upheld',
           determinedAt:      '2025-11-01T10:00:00Z',
           moduleOutcomes: [{ moduleCode: 'MOD601', outcome: 'defer_assessment' }],
@@ -288,7 +288,6 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
       });
 
       const payload = {
-        authorisedById:    'panel-chair-001',
         determinationCode: 'upheld',
         determinedAt:      '2025-11-05T10:00:00Z',
         moduleOutcomes: [{ moduleCode: 'MOD701', outcome: 'defer_assessment' }],
@@ -297,7 +296,7 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
       const first = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${claimId}/determine`,
-        headers: { authorization: `Bearer ${jwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload,
       });
       expect(first.statusCode).toBe(202);
@@ -307,7 +306,7 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
       const second = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${claimId}/determine`,
-        headers: { authorization: `Bearer ${jwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload,
       });
       expect(second.statusCode).toBe(200);
@@ -328,9 +327,8 @@ describe('Stage 5 — Exceptional Circumstances Workflow', () => {
       const res = await ctx.app.inject({
         method:  'POST',
         url:     `/api/v1/ec-claims/${claimId}/determine`,
-        headers: { authorization: `Bearer ${jwt}` },
+        headers: { authorization: `Bearer ${deciderJwt}` },
         payload: {
-          authorisedById:    'panel-chair-001',
           determinationCode: 'not_upheld',
           determinedAt:      '2025-11-10T10:00:00Z',
           moduleOutcomes: [{ moduleCode: 'MOD801', outcome: 'no_action' }],

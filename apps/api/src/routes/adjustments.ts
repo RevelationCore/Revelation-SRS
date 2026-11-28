@@ -1,12 +1,13 @@
 import { Type } from '@sinclair/typebox';
 import { requireAnyPermission, requirePermission, requireSelfOrPermission } from '@revelation-srs/auth';
-import { hasPermission } from '@revelation-srs/domain';
+import { ConflictError, hasPermission, NotFoundError } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import type {
   AdjustmentDistributionDto,
   AdjustmentDto,
   AdjustmentTaskDto,
+  CaseWithdrawalReason,
   RecordAdjustmentInput,
   ReplyActor,
 } from '../platform/adjustments/adjustment-service.js';
@@ -39,6 +40,12 @@ const AdjustmentSchema = Type.Object({
   recordedUntil: Type.Union([Type.String(), Type.Null()]),
   sourceCaseId: Type.Union([Type.String(), Type.Null()]),
   outcomeDocumentId: Type.Union([Type.String(), Type.Null()]),
+  // ADR-033: the authority it was recorded under.
+  provenanceCode: Type.String(),
+  manualProposalId: Type.Union([Type.String(), Type.Null()]),
+  // ADR-034: set when it was ended early.
+  withdrawalAuthorityCode: Type.Union([Type.String(), Type.Null()]),
+  withdrawalReasonCode: Type.Union([Type.String(), Type.Null()]),
 });
 
 const DistributionSchema = Type.Object({
@@ -64,8 +71,21 @@ const RecordAdjustmentBody = Type.Object({
   validFrom: Type.String({ format: 'date-time' }),
   validTo: Type.Optional(Type.String({ format: 'date-time' })),
   amount: Type.Optional(AmountSchema),
-  notes: Type.Optional(Type.String()),
   sourceCaseId: Type.Optional(Type.String()),
+});
+
+const CaseWithdrawalBody = Type.Object({
+  sourceCaseId: Type.String({ format: 'uuid' }),
+  withdrawalReasonCode: Type.String({ minLength: 1 }),
+  replacementAdjustmentId: Type.Optional(Type.String({ format: 'uuid' })),
+}, { additionalProperties: false });
+
+const WithdrawalResponse = Type.Object({
+  adjustmentId: Type.String(),
+  validTo: Type.String(),
+  withdrawalAuthorityCode: Type.Union([Type.String(), Type.Null()]),
+  withdrawalReasonCode: Type.Union([Type.String(), Type.Null()]),
+  changed: Type.Boolean(),
 });
 
 const ListAdjustmentQuery = Type.Object({
@@ -119,7 +139,21 @@ const TargetConfigBody = Type.Object({
  * for manual targets. A person's reply is audited.
  */
 function replyActor(request: FastifyRequest): ReplyActor {
-  return hasPermission(request.user.roles, 'integration:manage') ? 'connector' : 'person';
+  return hasPermission(request.user.roles, 'integration:manage') || hasPermission(request.user.roles, 'adjustment-distribution:reply:vle')
+    ? 'connector' : 'person';
+}
+
+/**
+ * A caller holding only adjustment-distribution:reply:vle (the VLE
+ * connector, ADR-032) replies only for connected 'vle' distributions:
+ * another target is 404, another mode 409.
+ */
+async function assertVleConnectorScope(fastify: FastifyInstance, request: FastifyRequest, adjustmentId: string, distributionId: string, targetSystem: string): Promise<void> {
+  const roles = request.user.roles;
+  if (hasPermission(roles, 'integration:manage') || hasPermission(roles, 'adjustment:fulfil')) return;
+  const distribution = (await fastify.adjustmentService.listDistributions(adjustmentId, request.tenantId)).find((d) => d.distributionId === distributionId);
+  if (targetSystem !== 'vle' || !distribution || distribution.targetSystem !== 'vle') throw new NotFoundError('AdjustmentDistribution', distributionId);
+  if (distribution.fulfilmentModeCode !== 'connected') throw new ConflictError(`This distribution is fulfilled by a ${distribution.fulfilmentModeCode} target; the VLE connector replies only for connected ones`);
 }
 
 async function auditPersonReply(
@@ -166,24 +200,46 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         response: {
           200: Type.Object({ adjustmentId: Type.String() }),
           201: Type.Object({ adjustmentId: Type.String() }),
+          400: ErrorSchema,
           404: ErrorSchema,
           409: ErrorSchema,
           422: ErrorSchema,
         },
       },
-      preHandler: [requirePermission('adjustment:write')],
+      // ADR-033 (BL-376): only the wellbeing service records a core adjustment
+      // here, naming the case that approved it (ADR-029). A case-less one is a
+      // manual proposal a second person approves (BL-378).
+      preHandler: [requirePermission('adjustment:record-approved')],
     },
     async (request, reply) => {
       const { personId } = request.params as { personId: string };
-      const body = request.body as RecordAdjustmentInput;
+      // No free text reaches core: its readers include registry and the
+      // integration service, and a note is where a diagnosis ends up (ADR-017,
+      // BL-243). Refused rather than ignored, so an old caller fails loudly.
+      if (typeof request.body === 'object' && request.body !== null && 'notes' in request.body) {
+        await reply.code(400).type('application/problem+json').send({
+          type: 'https://srs.example.com/errors/bad-request', title: 'Free text not accepted', status: 400,
+          detail: 'notes is not accepted: a core adjustment carries type, scope, amount and dates only; the narrative stays on the wellbeing case', instance: request.url,
+        });
+        return;
+      }
+      const { sourceCaseId, ...body } = request.body as RecordAdjustmentInput & { sourceCaseId?: string };
+      if (!sourceCaseId) {
+        await reply.code(422).type('application/problem+json').send({
+          type: 'https://srs.example.com/errors/unprocessable', title: 'Source case required', status: 422,
+          detail: 'An adjustment recorded by the wellbeing service must name the approving case (sourceCaseId)', instance: request.url,
+        });
+        return;
+      }
       // The wellbeing module sends x-idempotency-key; the platform-controls
       // routes use idempotency-key. Accept either.
       const headers = request.headers as Record<string, string | undefined>;
       const idempotencyKey = headers['x-idempotency-key'] ?? headers['idempotency-key'];
-      const { adjustmentId, replayed } = await fastify.adjustmentService.recordAdjustment(
+      const { adjustmentId, replayed } = await fastify.adjustmentService.recordAuthorisedAdjustment(
         request.tenantId,
         personId,
         body,
+        { kind: 'wellbeing-case', sourceCaseId },
         request.user.sub,
         idempotencyKey,
       );
@@ -192,6 +248,15 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
       if (replayed) {
         await reply.code(200).send({ adjustmentId });
         return;
+      }
+
+      // The SRS is itself the 'exams' target: add the arrangement to entries
+      // already generated for exams not yet sat (BL-058). The worker's
+      // reconcile loop retries if this fails.
+      try {
+        await fastify.examEntryService.applyExamAdditions(request.tenantId);
+      } catch (err) {
+        request.log.warn({ err, adjustmentId }, 'Exam entry refresh deferred to the reconcile loop');
       }
 
       await fastify.audit.record({
@@ -274,7 +339,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         body: AcknowledgeDistributionBody,
         response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
       },
-      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil')],
+      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil', 'adjustment-distribution:reply:vle')],
     },
     async (request, reply) => {
       const { adjustmentId, distributionId } = request.params as {
@@ -282,6 +347,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         distributionId: string;
       };
       const body = request.body as { targetSystem: string };
+      await assertVleConnectorScope(fastify, request, adjustmentId, distributionId, body.targetSystem);
       const actor = replyActor(request);
       await fastify.adjustmentService.acknowledgeDistribution(
         adjustmentId,
@@ -306,7 +372,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         body: DistributionFailureBody,
         response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
       },
-      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil')],
+      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil', 'adjustment-distribution:reply:vle')],
     },
     async (request, reply) => {
       const { adjustmentId, distributionId } = request.params as {
@@ -314,6 +380,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         distributionId: string;
       };
       const body = request.body as { targetSystem: string; reason: string };
+      await assertVleConnectorScope(fastify, request, adjustmentId, distributionId, body.targetSystem);
       const actor = replyActor(request);
       await fastify.adjustmentService.reportDistributionFailure(
         adjustmentId,
@@ -339,7 +406,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         body: AcknowledgeDistributionBody,
         response: { 204: Type.Null(), 404: ErrorSchema, 409: ErrorSchema },
       },
-      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil')],
+      preHandler: [requireAnyPermission('integration:manage', 'adjustment:fulfil', 'adjustment-distribution:reply:vle')],
     },
     async (request, reply) => {
       const { adjustmentId, distributionId } = request.params as {
@@ -347,6 +414,7 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
         distributionId: string;
       };
       const body = request.body as { targetSystem: string };
+      await assertVleConnectorScope(fastify, request, adjustmentId, distributionId, body.targetSystem);
       const actor = replyActor(request);
       await fastify.adjustmentService.acknowledgeWithdrawal(
         adjustmentId,
@@ -424,45 +492,53 @@ export function adjustmentRoutes(fastify: FastifyInstance): void {
     },
   );
 
+  // ADR-034 (BL-406): POST /adjustments/:adjustmentId/expire is retired. An
+  // adjustment is ended early only under an authority: its wellbeing case
+  // (below), a withdrawal a second person approved, or the end of its enrolment.
+
   fastify.post(
-    '/adjustments/:adjustmentId/expire',
+    '/students/:personId/adjustments/:adjustmentId/withdrawal',
     {
       schema: {
-        params: Type.Object({ adjustmentId: Type.String() }),
-        response: { 204: Type.Null(), 404: ErrorSchema },
+        params: Type.Object({ personId: Type.String({ format: 'uuid' }), adjustmentId: Type.String({ format: 'uuid' }) }),
+        body: CaseWithdrawalBody,
+        response: { 200: WithdrawalResponse, 400: ErrorSchema, 404: ErrorSchema, 409: ErrorSchema, 422: ErrorSchema },
       },
-      preHandler: [requirePermission('adjustment:write')],
+      // ADR-034 item 4: only the wellbeing service, for the case that recorded it.
+      preHandler: [requirePermission('adjustment:withdraw-approved')],
+      preValidation: async (request, reply) => {
+        const raw = request.body as Record<string, unknown> | undefined;
+        const unknown = raw && typeof raw === 'object' ? Object.keys(raw).filter((k) => !Object.keys(CaseWithdrawalBody.properties).includes(k)) : [];
+        if (unknown.length > 0) {
+          await reply.code(400).type('application/problem+json').send({
+            type: 'https://srs.example.com/errors/bad-request', title: 'Bad request', status: 400,
+            detail: `Not accepted: ${unknown.join(', ')}`, instance: request.url,
+          });
+        }
+      },
     },
     async (request, reply) => {
-      const { adjustmentId } = request.params as { adjustmentId: string };
-      await fastify.adjustmentService.expireAdjustment(adjustmentId, request.tenantId, request.user.sub);
-      // The SRS is itself the 'exams' target: remove the ended arrangement
-      // from entries for exams not yet sat and confirm the withdrawal.
-      await fastify.examEntryService.applyExamWithdrawals(request.tenantId);
-
-      await fastify.audit.record({
-        tenantId: request.tenantId,
-        entityType: 'reasonable_adjustment',
-        entityId: adjustmentId,
-        actionType: 'update',
-        actorType: 'user',
-        actorId: request.user.sub,
-        actorDisplayName: request.user.displayName,
-        correlationId: request.id,
-        reasonText: 'Adjustment expired',
+      const { personId, adjustmentId } = request.params as { personId: string; adjustmentId: string };
+      const body = request.body as { sourceCaseId: string; withdrawalReasonCode: string; replacementAdjustmentId?: string };
+      const adjustment = await fastify.adjustmentService.getAdjustment(adjustmentId, request.tenantId);
+      if (adjustment.personId !== personId) throw new NotFoundError('ReasonableAdjustment', adjustmentId);
+      const result = await fastify.adjustmentService.withdrawAuthorisedAdjustment(request.tenantId, adjustmentId, {
+        kind: 'wellbeing-case', sourceCaseId: body.sourceCaseId, reasonCode: body.withdrawalReasonCode as CaseWithdrawalReason,
+        ...(body.replacementAdjustmentId ? { replacementAdjustmentId: body.replacementAdjustmentId } : {}),
+      }, {
+        actorId: request.user.sub, actorType: 'integration', actorDisplayName: request.user.authorizedParty ?? request.user.displayName, correlationId: request.id,
       });
-
-      await reply.code(204).send();
+      if (result.changed) {
+        // The SRS is itself the 'exams' target; the worker loop is the backstop.
+        try {
+          await fastify.examEntryService.applyExamWithdrawals(request.tenantId);
+        } catch (err) {
+          request.log.warn({ err, adjustmentId }, 'Exam entry withdrawal deferred to the reconcile loop');
+        }
+      }
+      await reply.send({ ...result, validTo: result.validTo.toISOString() });
     },
   );
-
-  // ── Outcome document ────────────────────────────────────────────────────
-  //
-  // Detail document expanding on the coded adjustment (e.g. a specific
-  // seating/equipment/software specification), when type/scope/notes alone
-  // aren't expressive enough. Staff-authored (upload is adjustment:write
-  // only — a student can view but not attach their own "official" outcome
-  // document); download is self-or-all, matching the list route above.
 
   fastify.post(
     '/students/:personId/adjustments/:adjustmentId/outcome-document',

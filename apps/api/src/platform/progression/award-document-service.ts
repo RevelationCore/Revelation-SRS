@@ -16,12 +16,12 @@ import {
   type StudentDocument,
   withTenantContext,
 } from '@revelation-srs/db';
-import { createPostgresDocumentAdapter } from '@revelation-srs/documents';
 import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import type { BusinessCaseService } from '../cases/business-case-service.js';
 import { clockNow } from '../clock.js';
+import type { ApiDocumentStore } from '../documents/document-store.js';
 import type { ValueSetService } from '../value-sets/service.js';
 
 import { type DocumentRenderer, PdfmakeRenderer } from './document-renderer.js';
@@ -86,6 +86,7 @@ export class AwardDocumentService {
   constructor(
     private readonly db: Db,
     private readonly valueSets: ValueSetService,
+    private readonly documents: ApiDocumentStore,
     private readonly businessCases?: BusinessCaseService,
     private readonly signer: DocumentSigner = new LocalKeySigner(),
     private readonly renderer: DocumentRenderer = new PdfmakeRenderer(),
@@ -149,10 +150,12 @@ export class AwardDocumentService {
       }
       const issueNumber = prior.reduce((max, p) => Math.max(max, p.issueNumber), 0) + 1;
       if (issueNumber !== priorCount + 1) throw new ConflictError('Another issue of this document was made at the same time; try again');
-      const stored = await createPostgresDocumentAdapter(tx).store({
+      // Rendered here from the frozen snapshot; nothing in it was uploaded, so
+      // it is stored as system-generated rather than scanned (ADR-030 item 10).
+      const stored = await this.documents.adapter(tx).store(this.documents.systemContent({
         tenantId, ownerService: 'award-documents', ownerRef: issueId, filename: `${input.documentTypeCode}-${issueNumber}.pdf`,
         mimeType: 'application/pdf', content: rendered.pdf, actorId,
-      });
+      }, 'award-document-render'));
       await tx.insert(documentIssues).values({
         id: issueId, tenantId: tenantId as Uuid, studentDocumentId: doc.id, issueNumber, issueTypeCode, contentSnapshot: snapshot,
         contentHash, verificationCode: code, channelCode: input.channelCode, issuedBy: actorId, issuedAt,
@@ -325,7 +328,7 @@ export class AwardDocumentService {
   async pdf(tenantId: string, issueId: string, actorId: string): Promise<{ filename: string; content: Buffer }> {
     const issue = await this.#issue(tenantId, issueId);
     if (!issue.renderedDocumentId) throw new NotFoundError('Rendered document', issueId);
-    const doc = await withTenantContext(this.db, tenantId, (tx) => createPostgresDocumentAdapter(tx).retrieve(tenantId, issue.renderedDocumentId!, actorId));
+    const doc = await withTenantContext(this.db, tenantId, (tx) => this.documents.adapter(tx).retrieve(tenantId, issue.renderedDocumentId!, actorId));
     return { filename: doc.filename, content: doc.content };
   }
 

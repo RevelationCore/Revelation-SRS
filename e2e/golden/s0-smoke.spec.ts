@@ -22,6 +22,7 @@ import { createHmac } from 'node:crypto';
 import { type Page, test, expect } from '@playwright/test';
 
 import { GOLDEN_IDS } from '../../packages/demo-data/src/golden-ids.js';
+import { devSession } from '../helpers/auth.js';
 
 const ADMIN_URL = process.env['DEMO_GOLDEN_ADMIN_URL'] ?? 'http://localhost:5173';
 const API_URL   = process.env['DEMO_GOLDEN_API_URL']   ?? 'http://localhost:3000';
@@ -63,15 +64,9 @@ function goldenStaffToken(tenantId: string): string {
   });
 }
 
+/** A BFF development session for the golden staff user (ADR-026, BL-162). */
 async function injectStaffAuth(page: Page, tenantId: string): Promise<void> {
-  const token = goldenStaffToken(tenantId);
-  await page.addInitScript(
-    ({ t }: { t: string }) => {
-      localStorage.setItem('srs_admin_token',         t);
-      localStorage.setItem('srs_admin_refresh_token', t);
-    },
-    { t: token },
-  );
+  await devSession(page, ADMIN_URL, goldenStaffToken(tenantId));
 }
 
 // ─── Demo status preflight ─────────────────────────────────────────────────────

@@ -55,6 +55,16 @@ jobs:
         env:
           DATABASE_URL: postgresql://srs:srs@localhost:5432/srs
 
+      # Production mode refuses to start without a NATS user seed (BL-337). The
+      # compose NATS has no auth and accepts any, so generate a throwaway one.
+      - name: Generate a NATS user seed
+        id: nkey
+        working-directory: apps/api
+        run: |
+          seed=$(node --input-type=module -e "import { nkeys } from 'nats'; process.stdout.write(new TextDecoder().decode(nkeys.createUser().getSeed()))")
+          echo "::add-mask::$seed"
+          echo "seed=$seed" >> "$GITHUB_OUTPUT"
+
       - name: Start API server
         run: |
           pnpm --filter '@revelation-srs/api' start &
@@ -64,9 +74,15 @@ jobs:
             sleep 2
           done
         env:
-          DATABASE_URL:     postgresql://srs:srs@localhost:5432/srs
+          # The API connects as the application role (row-level security applies).
+          DATABASE_URL:     postgresql://srs_api:srs_api@localhost:5432/srs
           NATS_URL:         nats://localhost:4222
-          JWT_SECRET:       zap-dast-secret
+          NATS_NKEY_SEED:   ${{ steps.nkey.outputs.seed }}
+          # Production mode needs a real scanner or none at all (ADR-030): no
+          # clamd here, so uploads are refused with 503 rather than stored unscanned.
+          DOCUMENT_SCANNER: reject
+          # Production mode accepts only Keycloak's RS256 tokens.
+          KEYCLOAK_JWKS_URL: http://localhost:8081/realms/srs/protocol/openid-connect/certs
           NODE_ENV:         production
           LOG_LEVEL:        warn
           CORS_ORIGINS:     http://localhost:5173

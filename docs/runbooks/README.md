@@ -18,6 +18,7 @@ and on-call engineers.
 | [07 — Demo Rotation](07-demo-rotation.md) | Demo data refresh; demo environment validation failures |
 | [08 — Security Incident](08-security-incident.md) | Suspected breach, unusual access patterns, CVE in deployed image |
 | [09 — Accessibility Issue](09-accessibility-issue.md) | Accessibility complaint or regression; WCAG failure reported |
+| [10 — Document Scanning](10-document-scanning.md) | First rollout of malware scanning; rescanning old documents; malware or scanner-down alerts |
 
 ## Shared reference
 

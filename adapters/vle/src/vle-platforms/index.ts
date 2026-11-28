@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '@revelation-srs/service-client';
+
 import { CanvasDriver } from './canvas-driver.js';
 import type { VlePlatform, VlePlatformDriver } from './driver.js';
 import { MoodleDriver, type MoodleStrategy } from './moodle-driver.js';
@@ -23,6 +25,6 @@ export function createPlatformDriver(
       if (!apiToken) throw new Error(`VLE_API_TOKEN is required for VLE_PLATFORM=${platform}`);
       return platform === 'canvas'
         ? new CanvasDriver(baseUrl, apiToken)
-        : new MoodleDriver(baseUrl, apiToken, fetch, opts.moodleStrategy ?? 'quiz-overrides');
+        : new MoodleDriver(baseUrl, apiToken, fetchWithTimeout, opts.moodleStrategy ?? 'quiz-overrides');
   }
 }

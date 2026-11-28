@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/PersonMergedV1Payload",
+  "definitions": {
+    "PersonMergedV1Payload": {
+      "type": "object",
+      "properties": {
+        "mergeId": {
+          "type": "string"
+        },
+        "survivorPersonId": {
+          "type": "string"
+        },
+        "mergedPersonId": {
+          "type": "string"
+        },
+        "effectiveAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "mergeId",
+        "survivorPersonId",
+        "mergedPersonId",
+        "effectiveAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$id": "https://schemas.revelation-srs.io/events/person/merged/v1.json",
+  "title": "PersonMergedV1Payload",
+  "description": "Payload schema for srs.person.merged v1.0.0"
+}

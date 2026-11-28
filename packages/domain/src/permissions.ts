@@ -27,7 +27,29 @@ export const ROLES = [
   // Phase 5 D-38: self-service audiences outside the back office.
   'applicant',
   'pgr-examiner',
+  // ADR-028: exceptional-circumstances claims, named after the BP-04-005 actors.
+  'ec-case-officer',
+  'ec-decision-maker',
+  // ADR-029: the wellbeing service's own role for its two hand-offs, honoured
+  // only from its tenant-bound client (packages/auth bindServiceRoles).
+  'wellbeing-service',
+  // ADR-032: the VLE connector's own role, honoured only from its tenant-bound
+  // client; it holds the three VLE-only permissions and nothing else.
+  'vle-connector-service',
+  // ADR-031: BP-08-001's Identity Resolution Officer prepares and decides merges (never both on one case).
+  'identity-resolution-officer',
+  // ADR-033: approves manual adjustments (and releases migrated ones) under
+  // BP-04-004's delegated authority; never held with adjustment:propose.
+  'adjustment-approver',
+  // SME-6: proposes a manual adjustment, for disability-service staff outside registry.
+  'adjustment-proposer',
+  // BP-06 pre-review G5 (BL-279): the academic authority that confers awards
+  // (a Registrar or Senate delegate), not an IT role.
+  'conferment-authority',
 ] as const;
+
+/** The integration contracts the VLE connector serves (ADR-032). */
+export const VLE_CONTRACT_IDS: readonly string[] = ['vle-course-provisioning.v1', 'vle-adjustments.v1', 'vle-assessment-results.v1'];
 
 export type Role = (typeof ROLES)[number];
 
@@ -49,8 +71,23 @@ export const PERMISSION_ROLES = {
   'exam-board:read':           ['registry-administrator', 'exam-board-chair', 'exam-board-member', 'external-examiner'] as Role[],
   'exam-board:ratify':         ['exam-board-chair', 'registry-administrator'] as Role[],
   'adjustment:read:own':       ['student'] as Role[],
-  'adjustment:read:all':       ['registry-administrator', 'wellbeing-advisor', 'integration-service'] as Role[],
+  'adjustment:read:all':       ['registry-administrator', 'wellbeing-advisor', 'integration-service', 'adjustment-approver'] as Role[],
   'adjustment:write':          ['registry-administrator', 'wellbeing-advisor'] as Role[],
+  // ADR-029: record an adjustment the wellbeing service approved; needs sourceCaseId.
+  'adjustment:record-approved':         ['wellbeing-service'] as Role[],
+  // ADR-034 item 4: end an adjustment its wellbeing case recorded, naming that case.
+  'adjustment:withdraw-approved':       ['wellbeing-service'] as Role[],
+  // ADR-033 item 2: a case-less adjustment is a proposal a second person
+  // approves. SME-6: not wellbeing-advisor, who has the governed case instead.
+  'adjustment:propose':        ['registry-administrator', 'adjustment-proposer'] as Role[],
+  'adjustment:approve-manual': ['adjustment-approver'] as Role[],
+  // ADR-033 item 7, SME-8: distribute a reconciled migration batch.
+  'adjustment:release-migrated': ['adjustment-approver'] as Role[],
+  // ADR-034 item 8: end a manual, migrated or legacy adjustment early, by a
+  // proposal a second person decides. wellbeing-advisor may propose (these
+  // adjustments have no case); no role both proposes and approves.
+  'adjustment:propose-withdrawal': ['registry-administrator', 'adjustment-proposer', 'wellbeing-advisor'] as Role[],
+  'adjustment:approve-withdrawal': ['adjustment-approver'] as Role[],
   // Work the adjustment task queue: confirm, by hand, that an instruction for
   // a target with no connected system was applied or removed.
   'adjustment:fulfil':         ['registry-administrator', 'engagement-officer', 'tenant-administrator'] as Role[],
@@ -92,9 +129,12 @@ export const PERMISSION_ROLES = {
   // assessment, panel, approve/reject), distinct from the `adjustment:*`
   // permissions above which gate the core-SRS *distributed outcome* record.
   'adjustment-case:read:own':  ['student'] as Role[],
-  'adjustment-case:read:all':  ['wellbeing-advisor', 'wellbeing-specialist-assessor', 'wellbeing-panel-chair', 'registry-administrator'] as Role[],
+  // BL-237: registry receives the decided outcome in core (ADR-017), not the case.
+  'adjustment-case:read:all':  ['wellbeing-advisor', 'wellbeing-specialist-assessor', 'wellbeing-panel-chair'] as Role[],
   'adjustment-case:write:own': ['student'] as Role[],
-  'adjustment-case:manage':    ['wellbeing-advisor', 'registry-administrator'] as Role[],
+  'adjustment-case:manage':    ['wellbeing-advisor'] as Role[],
+  // BL-239: correcting a case's status outside the state machine is its own permission.
+  'adjustment-case:correct-status': ['wellbeing-advisor', 'wellbeing-panel-chair'] as Role[],
   'adjustment-case:assess':    ['wellbeing-specialist-assessor', 'wellbeing-advisor'] as Role[],
   'special-category:read':     ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'wellbeing-panel-chair', 'wellbeing-auditor', 'dpo', 'registry-administrator'] as Role[],
   'mh-session-note:read':      ['wellbeing-mental-health-advisor', 'wellbeing-auditor', 'dpo'] as Role[],
@@ -105,7 +145,7 @@ export const PERMISSION_ROLES = {
   'mental-health-case:manage': ['wellbeing-advisor', 'wellbeing-mental-health-advisor'] as Role[],
   'early-warning:read':        ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'wellbeing-auditor', 'dpo'] as Role[],
   'early-warning:triage':      ['wellbeing-advisor', 'wellbeing-mental-health-advisor'] as Role[],
-  'panel-decision:write':      ['wellbeing-panel-chair', 'registry-administrator'] as Role[],
+  'panel-decision:write':      ['wellbeing-panel-chair'] as Role[],
   'wellbeing-sar:export':      ['wellbeing-auditor', 'dpo'] as Role[],
   'wellbeing-retention:write': ['wellbeing-auditor', 'registry-administrator'] as Role[],
   'config:read':               ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
@@ -114,6 +154,10 @@ export const PERMISSION_ROLES = {
   'value-set:translate-platform': ['system-administrator'] as Role[],
   'integration:read':          ['registry-administrator', 'tenant-administrator', 'system-administrator', 'integration-service'] as Role[],
   'integration:manage':        ['tenant-administrator', 'integration-service'] as Role[],
+  // ADR-032: machine permissions named after their target; the target is enforced in the route.
+  'integration-registration:use:vle': ['vle-connector-service'] as Role[],
+  'mark:record-from-vle':             ['vle-connector-service'] as Role[],
+  'adjustment-distribution:reply:vle': ['vle-connector-service'] as Role[],
   'audit:read':                ['dpo', 'system-administrator', 'wellbeing-auditor'] as Role[],
   'tenant:manage':             ['system-administrator'] as Role[],
   'rule:read':                          ['registry-administrator', 'tenant-administrator'] as Role[],
@@ -132,10 +176,18 @@ export const PERMISSION_ROLES = {
   'disability:write':                   ['wellbeing-advisor', 'wellbeing-mental-health-advisor', 'registry-administrator'] as Role[],
   'exam-board:write':                   ['registry-administrator'] as Role[],
   'circumstances:read:own':             ['student'] as Role[],
-  'circumstances:read':                 ['registry-administrator', 'wellbeing-advisor'] as Role[],
-  'circumstances:write':                ['registry-administrator'] as Role[],
+  'circumstances:read':                 ['registry-administrator', 'wellbeing-advisor', 'ec-case-officer'] as Role[],
+  'circumstances:write':                ['registry-administrator', 'ec-case-officer'] as Role[],
   /** Decide a proposed EC outcome (D-41); never the proposer or the person who recorded the claim. */
-  'circumstances:decide':               ['registry-administrator', 'exam-board-chair'] as Role[],
+  // ADR-028: deciding is held only by the decision maker (amends Phase 5 D-41).
+  'circumstances:decide':               ['ec-decision-maker'] as Role[],
+  // ADR-029: record an EC outcome the wellbeing service determined (amends ADR-028 item 8).
+  'circumstances:record-determined':    ['wellbeing-service'] as Role[],
+  /** Wellbeing EC claims (modules/wellbeing): the advisers who run the claim workflow. Needs institutional sign-off. */
+  // ADR-028: registry receives the decided outcome in core (ADR-017), not the claim.
+  'ec-claim:read':                      ['ec-case-officer', 'ec-decision-maker', 'wellbeing-advisor', 'wellbeing-auditor'] as Role[],
+  'ec-claim:manage':                    ['ec-case-officer', 'wellbeing-advisor'] as Role[],
+  'ec-claim:determine':                 ['ec-decision-maker'] as Role[],
   'progression:read':                   ['registry-administrator', 'exam-board-chair', 'exam-board-member'] as Role[],
   'progression:write':                  ['registry-administrator'] as Role[],
   'regulatory:read':                    ['registry-administrator', 'regulatory-officer', 'dpo', 'tenant-administrator', 'system-administrator'] as Role[],
@@ -173,7 +225,14 @@ export const PERMISSION_ROLES = {
   'email:receive':                      ['integration-service'] as Role[],
   'email-simulator:use':                ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'audit-log:read':                     ['dpo', 'system-administrator', 'registry-administrator', 'wellbeing-auditor'] as Role[],
-  'retention:enforce':                  ['dpo', 'system-administrator'] as Role[],
+  // BP-08 pre-review R08-8 (BL-287): reviewing the audit trail is not part of
+  // reading it, and is not open to the people whose actions are audited.
+  'audit-review:manage':                ['dpo'] as Role[],
+  'audit:seal':                         ['dpo', 'system-administrator'] as Role[],
+  // BL-284: irreversible disposal is a DPO decision, not an IT operation.
+  'retention:enforce':                  ['dpo'] as Role[],
+  // BL-327: a second person approves a disposal plan; never its preparer (enforced in the service).
+  'retention:approve':                  ['dpo'] as Role[],
   'notifications:read':                 ['student', 'registry-administrator', 'tenant-administrator', 'system-administrator', 'external-examiner'] as Role[],
   'notifications:write':                ['registry-administrator', 'tenant-administrator', 'system-administrator'] as Role[],
   'circumstances:submit':               ['student'] as Role[],
@@ -193,6 +252,10 @@ export const PERMISSION_ROLES = {
   'engagement-outcome:read:own':        ['student'] as Role[],
   'engagement-outcome:read:all':        ['personal-tutor', 'engagement-officer', 'registry-administrator', 'integration-service'] as Role[],
   'identity:manage':                    ['dpo', 'registry-administrator'] as Role[],
+  // ADR-031: identity resolution cases. Deciding a merge is the officer's alone, and never the preparer's.
+  'identity-resolution:read':           ['identity-resolution-officer', 'registry-administrator', 'dpo'] as Role[],
+  'identity-resolution:prepare':        ['identity-resolution-officer', 'registry-administrator'] as Role[],
+  'identity-resolution:decide':         ['identity-resolution-officer'] as Role[],
   // Identity verification results, including fraud flags: only those who act on them (D-6).
   'identity-verification:read':         ['registry-administrator', 'dpo', 'regulatory-officer'] as Role[],
   // Academic misconduct outcomes and their effects, never allegations or evidence (D-5; ADR-017).
@@ -242,7 +305,8 @@ export const PERMISSION_ROLES = {
   // Award recommendation and conferment (BPR-D14): the board recommends,
   // a delegated authority who is not the recommender confers.
   'award:recommend':                     ['exam-board-chair', 'registry-administrator'] as Role[],
-  'award:confer':                        ['registry-administrator', 'tenant-administrator'] as Role[],
+  // G5 (BL-279): not tenant-administrator, an IT role with no academic authority.
+  'award:confer':                        ['registry-administrator', 'conferment-authority'] as Role[],
   // Reassessment plans follow a ratified progression decision.
   'reassessment:read':                   ['registry-administrator', 'exam-board-chair', 'exam-board-member', 'module-tutor', 'personal-tutor'] as Role[],
   'reassessment:write':                  ['registry-administrator'] as Role[],

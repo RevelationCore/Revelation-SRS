@@ -12,6 +12,9 @@
  * permission?) before invoking the adapter at all.
  */
 
+import type { ScannedUpload } from './scanned-upload.js';
+
+/** What a caller hands the store to be scanned (ADR-030). */
 export interface StoreDocumentInput {
   tenantId:     string;
   ownerService: string;
@@ -75,8 +78,25 @@ export class DocumentTypeNotAllowedError extends Error {
   }
 }
 
+/** The malware check rejected the upload; its metadata is kept, its content never written (ADR-030). */
+export class DocumentRejectedError extends Error {
+  constructor(public readonly documentId: string, public readonly checksumSha256: string) {
+    super('This file was rejected by the malware check. If it is password-protected or contains macros, save a copy without them and upload it again.');
+    this.name = 'DocumentRejectedError';
+  }
+}
+
+/** The document has not passed the malware check, so it is not served (ADR-030). */
+export class DocumentNotAvailableError extends Error {
+  constructor(public readonly documentId: string, public readonly reason: 'pending-scan' | 'infected') {
+    super('This document has not passed the malware check and cannot be downloaded.');
+    this.name = 'DocumentNotAvailableError';
+  }
+}
+
 export interface DocumentStorageAdapter {
-  store(input: StoreDocumentInput): Promise<StoredDocument>;
+  /** Stores only an upload the document store scanned (or marked system content); anything else is a TypeError. */
+  store(upload: ScannedUpload): Promise<StoredDocument>;
   retrieve(tenantId: string, documentId: string, actorId: string): Promise<RetrievedDocument>;
   getMetadata(tenantId: string, documentId: string): Promise<DocumentMetadata>;
   softDelete(tenantId: string, documentId: string, actorId: string, reason: string): Promise<void>;

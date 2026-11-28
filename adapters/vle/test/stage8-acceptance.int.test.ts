@@ -49,7 +49,7 @@ import { MarkSubmissionService }        from '../src/services/mark-submission-se
 import { HttpVleClient }               from '../src/vle-client/client.js';
 import { StubVleDriver }               from '../src/vle-platforms/stub-driver.js';
 
-import { startTestApp, type TestVleApp } from './helpers/test-app.js';
+import { startTestApp, type TestVleApp, staticTokens } from './helpers/test-app.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const log       = pino({ level: 'silent' });
@@ -86,7 +86,7 @@ function makeFullConsumer(ctx: TestVleApp): VleEventConsumer {
     'nats://unused', ctx.db, TENANT, log,
     {
       vleClient:    new HttpVleClient(ctx.stubVleBaseUrl),
-      srsAckClient: new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, 'test-token'),
+      srsAckClient: new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, staticTokens, ctx.tenantId),
       platformDriver: new StubVleDriver(ctx.stubVleBaseUrl),
     },
   );
@@ -195,6 +195,9 @@ const STAGE_0_SUBJECTS = [
   // meant nothing was ever applied.
   'srs.adjustment.distribution-requested.vle',
   'srs.adjustment.distribution-withdrawal-requested.vle',
+  // ADR-031 items 7 and 10 (BL-358, BL-359): re-key mappings on merge and unmerge.
+  'srs.person.merged',
+  'srs.person.unmerged',
 ] as const;
 
 describe('Stage 8 — event contract compliance (static)', () => {
@@ -360,7 +363,7 @@ describe('Stage 8 — golden-path scenarios', () => {
     });
 
     // Outbound: submit mark via MarkSubmissionService
-    const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, 'test-token');
+    const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, staticTokens, ctx.tenantId);
     const markService   = new MarkSubmissionService(ctx.db, TENANT, srsMarkClient);
     const { markId }    = await markService.submitMark({
       moduleRegistrationId, assessmentComponentId, sourceReference, rawMark: 72,
@@ -431,7 +434,7 @@ describe('Stage 8 — golden-path scenarios', () => {
     expect(ctx.stubSrsAck.getAckCalls()).toHaveLength(1);
 
     // F-VLE-SIS-01 outbound — mark submission
-    const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, 'test-token');
+    const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, staticTokens, ctx.tenantId);
     const markService   = new MarkSubmissionService(ctx.db, TENANT, srsMarkClient);
     const { markId }    = await markService.submitMark({
       moduleRegistrationId, assessmentComponentId,
@@ -632,7 +635,7 @@ describe('Stage 8 — resilience and recovery', () => {
   });
 
   it('5.2 duplicate mark submission (same sourceReference) posts to SRS only once', async () => {
-    const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, 'test-token');
+    const srsMarkClient = new HttpSrsMarkClient(ctx.stubSrsMarksBaseUrl, staticTokens, ctx.tenantId);
     const service       = new MarkSubmissionService(ctx.db, TENANT, srsMarkClient);
     const opts = {
       moduleRegistrationId:  crypto.randomUUID(),

@@ -251,46 +251,53 @@ export class FeatureFlagService {
     }).where(eq(featureFlags.id, featureFlagId as `${string}-${string}-${string}-${string}-${string}`));
   }
 
-  async getImpact(featureFlagId: string): Promise<FlagImpactDto> {
+  /**
+   * What an assignment change would touch, as far as the caller may see: the
+   * platform-wide assignments and the caller's own tenant. Other tenants'
+   * assignments are never counted or listed (tenant isolation).
+   */
+  async getImpact(featureFlagId: string, tenantId: string): Promise<FlagImpactDto> {
     const flag = await this.getFlag(featureFlagId);
     const now  = clockNow();
 
-    const [countRow] = await this.db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(featureFlagAssignments)
-      .where(and(
-        eq(featureFlagAssignments.flagId, featureFlagId as `${string}-${string}-${string}-${string}-${string}`),
-        eq(featureFlagAssignments.statusCode, 'active'),
-        or(isNull(featureFlagAssignments.activeTo), gt(featureFlagAssignments.activeTo, now)),
-      ));
+    return withTenantContext(this.db, tenantId, async (tx) => {
+      const [countRow] = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(featureFlagAssignments)
+        .where(and(
+          eq(featureFlagAssignments.flagId, featureFlagId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(featureFlagAssignments.statusCode, 'active'),
+          or(isNull(featureFlagAssignments.activeTo), gt(featureFlagAssignments.activeTo, now)),
+        ));
 
-    const tenantRows = await this.db
-      .selectDistinct({ tenantId: featureFlagAssignments.tenantId })
-      .from(featureFlagAssignments)
-      .where(and(
-        eq(featureFlagAssignments.flagId, featureFlagId as `${string}-${string}-${string}-${string}-${string}`),
-        eq(featureFlagAssignments.statusCode, 'active'),
-        isNotNull(featureFlagAssignments.tenantId),
-        or(isNull(featureFlagAssignments.activeTo), gt(featureFlagAssignments.activeTo, now)),
-      ));
+      const tenantRows = await tx
+        .selectDistinct({ tenantId: featureFlagAssignments.tenantId })
+        .from(featureFlagAssignments)
+        .where(and(
+          eq(featureFlagAssignments.flagId, featureFlagId as `${string}-${string}-${string}-${string}-${string}`),
+          eq(featureFlagAssignments.statusCode, 'active'),
+          isNotNull(featureFlagAssignments.tenantId),
+          or(isNull(featureFlagAssignments.activeTo), gt(featureFlagAssignments.activeTo, now)),
+        ));
 
-    const triggerRows = await this.db
-      .select({ triggerKey: workflowTriggerRules.triggerKey })
-      .from(workflowTriggerRules)
-      .where(and(
-        eq(workflowTriggerRules.active, true),
-        sql`${workflowTriggerRules.configuration}::jsonb @> ${JSON.stringify({ flagKey: flag.flagKey })}::jsonb`,
-      ));
+      const triggerRows = await tx
+        .select({ triggerKey: workflowTriggerRules.triggerKey })
+        .from(workflowTriggerRules)
+        .where(and(
+          eq(workflowTriggerRules.active, true),
+          sql`${workflowTriggerRules.configuration}::jsonb @> ${JSON.stringify({ flagKey: flag.flagKey })}::jsonb`,
+        ));
 
-    const defaultVariant = flag.variants.find((v) => v.variantKey === flag.defaultVariantKey);
-    return {
-      activeAssignmentCount:      countRow?.count ?? 0,
-      activeTenantsCount:         tenantRows.length,
-      activeTenantIds:            tenantRows.map((r) => r.tenantId!).filter(Boolean),
-      referencingTriggerRuleKeys: triggerRows.map((r) => r.triggerKey),
-      currentDefaultVariantKey:   flag.defaultVariantKey,
-      currentDefaultValue:        defaultVariant?.value ?? null,
-    };
+      const defaultVariant = flag.variants.find((v) => v.variantKey === flag.defaultVariantKey);
+      return {
+        activeAssignmentCount:      countRow?.count ?? 0,
+        activeTenantsCount:         tenantRows.length,
+        activeTenantIds:            tenantRows.map((r) => r.tenantId!).filter(Boolean),
+        referencingTriggerRuleKeys: triggerRows.map((r) => r.triggerKey),
+        currentDefaultVariantKey:   flag.defaultVariantKey,
+        currentDefaultValue:        defaultVariant?.value ?? null,
+      };
+    });
   }
 
   async createAssignment(

@@ -41,16 +41,18 @@ async function start(scenario) {
   command('pnpm', ['setup:keycloak']);
 
   const log = await import('node:fs').then(({ openSync }) => openSync(logPath, 'a'));
-  const child = spawn('pnpm', ['--parallel', '--filter', '@revelation-srs/api', '--filter', '@revelation-srs/admin', '--filter', '@revelation-srs/portal', 'dev'], {
+  const child = spawn('pnpm', ['--parallel', '--filter', '@revelation-srs/api', '--filter', '@revelation-srs/bff', '--filter', '@revelation-srs/admin', '--filter', '@revelation-srs/portal', 'dev'], {
     detached: true,
     stdio: ['ignore', log, log],
-    env: { ...process.env, DEMO_DATA_ENABLED: 'true', VITE_DEMO_MODE: 'true' },
+    // The demo scenarios register the 'development' environment; run as it, so
+    // Operations → Environment runtime shows it (BL-402).
+    env: { ...process.env, DEMO_DATA_ENABLED: 'true', VITE_DEMO_MODE: 'true', SRS_ENVIRONMENT_CODE: process.env.SRS_ENVIRONMENT_CODE ?? 'development' },
   });
   child.unref();
   writeFileSync(statePath, JSON.stringify({ pid: child.pid, previouslyRunning, startedAt: new Date().toISOString(), scenario }, null, 2));
 
   try {
-    await waitForServices(['api', 'admin', 'portal'], 120_000);
+    await waitForServices(['api', 'adminBff', 'portalBff', 'admin', 'portal'], 120_000);
   } catch (error) {
     console.error(`Application startup failed. Diagnostic log: ${logPath}`);
     throw error;

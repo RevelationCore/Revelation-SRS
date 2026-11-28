@@ -25,19 +25,25 @@ import {
 type Tab = 'cas' | 'compliance' | 'decisions';
 
 export function UkviPage() {
+  const { roles } = useAuth();
+  // The page is for regulatory:read holders; CAS records need cas:read too
+  // (BL-403: the DPO reads compliance and sponsor decisions, not CAS cases).
+  const canReadCas = userHasAnyPermission(roles, ['cas:read']);
   const [tab, setTab] = useState<Tab>('cas');
+  // Roles can arrive after the first render, so decide on every render.
+  const shown: Tab = tab === 'cas' && !canReadCas ? 'compliance' : tab;
 
   return (
     <div>
       <PageHeader title="UKVI" />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+      <Tabs value={shown} onValueChange={(v) => setTab(v as Tab)}>
         <TabsList className="mb-6">
-          <TabsTrigger value="cas">CAS</TabsTrigger>
+          {canReadCas && <TabsTrigger value="cas">CAS</TabsTrigger>}
           <TabsTrigger value="compliance">Compliance alerts</TabsTrigger>
           <TabsTrigger value="decisions">Sponsor decisions</TabsTrigger>
         </TabsList>
-        <TabsContent value="cas"><CasTab /></TabsContent>
+        {canReadCas && <TabsContent value="cas"><CasTab /></TabsContent>}
         <TabsContent value="compliance"><ComplianceTab /></TabsContent>
         <TabsContent value="decisions"><SponsorDecisionsTab /></TabsContent>
       </Tabs>

@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { PendingApprovalsPage } from '../src/pages/PendingApprovalsPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ME = 'test-user-001';
 const subject = { personId: 'person-1', studentNumber: 'S1001', studentName: 'Ada Lovelace', programmeCode: 'BSC-CS', programmeTitle: 'BSc CS' };
 

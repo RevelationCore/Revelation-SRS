@@ -9,7 +9,7 @@ import { renderWithProviders } from './render.js';
 import { ApplicationsPage } from '../src/pages/ApplicationsPage.js';
 import { ApplicationDetailPage } from '../src/pages/ApplicationDetailPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ME = 'test-user-001';
 
 const VALUE_SETS: Record<string, Array<{ code: string; displayLabel: string }>> = {

@@ -32,6 +32,18 @@ spec:
               app.kubernetes.io/name: ingress-nginx
       ports:
         - port: 3000
+    # From the services that call core: the wellbeing hand-offs (ADR-029),
+    # attendance's engagement outcomes and value sets, the VLE adapter's
+    # registry, marks and acknowledgements (BL-331), and the two BFFs, which
+    # carry every browser call (ADR-026).
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [srs-wellbeing, srs-attendance, srs-vle-adapter, srs-admin-bff, srs-portal-bff]
+      ports:
+        - port: 3000
     # From Prometheus scraping
     - from:
         - namespaceSelector:
@@ -40,6 +52,13 @@ spec:
       ports:
         - port: 9464
   egress:
+    # To the malware scanner (ADR-030)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-clamav
+      ports:
+        - port: 3310
     # To PostgreSQL (operator-managed, may be external)
     - to:
         - ipBlock:
@@ -162,6 +181,13 @@ spec:
       ports:
         - port: 9465
   egress:
+    # To the malware scanner (ADR-030)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-clamav
+      ports:
+        - port: 3310
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
@@ -217,6 +243,7 @@ spec:
                   - srs-vle-adapter
                   - srs-wellbeing
                   - srs-attendance
+                  - srs-nats-streams   # declares SRS_EVENTS (BL-012)
       ports:
         - port: 4222
     # NATS cluster peering (production multi-node)
@@ -256,6 +283,30 @@ spec:
               app.kubernetes.io/name: srs-api
       ports:
         - port: 3004
+
+---
+# ── Wellbeing: accept ingress from the API and the BFFs only (BL-331, BL-163) ──
+# default-deny-ingress otherwise blocks everything. Browsers reach the
+# wellbeing service only through their backend-for-frontend (ADR-026).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-wellbeing
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-wellbeing
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [srs-api, srs-admin-bff, srs-portal-bff]
+      ports:
+        - port: 3002
 
 ---
 # ── Temporal: accept ingress from API and Worker ──────────────────────────────
@@ -343,3 +394,97 @@ spec:
       ports:
         - port: 53
           protocol: UDP
+---
+# ── ClamAV: accept scans from the uploading services only (ADR-030) ─────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-clamav
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-clamav
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [srs-api, srs-worker, srs-wellbeing]
+      ports:
+        - port: 3310
+  egress:
+    # DNS, and freshclam to the signature mirror (NetworkPolicy cannot select
+    # by DNS name; an overlay can point PrivateMirror at an internal mirror).
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+---
+# ── Admin BFF: accept its SPA's nginx, and Keycloak's back-channel logout (ADR-026) ──
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-admin-bff
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-admin-bff
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-admin
+      ports:
+        - port: 3010
+    # Keycloak posts back-channel logout tokens. It runs outside this
+    # namespace; narrow this to its namespace or address per deployment.
+    - from:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+      ports:
+        - port: 3010
+
+---
+# ── Portal BFF: accept its SPA's nginx, and Keycloak's back-channel logout (ADR-026) ──
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-portal-bff
+  namespace: revelation-srs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: srs-portal-bff
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: srs-portal
+      ports:
+        - port: 3010
+    # Keycloak posts back-channel logout tokens. It runs outside this
+    # namespace; narrow this to its namespace or address per deployment.
+    - from:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+      ports:
+        - port: 3010
+

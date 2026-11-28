@@ -49,10 +49,11 @@ data:
     path "database/creds/srs-api" {
       capabilities = ["read"]
     }
-    path "kv/data/srs/keycloak" {
+    path "kv/data/srs/nats" {
       capabilities = ["read"]
     }
-    path "kv/data/srs/nats" {
+    # BL-184: the key for the public verification IP hash.
+    path "kv/data/srs/api/public-verify" {
       capabilities = ["read"]
     }
 
@@ -69,6 +70,10 @@ data:
       capabilities = ["read"]
     }
     path "kv/data/srs/nats" {
+      capabilities = ["read"]
+    }
+    # ADR-029: the key for the hand-offs' client assertions.
+    path "kv/data/srs/wellbeing/service-client" {
       capabilities = ["read"]
     }
 
@@ -90,6 +95,27 @@ data:
     path "kv/data/srs/vle-adapter" {
       capabilities = ["read"]
     }
+    # ADR-032: the connector's own client key for calls to core.
+    path "kv/data/srs/vle-connector/service-client" {
+      capabilities = ["read"]
+    }
+
+  # ADR-026: each BFF reads its own client secret and session keys, and the shared srs-bff database role.
+  policy-admin-bff.hcl: |
+    path "database/creds/srs-bff" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/bff/admin" {
+      capabilities = ["read"]
+    }
+
+  policy-portal-bff.hcl: |
+    path "database/creds/srs-bff" {
+      capabilities = ["read"]
+    }
+    path "kv/data/srs/bff/portal" {
+      capabilities = ["read"]
+    }
 
   policy-temporal.hcl: |
     path "kv/data/srs/temporal-db" {
@@ -104,7 +130,7 @@ data:
 
     NAMESPACE=revelation-srs
 
-    for svc in api worker wellbeing attendance temporal; do
+    for svc in api worker wellbeing attendance temporal admin-bff portal-bff; do
       echo "Applying policy: srs-${svc}"
       bao policy write "srs-${svc}" - < /dev/stdin <<POLICY
     $(cat "/etc/openbao-policies/policy-${svc}.hcl")
@@ -117,7 +143,7 @@ data:
     POLICY
 
     # Create Kubernetes auth roles (TTL 1h; max 24h)
-    for svc in api worker wellbeing attendance temporal; do
+    for svc in api worker wellbeing attendance temporal admin-bff portal-bff; do
       echo "Creating Kubernetes auth role: srs-${svc}"
       bao write "auth/kubernetes/role/srs-${svc}" \
         bound_service_account_names="srs-${svc}" \
@@ -145,5 +171,15 @@ data:
         default_ttl=1h \
         max_ttl=24h
     done
+
+    # Secrets the platform generates itself: created when absent, never
+    # overwritten (rotation is a deliberate `bao kv put`), never printed.
+    # BL-184: the key for the public verification IP hash, 64 hex characters.
+    if bao kv get -field=ip_key kv/srs/api/public-verify >/dev/null 2>&1; then
+      echo "kv/srs/api/public-verify already set"
+    else
+      echo "Generating kv/srs/api/public-verify"
+      bao kv put kv/srs/api/public-verify ip_key="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')" >/dev/null
+    fi
 
     echo "OpenBao policy and role setup complete."

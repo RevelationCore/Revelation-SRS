@@ -8,7 +8,7 @@ import { DemoBanner } from '../src/components/DemoBanner.js';
 describe('portal demo context', () => {
   it('keeps Alpha, scenario, version and limitations visible', async () => {
     server.use(
-      http.get('http://localhost:3000/api/v1/demo/status', () =>
+      http.get('http://localhost:3000/bff/srs/api/v1/demo/status', () =>
         HttpResponse.json({ active: true, scenarioName: 'Module Selection', scenarioSlug: 'module-selection', schemaVersion: '0006', demoNow: '2026-06-01T00:00:00Z', nextResetAt: null }),
       ),
     );
@@ -24,7 +24,7 @@ describe('portal demo context', () => {
     let markHandled: () => void = () => {};
     const requestHandled = new Promise<void>((resolve) => { markHandled = resolve; });
     server.use(
-      http.get('http://localhost:3000/api/v1/demo/status', () => {
+      http.get('http://localhost:3000/bff/srs/api/v1/demo/status', () => {
         markHandled();
         return HttpResponse.json({ active: false, scenarioName: null, scenarioSlug: null, schemaVersion: null, demoNow: null, nextResetAt: null });
       }),

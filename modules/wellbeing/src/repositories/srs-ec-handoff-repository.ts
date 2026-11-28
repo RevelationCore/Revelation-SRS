@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm';
 
-import type { WellbeingDb, WellbeingTx } from '../db/client.js';
+import type { WellbeingTx } from '../db/client.js';
 import { srsEcHandoffOutbox } from '../db/schema/srs-ec-handoff.js';
 
 /** Idempotency key for an EC claim handoff. */
@@ -31,7 +31,7 @@ export async function enqueueEcHandoff(
 
 /** Fetch the outbox record for an EC claim (null if not yet enqueued). */
 export async function findEcHandoffForClaim(
-  db:        WellbeingDb | WellbeingTx,
+  db:        WellbeingTx,  // tenant context only: the outbox has RLS (BL-035)
   ecClaimId: string,
 ) {
   const rows = await db
@@ -44,7 +44,7 @@ export async function findEcHandoffForClaim(
 
 /** Mark an EC handoff record as successfully sent. */
 export async function markEcHandoffSent(
-  db:          WellbeingDb | WellbeingTx,
+  db:          WellbeingTx,  // tenant context only: the outbox has RLS (BL-035)
   outboxId:    string,
   srsResponse: Record<string, unknown>,
 ): Promise<void> {
@@ -56,7 +56,7 @@ export async function markEcHandoffSent(
 
 /** Mark an EC handoff record as failed and record the error. */
 export async function markEcHandoffFailed(
-  db:          WellbeingDb | WellbeingTx,
+  db:          WellbeingTx,  // tenant context only: the outbox has RLS (BL-035)
   outboxId:    string,
   errorDetail: string,
 ): Promise<void> {

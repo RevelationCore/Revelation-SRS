@@ -1,4 +1,4 @@
-import { createPostgresDocumentAdapter, DocumentTooLargeError, DocumentTypeNotAllowedError, type RetrievedDocument } from '@revelation-srs/documents';
+import type { RetrievedDocument } from '@revelation-srs/documents';
 import {
   businessCases,
   caseDecisions,
@@ -16,10 +16,11 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
+import { ConflictError, NotFoundError } from '@revelation-srs/domain';
 import { and, desc, eq, gt, inArray, isNull, lte, or } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
+import type { ApiDocumentStore } from '../documents/document-store.js';
 
 import type { ExaminationService } from './examination-service.js';
 import type { ProgressReviewService } from './progress-review-service.js';
@@ -53,6 +54,7 @@ export class ResearchStaffService {
     private readonly db: Db,
     private readonly reviews: ProgressReviewService,
     private readonly examinations: ExaminationService,
+    private readonly documents: ApiDocumentStore,
   ) {}
 
   async resolve(tenantId: string, personId: string): Promise<ResearchScope> {
@@ -184,7 +186,7 @@ export class ResearchStaffService {
       eq(caseEvidenceReferences.tenantId, tenantId as Uuid), eq(caseEvidenceReferences.id, evidenceId as Uuid), eq(caseEvidenceReferences.businessCaseId, review.businessCaseId as Uuid),
     )).limit(1));
     if (!row?.evidenceRef.startsWith('documents:')) throw new NotFoundError('Evidence', evidenceId);
-    return withTenantContext(this.db, tenantId, (tx) => createPostgresDocumentAdapter(tx).retrieve(tenantId, row.evidenceRef.slice('documents:'.length), actorId));
+    return withTenantContext(this.db, tenantId, (tx) => this.documents.adapter(tx).retrieve(tenantId, row.evidenceRef.slice('documents:'.length), actorId));
   }
 
   async declareReviewConflict(tenantId: string, personId: string, memberId: string, conflictTypeCode: string): Promise<void> {
@@ -229,7 +231,7 @@ export class ResearchStaffService {
     if (!mine.confirmedAt || !mine.independenceCheckedAt) throw new ConflictError('The thesis is released once your appointment is confirmed');
     const thesis = await this.examinations.getThesisSubmission(tenantId, examinationCaseId);
     if (!thesis.storageRef.startsWith('documents:')) throw new NotFoundError('ThesisDocument', examinationCaseId);
-    return withTenantContext(this.db, tenantId, (tx) => createPostgresDocumentAdapter(tx).retrieve(tenantId, thesis.storageRef.slice('documents:'.length), actorId));
+    return withTenantContext(this.db, tenantId, (tx) => this.documents.adapter(tx).retrieve(tenantId, thesis.storageRef.slice('documents:'.length), actorId));
   }
 
   /** An examiner submits their own preliminary report (D-40). */
@@ -264,15 +266,10 @@ export class ResearchStaffService {
     return appointment;
   }
 
+  /** Called after the caller's checks (ADR-030): scan with no transaction open, then write. */
   async #store(tenantId: string, ownerService: string, ownerRef: string, file: { filename: string; mimeType: string; content: Buffer }, actorId: string): Promise<string> {
-    return withTenantContext(this.db, tenantId, async (tx) => {
-      try {
-        return (await createPostgresDocumentAdapter(tx).store({ tenantId, ownerService, ownerRef, filename: file.filename, mimeType: file.mimeType, content: file.content, actorId })).documentId;
-      } catch (err) {
-        if (err instanceof DocumentTooLargeError || err instanceof DocumentTypeNotAllowedError) throw new ValidationError(err.message);
-        throw err;
-      }
-    });
+    const scanned = await this.documents.scanUpload({ tenantId, ownerService, ownerRef, filename: file.filename, mimeType: file.mimeType, content: file.content, actorId });
+    return withTenantContext(this.db, tenantId, async (tx) => (await this.documents.adapter(tx).store(scanned)).documentId);
   }
 
   async #names(tenantId: string, personIds: string[]): Promise<Map<string, string>> {

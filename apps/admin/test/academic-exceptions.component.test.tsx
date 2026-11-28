@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { AcademicExceptionsTab } from '../src/pages/AcademicExceptionsTab.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ME = 'test-user-001';
 
 const VALUE_SETS: Record<string, Array<{ code: string; displayLabel: string }>> = {

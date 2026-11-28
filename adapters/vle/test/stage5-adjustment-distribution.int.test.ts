@@ -13,7 +13,7 @@
 
 import { randomUUID } from 'node:crypto';
 
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { pino } from 'pino';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type {
@@ -38,7 +38,7 @@ import { HttpVleClient } from '../src/vle-client/client.js';
 import type { VlePlatformDriver } from '../src/vle-platforms/driver.js';
 import { StubVleDriver } from '../src/vle-platforms/stub-driver.js';
 
-import { startTestApp, type TestVleApp } from './helpers/test-app.js';
+import { startTestApp, type TestVleApp, staticTokens } from './helpers/test-app.js';
 
 const log = pino({ level: 'silent' });
 const TENANT = '00000000-0000-0000-0000-000000000001';
@@ -84,7 +84,7 @@ function envelope<T>(type: string, payload: T): DomainEventEnvelope<T> {
 function consumer(opts: { driver?: VlePlatformDriver | null; logger?: typeof log } = {}): VleEventConsumer {
   return new VleEventConsumer('nats://unused', ctx.db, TENANT, opts.logger ?? log, {
     vleClient:    new HttpVleClient(ctx.stubVleBaseUrl),
-    srsAckClient: new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, 'test-token'),
+    srsAckClient: new HttpSrsAcknowledgementClient(ctx.stubSrsAckBaseUrl, staticTokens, ctx.tenantId),
     ...(opts.driver === null ? {} : { platformDriver: opts.driver ?? new StubVleDriver(ctx.stubVleBaseUrl) }),
   });
 }
@@ -421,3 +421,41 @@ describe('Stage 5 — coverage as courses and assessments change', () => {
     expect(result).toMatchObject({ driftCount: 0, repairedCount: 0 });
   });
 });
+
+describe('srs.person.merged (ADR-031 item 7, BL-358)', () => {
+  it('moves the merged person\'s VLE mappings to the survivor, once', async () => {
+    const c = consumer();
+    const merged = await enrolStudent(c);
+    await registerOnNewCourse(c, merged, 'MRG101');
+    const survivorPersonId = randomUUID();
+    const mergeId = randomUUID();
+    const event = () => envelope('srs.person.merged', { mergeId, survivorPersonId, mergedPersonId: merged.personId, effectiveAt: new Date().toISOString() });
+
+    await c.dispatch(event());
+    const maps = await ctx.db.select({ personId: enrolmentMap.personId }).from(enrolmentMap).where(eq(enrolmentMap.enrolmentId, merged.enrolmentId));
+    expect(maps.length).toBeGreaterThan(0);
+    expect(maps.every((m) => m.personId === survivorPersonId)).toBe(true);
+    const students = await ctx.db.select({ personId: studentEnrolmentMap.personId }).from(studentEnrolmentMap).where(eq(studentEnrolmentMap.enrolmentId, merged.enrolmentId));
+    expect(students.map((s) => s.personId)).toEqual([survivorPersonId]);
+
+    const count = async () => ((await ctx.db.execute(sql`SELECT count(*)::int AS n FROM vle_connector.person_merge_move WHERE merge_id = ${mergeId}::uuid`)) as unknown as Array<{ n: number }>)[0]!.n;
+    const moved = await count();
+    expect(moved).toBeGreaterThanOrEqual(2);
+    await c.dispatch(event());
+    expect(await count()).toBe(moved);
+  });
+
+  it('srs.person.unmerged moves the mappings back (BL-359)', async () => {
+    const c = consumer();
+    const merged = await enrolStudent(c);
+    await registerOnNewCourse(c, merged, 'UNM101');
+    const survivorPersonId = randomUUID();
+    const mergeId = randomUUID();
+    await c.dispatch(envelope('srs.person.merged', { mergeId, survivorPersonId, mergedPersonId: merged.personId, effectiveAt: new Date().toISOString() }));
+    await c.dispatch(envelope('srs.person.unmerged', { mergeId, survivorPersonId, restoredPersonId: merged.personId, effectiveAt: new Date().toISOString(), reallocatedToRestored: {} }));
+    const maps = await ctx.db.select({ personId: enrolmentMap.personId }).from(enrolmentMap).where(eq(enrolmentMap.enrolmentId, merged.enrolmentId));
+    expect(maps.length).toBeGreaterThan(0);
+    expect(maps.every((m) => m.personId === merged.personId)).toBe(true);
+  });
+});
+

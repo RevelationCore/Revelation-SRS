@@ -1,3 +1,5 @@
+import { callCoreAsService, type ServiceTokenSource } from '@revelation-srs/service-client';
+
 export interface SrsMarkSubmitInput {
   assessmentComponentId: string;
   rawMark:               number;
@@ -26,8 +28,9 @@ export class SrsMarkError extends Error {
 
 export class HttpSrsMarkClient implements SrsMarkClient {
   constructor(
-    private readonly srsBaseUrl:  string,
-    private readonly bearerToken: string,
+    private readonly srsBaseUrl: string,
+    private readonly tokens:     ServiceTokenSource,
+    private readonly tenantId:   string,
   ) {}
 
   async submitMark(
@@ -35,13 +38,11 @@ export class HttpSrsMarkClient implements SrsMarkClient {
     input:                SrsMarkSubmitInput,
   ): Promise<{ markId: string }> {
     const url = `${this.srsBaseUrl}/api/v1/module-registrations/${encodeURIComponent(moduleRegistrationId)}/marks`;
-    const res = await fetch(url, {
+    // ADR-032: the connector may record only VLE marks, each with its submission reference.
+    const res = await callCoreAsService(this.tokens, this.tenantId, url, {
       method:  'POST',
-      headers: {
-        'Authorization': `Bearer ${this.bearerToken}`,
-        'Content-Type':  'application/json',
-      },
-      body: JSON.stringify(input),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourceSystem: 'vle', ...input }),
     });
 
     if (res.status === 409) {

@@ -1,9 +1,12 @@
+import { randomUUID } from 'node:crypto';
+
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
+import { wellbeingServiceJwt } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -319,8 +322,8 @@ async function createAdjustment(fixture: BoardFixture): Promise<void> {
   const adjustment = await ctx.app.inject({
     method: 'POST',
     url: `/api/v1/students/${fixture.personId}/adjustments`,
-    headers: { authorization: `Bearer ${jwt}` },
-    payload: {
+    headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+    payload: { sourceCaseId: randomUUID(), 
       enrolmentId: fixture.enrolmentId,
       adjustmentTypeCode: 'extra-time',
       scopeCode: 'exam',

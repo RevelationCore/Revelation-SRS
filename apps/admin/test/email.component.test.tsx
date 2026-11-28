@@ -8,7 +8,7 @@ import { renderWithProviders } from './render.js';
 import { EmailPage } from '../src/pages/EmailPage.js';
 import { EmailSimulatorPage } from '../src/pages/EmailSimulatorPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const INSTITUTION = 'registry@revelation.example.ac.uk';
 
 const inbound = {

@@ -22,7 +22,7 @@ import {
 } from '@revelation-srs/ui';
 
 export function HesaPage() {
-  const { token, roles }   = useAuth();
+  const { roles }   = useAuth();
   const canDecide = userHasAnyPermission(roles, ['regulatory:decide']);
   const [returns,   setReturns]   = useState<HesaReturn[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -89,7 +89,7 @@ export function HesaPage() {
     setDownloading(true);
     setActionError('');
     try {
-      await downloadHesaFile(returnId, token);
+      await downloadHesaFile(returnId);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Download failed');
     } finally {

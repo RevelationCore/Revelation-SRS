@@ -98,18 +98,17 @@ const STUB_CONFIG: Config = {
   port:                      3000,
   logLevel:                  'silent',
   nodeEnv:                   'test',
+  documentScanner:           { mode: 'noop', clamdPort: 3310, timeoutMs: 30_000, maxConcurrency: 4 },
   databaseUrl:               'postgres://unused/openapi-test',
   natsUrl:                   'nats://unused:4222',
   temporalAddress:           'unused:7233',
   deploymentEnvironmentCode: 'local',
   releaseVersion:            '1.0.0',
   imageDigest:               undefined,
-  migrationVersion:          '0004_business_process_foundations',
+  migrationVersion:          '0001_security_and_tenant_isolation',
   jwtSecret:                 'test-secret',
   keycloakJwksUrl:           undefined,
   corsOrigins:               ['*'],
-  otelEndpoint:              undefined,
-  otelServiceName:           'srs-api',
 };
 
 // ---------------------------------------------------------------------------

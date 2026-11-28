@@ -1,0 +1,71 @@
+import {
+  DocumentNotAvailableError,
+  DocumentRejectedError,
+  DocumentScannerUnavailableError,
+  DocumentTooLargeError,
+  DocumentTypeNotAllowedError,
+} from '@revelation-srs/documents';
+import type { FastifyError, FastifyInstance, FastifyReply } from 'fastify';
+
+/**
+ * RFC 9457 problem details, the error shape the core API uses. `error`
+ * repeats `detail` for clients written against the module's earlier
+ * `{ error }` bodies.
+ */
+export interface Problem {
+  type:     string;
+  title:    string;
+  status:   number;
+  detail:   string;
+  instance: string;
+  error:    string;
+  [extra: string]: unknown;
+}
+
+const TITLES: Record<number, string> = {
+  400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden', 404: 'Not Found',
+  409: 'Conflict', 413: 'Payload Too Large', 415: 'Unsupported Media Type', 422: 'Unprocessable Content',
+  429: 'Too Many Requests', 500: 'Internal Server Error', 502: 'Bad Gateway', 503: 'Service Unavailable',
+};
+
+export function problem(status: number, detail: string, instance: string, extra: Record<string, unknown> = {}): Problem {
+  return { type: 'about:blank', title: TITLES[status] ?? 'Error', status, detail, instance, error: detail, ...extra };
+}
+
+/** Sends a problem+json response. */
+export function sendProblem(reply: FastifyReply, status: number, detail: string, extra: Record<string, unknown> = {}) {
+  return reply.code(status).type('application/problem+json').send(problem(status, detail, reply.request.url, extra));
+}
+
+/**
+ * Every error leaves as problem+json: schema validation failures as 400,
+ * errors carrying a 4xx statusCode as that status, anything else as a 500
+ * whose detail reveals nothing.
+ */
+export function registerProblemHandlers(fastify: FastifyInstance): void {
+  fastify.setErrorHandler((err: FastifyError, request, reply) => {
+    if (err.validation) {
+      return sendProblem(reply, 400, err.message, { validation: err.validation });
+    }
+    // ADR-030: the document store's errors, mapped here rather than by each route.
+    const e: unknown = err;
+    if (e instanceof DocumentRejectedError) return sendProblem(reply, 422, e.message, { type: 'https://srs.example.com/errors/document-rejected' });
+    if (e instanceof DocumentNotAvailableError) return sendProblem(reply, 409, e.message, { type: 'https://srs.example.com/errors/document-not-available' });
+    if (e instanceof DocumentTooLargeError || e instanceof DocumentTypeNotAllowedError) return sendProblem(reply, 422, e.message);
+    if (e instanceof DocumentScannerUnavailableError) {
+      if (e.cause === 'disabled') return sendProblem(reply, 503, 'Uploads are not available in this environment.', { type: 'https://srs.example.com/errors/scanner-unavailable' });
+      void reply.header('Retry-After', '60');
+      return sendProblem(reply, 503, 'Uploads are temporarily unavailable. Try again in a few minutes.', { type: 'https://srs.example.com/errors/scanner-unavailable' });
+    }
+    const status = typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 500 ? err.statusCode : 500;
+    if (status === 500) {
+      request.log.error({ err }, 'Unhandled error');
+      return sendProblem(reply, 500, 'An unexpected error occurred');
+    }
+    // An error may name its problem type (e.g. separation-of-duties).
+    const type = (err as FastifyError & { problemType?: unknown }).problemType;
+    return sendProblem(reply, status, err.message, typeof type === 'string' ? { type } : {});
+  });
+
+  fastify.setNotFoundHandler((request, reply) => sendProblem(reply, 404, `Route ${request.method} ${request.url} not found`));
+}

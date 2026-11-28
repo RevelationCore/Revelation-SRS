@@ -251,3 +251,22 @@ export async function findLatestDetermination(
     .limit(1);
   return rows[0] ?? null;
 }
+
+/**
+ * Everyone who has prepared the claim (ADR-028): the actor on any version
+ * (who recorded it or changed its status) and the reviewer on any evidence
+ * review (who assessed it). None of them may decide it.
+ */
+export async function listEcClaimPreparers(
+  tx:       WellbeingTx,
+  tenantId: string,
+  claimId:  string,
+): Promise<Set<string>> {
+  const [versions, reviews] = await Promise.all([
+    tx.selectDistinct({ id: ecClaims.actorId }).from(ecClaims)
+      .where(and(eq(ecClaims.tenantId, tenantId), eq(ecClaims.id, claimId))),
+    tx.selectDistinct({ id: ecEvidenceReviews.reviewerId }).from(ecEvidenceReviews)
+      .where(and(eq(ecEvidenceReviews.tenantId, tenantId), eq(ecEvidenceReviews.ecClaimId, claimId))),
+  ]);
+  return new Set([...versions, ...reviews].map((r) => r.id));
+}

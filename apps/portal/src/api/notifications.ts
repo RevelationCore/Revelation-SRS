@@ -23,7 +23,7 @@ export function markNotificationRead(id: string): Promise<void> {
   return api.patch(`/api/v1/notifications/${id}/read`, {});
 }
 
-export function createNotificationStream(token: string, baseUrl: string): EventSource {
-  const url = `${baseUrl}/api/v1/notifications/stream`;
-  return new EventSource(`${url}?token=${encodeURIComponent(token)}`);
+/** The live stream, authenticated by the BFF session cookie (ADR-026 item 12). */
+export function createNotificationStream(): EventSource {
+  return new EventSource('/bff/srs/api/v1/notifications/stream', { withCredentials: true });
 }

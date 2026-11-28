@@ -1,13 +1,11 @@
 /// <reference types="vite/client" />
 
+// ADR-026: the app calls only its own origin (/bff/...); the BFF holds the tokens.
 interface ImportMetaEnv {
-  readonly VITE_API_URL:            string;
-  readonly VITE_API_BASE_URL?:      string;
-  readonly VITE_WELLBEING_API_URL?: string;
-  readonly VITE_KEYCLOAK_URL:       string;
-  readonly VITE_KEYCLOAK_REALM:     string;
-  readonly VITE_KEYCLOAK_CLIENT_ID: string;
-  readonly VITE_DEMO_MODE?:         string;
+  /** 'false' hides the single sign-on button where no Keycloak runs. */
+  readonly VITE_SSO?:       string;
+  readonly VITE_DEV_AUTH?:  string;
+  readonly VITE_DEMO_MODE?: string;
 }
 
 interface ImportMeta {

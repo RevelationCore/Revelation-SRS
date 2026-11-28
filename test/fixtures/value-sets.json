@@ -426,6 +426,85 @@
    }
   ]
  },
+ "adjustment_proposal/manual_reason_code": {
+  "setCode": "adjustment-manual-reason-code",
+  "displayName": "Manual Adjustment Reason",
+  "entityName": "adjustment_proposal",
+  "fieldName": "manual_reason_code",
+  "members": [
+   {
+    "code": "external-case-system",
+    "displayLabel": "Decided in the disability service's own case system",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "paper-record",
+    "displayLabel": "A signed paper support plan",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "prior-provider-plan",
+    "displayLabel": "A plan from a previous or partner provider",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "migration-correction",
+    "displayLabel": "Re-entering a legacy adjustment the migration could not express",
+    "description": null,
+    "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "adjustment_proposal/status_code": {
+  "setCode": "adjustment-proposal-status-code",
+  "displayName": "Adjustment Proposal Status",
+  "entityName": "adjustment_proposal",
+  "fieldName": "status_code",
+  "members": [
+   {
+    "code": "proposed",
+    "displayLabel": "Proposed",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "approved",
+    "displayLabel": "Approved",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "rejected",
+    "displayLabel": "Rejected",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
  "adjustment_target_config/fulfilment_mode_code": {
   "setCode": "distribution-fulfilment-mode-code",
   "displayName": "Adjustment Target Fulfilment Mode",
@@ -499,6 +578,94 @@
     "displayLabel": "Exams",
     "description": null,
     "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "adjustment_withdrawal/status_code": {
+  "setCode": "adjustment-proposal-status-code",
+  "displayName": "Adjustment Proposal Status",
+  "entityName": "adjustment_withdrawal",
+  "fieldName": "status_code",
+  "members": [
+   {
+    "code": "proposed",
+    "displayLabel": "Proposed",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "approved",
+    "displayLabel": "Approved",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "rejected",
+    "displayLabel": "Rejected",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "adjustment_withdrawal/withdrawal_reason_code": {
+  "setCode": "adjustment-withdrawal-reason-code",
+  "displayName": "Adjustment Withdrawal Reason",
+  "entityName": "adjustment_withdrawal",
+  "fieldName": "withdrawal_reason_code",
+  "members": [
+   {
+    "code": "student-request",
+    "displayLabel": "The student asked to stop it",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "no-longer-needed",
+    "displayLabel": "A review found it is no longer needed",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "recorded-in-error",
+    "displayLabel": "It should never have been recorded",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "superseded",
+    "displayLabel": "Replaced by another adjustment",
+    "description": null,
+    "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "enrolment-ended",
+    "displayLabel": "The enrolment it belongs to has ended",
+    "description": null,
+    "sortOrder": 50,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -1225,6 +1392,78 @@
     "displayLabel": "PGR examiner",
     "description": null,
     "sortOrder": 260,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "vle-connector-service",
+    "displayLabel": "VLE connector (system)",
+    "description": null,
+    "sortOrder": 300,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -2750,6 +2989,15 @@
   "fieldName": "check_type_code",
   "members": [
    {
+    "code": "identity",
+    "displayLabel": "Identity and nationality",
+    "description": null,
+    "sortOrder": 5,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
     "code": "genuine-student",
     "displayLabel": "Genuine student requirement",
     "description": null,
@@ -2768,6 +3016,15 @@
     "selectable": true
    },
    {
+    "code": "english-language",
+    "displayLabel": "English language",
+    "description": null,
+    "sortOrder": 25,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
     "code": "financial-requirement",
     "displayLabel": "Financial requirement",
     "description": null,
@@ -2781,6 +3038,15 @@
     "displayLabel": "Immigration history",
     "description": null,
     "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "atas",
+    "displayLabel": "ATAS certificate (where the course needs one)",
+    "description": null,
+    "sortOrder": 50,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -2816,6 +3082,15 @@
     "displayLabel": "Referred for review",
     "description": null,
     "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "exempt",
+    "displayLabel": "Exempt (with a recorded reason)",
+    "description": null,
+    "sortOrder": 40,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -6373,6 +6648,78 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "vle-connector-service",
+    "displayLabel": "VLE connector (system)",
+    "description": null,
+    "sortOrder": 300,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -7019,6 +7366,32 @@
    {
     "code": "hesa-authority",
     "displayLabel": "HESA",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "identity_merge_proposal/identifier_keep": {
+  "setCode": "identity-merge-keep-code",
+  "displayName": "Identity Merge: Value Kept",
+  "entityName": "identity_merge_proposal",
+  "fieldName": "identifier_keep",
+  "members": [
+   {
+    "code": "survivor",
+    "displayLabel": "The surviving record's value",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "merged",
+    "displayLabel": "The merged record's value",
     "description": null,
     "sortOrder": 20,
     "active": true,
@@ -10518,6 +10891,15 @@
     "selectable": true
    },
    {
+    "code": "defer",
+    "displayLabel": "Deferred until results are complete",
+    "description": null,
+    "sortOrder": 25,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
     "code": "repeat-year",
     "displayLabel": "Repeat Year",
     "description": null,
@@ -10557,6 +10939,15 @@
     "displayLabel": "Resit Required",
     "description": null,
     "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "defer",
+    "displayLabel": "Deferred until results are complete",
+    "description": null,
+    "sortOrder": 25,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -10678,6 +11069,50 @@
    }
   ]
  },
+ "reasonable_adjustment/provenance_code": {
+  "setCode": "adjustment-provenance-code",
+  "displayName": "Adjustment Provenance",
+  "entityName": "reasonable_adjustment",
+  "fieldName": "provenance_code",
+  "members": [
+   {
+    "code": "wellbeing-case",
+    "displayLabel": "Approved in a wellbeing case",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "manual-approved",
+    "displayLabel": "Manual, approved by a second person",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "migrated",
+    "displayLabel": "Migrated from the previous system",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "legacy-direct",
+    "displayLabel": "Recorded directly before 22 November 2026",
+    "description": null,
+    "sortOrder": 40,
+    "active": false,
+    "hidden": false,
+    "selectable": false
+   }
+  ]
+ },
  "reasonable_adjustment/scope_code": {
   "setCode": "adjustment-scope-code",
   "displayName": "Reasonable Adjustment Scope",
@@ -10716,6 +11151,94 @@
     "displayLabel": "Attendance only",
     "description": null,
     "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "reasonable_adjustment/withdrawal_authority_code": {
+  "setCode": "adjustment-withdrawal-authority-code",
+  "displayName": "Adjustment Withdrawal Authority",
+  "entityName": "reasonable_adjustment",
+  "fieldName": "withdrawal_authority_code",
+  "members": [
+   {
+    "code": "wellbeing-case",
+    "displayLabel": "Withdrawn through its wellbeing case",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "approved-withdrawal",
+    "displayLabel": "Withdrawn, approved by a second person",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "enrolment-ended",
+    "displayLabel": "Ended with the enrolment",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "reasonable_adjustment/withdrawal_reason_code": {
+  "setCode": "adjustment-withdrawal-reason-code",
+  "displayName": "Adjustment Withdrawal Reason",
+  "entityName": "reasonable_adjustment",
+  "fieldName": "withdrawal_reason_code",
+  "members": [
+   {
+    "code": "student-request",
+    "displayLabel": "The student asked to stop it",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "no-longer-needed",
+    "displayLabel": "A review found it is no longer needed",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "recorded-in-error",
+    "displayLabel": "It should never have been recorded",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "superseded",
+    "displayLabel": "Replaced by another adjustment",
+    "description": null,
+    "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "enrolment-ended",
+    "displayLabel": "The enrolment it belongs to has ended",
+    "description": null,
+    "sortOrder": 50,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -11373,6 +11896,85 @@
    {
     "code": "withdrawn",
     "displayLabel": "Withdrawn",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "retention_disposal_plan/status_code": {
+  "setCode": "retention-disposal-plan-status-code",
+  "displayName": "Retention Disposal Plan Status",
+  "entityName": "retention_disposal_plan",
+  "fieldName": "status_code",
+  "members": [
+   {
+    "code": "prepared",
+    "displayLabel": "Prepared",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "approved",
+    "displayLabel": "Approved",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "rejected",
+    "displayLabel": "Rejected",
+    "description": null,
+    "sortOrder": 30,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "executed",
+    "displayLabel": "Executed",
+    "description": null,
+    "sortOrder": 40,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   }
+  ]
+ },
+ "retention_disposal_plan_item/action_code": {
+  "setCode": "record-disposition-type-code",
+  "displayName": "Record Disposition Type",
+  "entityName": "retention_disposal_plan_item",
+  "fieldName": "action_code",
+  "members": [
+   {
+    "code": "anonymised",
+    "displayLabel": "Anonymised",
+    "description": null,
+    "sortOrder": 10,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "deleted",
+    "displayLabel": "Deleted",
+    "description": null,
+    "sortOrder": 20,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "transferred",
+    "displayLabel": "Transferred",
     "description": null,
     "sortOrder": 30,
     "active": true,
@@ -15039,6 +15641,78 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "vle-connector-service",
+    "displayLabel": "VLE connector (system)",
+    "description": null,
+    "sortOrder": 300,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -15278,6 +15952,78 @@
     "displayLabel": "PGR examiner",
     "description": null,
     "sortOrder": 260,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "vle-connector-service",
+    "displayLabel": "VLE connector (system)",
+    "description": null,
+    "sortOrder": 300,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
     "active": true,
     "hidden": false,
     "selectable": true
@@ -15699,6 +16445,78 @@
     "active": true,
     "hidden": false,
     "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "vle-connector-service",
+    "displayLabel": "VLE connector (system)",
+    "description": null,
+    "sortOrder": 300,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
+    "active": true,
+    "hidden": false,
+    "selectable": true
    }
   ]
  },
@@ -16000,6 +16818,78 @@
     "displayLabel": "PGR examiner",
     "description": null,
     "sortOrder": 260,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-case-officer",
+    "displayLabel": "EC case officer",
+    "description": null,
+    "sortOrder": 270,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "ec-decision-maker",
+    "displayLabel": "EC decision maker",
+    "description": null,
+    "sortOrder": 280,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "wellbeing-service",
+    "displayLabel": "Wellbeing service (system)",
+    "description": null,
+    "sortOrder": 290,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "vle-connector-service",
+    "displayLabel": "VLE connector (system)",
+    "description": null,
+    "sortOrder": 300,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "identity-resolution-officer",
+    "displayLabel": "Identity resolution officer",
+    "description": null,
+    "sortOrder": 310,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-approver",
+    "displayLabel": "Adjustment approver",
+    "description": null,
+    "sortOrder": 320,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "adjustment-proposer",
+    "displayLabel": "Adjustment proposer",
+    "description": null,
+    "sortOrder": 330,
+    "active": true,
+    "hidden": false,
+    "selectable": true
+   },
+   {
+    "code": "conferment-authority",
+    "displayLabel": "Conferment authority",
+    "description": null,
+    "sortOrder": 340,
     "active": true,
     "hidden": false,
     "selectable": true

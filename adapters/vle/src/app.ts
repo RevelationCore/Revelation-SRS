@@ -1,5 +1,7 @@
+import { httpServerMetrics } from '@revelation-srs/telemetry';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import type { ServiceTokenSource } from '@revelation-srs/service-client';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
@@ -34,6 +36,8 @@ export interface BuildAppOptions {
   vleClient?: VleClient;
   /** Override the platform driver for adjustments — used in tests. */
   platformDriver?: VlePlatformDriver;
+  /** Tokens for calls to core (ADR-032); required unless registryClient is given. */
+  srsTokens?: ServiceTokenSource;
 }
 
 export async function buildApp(
@@ -51,17 +55,22 @@ export async function buildApp(
         },
     trustProxy: true,
   });
+  // ADR-035: request durations by route template, served on the metrics port.
+  httpServerMetrics(fastify);
 
   await fastify.register(helmet, { global: true });
   await fastify.register(cors, { origin: false });
 
-  const db = createVleDb(config.databaseUrl);
+  const db = createVleDb(config.databaseUrl, { statementTimeoutMs: 30_000, idleInTransactionTimeoutMs: 60_000 });
   fastify.decorate('vleDb', db);
   fastify.decorate('config', config);
 
   const registryClient =
     opts.registryClient ??
-    new HttpSrsRegistryClient(config.srsApiUrl, config.serviceAccountToken);
+    (() => {
+      if (!opts.srsTokens) throw new Error('buildApp needs a registryClient or srsTokens to reach core (ADR-032)');
+      return new HttpSrsRegistryClient(config.srsApiUrl, opts.srsTokens, config.tenantId);
+    })();
 
   const registrationLoader = new RegistrationLoader(
     registryClient,

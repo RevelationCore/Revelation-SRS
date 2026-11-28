@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
 import {
   boardMemberConflicts,
   boardQuorumDecisions,
@@ -15,7 +15,7 @@ import {
   type Db,
   withTenantContext,
 } from '@revelation-srs/db';
-import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@revelation-srs/domain';
 
 import { canonicalHash } from '../canonical-hash.js';
 import { clockNow } from '../clock.js';
@@ -102,6 +102,33 @@ export class BoardAuthorityService {
     });
   }
 
+  /**
+   * BL-265 (BP-05-007/009): no board decision or ratification while a declared
+   * conflict is unrecused, and none by a member with a conflict about a
+   * candidate the pack covers (every board decision covers the whole pack).
+   */
+  async assertConflictsResolved(tenantId: string, examBoardId: string, actorId: string): Promise<void> {
+    const conflicts = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(boardMemberConflicts).where(and(
+      eq(boardMemberConflicts.tenantId, tenantId as Uuid),
+      eq(boardMemberConflicts.examBoardId, examBoardId as Uuid),
+    )));
+    const open = conflicts.filter((c) => c.recusedAt === null);
+    if (open.length > 0) throw new ConflictError(`${open.length} declared conflict(s) on this board are not yet resolved by recusal`);
+    if (conflicts.some((c) => c.actorId === actorId && c.enrolmentId !== null)) {
+      throw new ForbiddenError('You declared a conflict about a candidate this board decides, so someone else must take this decision');
+    }
+  }
+
+  /** BL-265 (BP-05-009 E1.1): the latest quorum decision for the board found the quorum met. */
+  async assertQuorumMet(tenantId: string, examBoardId: string): Promise<void> {
+    const [latest] = await withTenantContext(this.db, tenantId, (tx) => tx.select().from(boardQuorumDecisions).where(and(
+      eq(boardQuorumDecisions.tenantId, tenantId as Uuid),
+      eq(boardQuorumDecisions.examBoardId, examBoardId as Uuid),
+    )).orderBy(desc(boardQuorumDecisions.decidedAt)).limit(1));
+    if (!latest) throw new ValidationError('Record the quorum before ratification', [{ field: 'quorum', message: 'POST /exam-boards/:id/quorum-decision first' }]);
+    if (!latest.quorumMet) throw new ValidationError(`The board was not quorate (${latest.attendingCount} of ${latest.requiredCount} required)`, [{ field: 'quorum', message: 'The latest quorum decision found the quorum not met' }]);
+  }
+
   async recordQuorumDecision(tenantId: string, examBoardId: string, input: RecordQuorumDecisionInput, decidedBy: string): Promise<string> {
     const id = randomUUID();
     await withTenantContext(this.db, tenantId, async (tx) => {
@@ -138,6 +165,7 @@ export class BoardAuthorityService {
     if (!pack.packHash || pack.packHash !== input.packHash) {
       throw new ConflictError('The data pack has changed since it was shown; reload it before deciding');
     }
+    await this.assertConflictsResolved(tenantId, examBoardId, decidedBy);
     if (await this.#blocksOnDrift(tenantId)) {
       const manifest = await this.#manifest(tenantId, pack.ruleManifestRef);
       if (manifest && manifest.drift.length > 0) {
@@ -171,6 +199,10 @@ export class BoardAuthorityService {
     );
     const decision = decisionRows[0];
     if (!decision) throw new NotFoundError('ExamBoardDecision', examBoardDecisionId);
+    // Separation of duties (BL-065): whoever recorded the board's decision cannot also ratify it.
+    if (decision.decidedBy === ratifiedBy) {
+      throw new ForbiddenError('You recorded the board\'s decision, so someone else must ratify it');
+    }
     if (decision.decisionTypeCode !== 'ratify') {
       throw new ValidationError(`Only a 'ratify' decision can produce a ratification record; decision is '${decision.decisionTypeCode}'`);
     }

@@ -1,5 +1,6 @@
 import net from 'node:net';
 
+import { fetchWithTimeout } from '@revelation-srs/auth';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
@@ -34,7 +35,7 @@ async function tcpCheck(address: string, defaultPort: number): Promise<CheckResu
 async function jwksCheck(jwksUrl: string): Promise<CheckResult> {
   const t0 = Date.now();  // clock:allow — latency timing
   try {
-    const res = await fetch(jwksUrl, { signal: AbortSignal.timeout(1_500) });
+    const res = await fetchWithTimeout(jwksUrl, {}, 1_500);
     return res.ok
       ? { status: 'ok', latencyMs: Date.now() - t0 }  // clock:allow
       : { status: 'error', error: `HTTP ${res.status}` };
@@ -83,9 +84,14 @@ export function healthRoutes(fastify: FastifyInstance): void {
         checks['database'] = { status: 'error', error: String(err) };
       }
 
-      checks['nats'] = fastify.eventBus.isConnected()
-        ? { status: 'ok' }
-        : { status: 'error', error: 'not connected' };
+      // Readiness depends on the database only (ADR-027, readiness 2.2). NATS
+      // and Keycloak are reported but do not take the pod out of service: a
+      // broker outage must not stop the API serving records (events are
+      // published when it returns), and token keys are cached.
+      checks['nats'] = {
+        ...(fastify.eventBus.isConnected() ? { status: 'ok' as const } : { status: 'error' as const, error: 'not connected' }),
+        required: false,
+      };
 
       // Temporal is reported but does not gate readiness (ADR-024): during a
       // workflow outage the API must keep serving records and saving
@@ -98,7 +104,7 @@ export function healthRoutes(fastify: FastifyInstance): void {
       };
 
       if (fastify.config.keycloakJwksUrl) {
-        checks['keycloakJwks'] = await jwksCheck(fastify.config.keycloakJwksUrl);
+        checks['keycloakJwks'] = { ...(await jwksCheck(fastify.config.keycloakJwksUrl)), required: false };
       }
 
       const allOk = Object.values(checks).every((c) => c.required === false || c.status === 'ok');
@@ -109,30 +115,6 @@ export function healthRoutes(fastify: FastifyInstance): void {
         version: process.env['npm_package_version'] ?? '0.0.1',
         uptime:  Math.floor(process.uptime()),
       });
-    },
-  );
-
-  fastify.get(
-    '/metrics',
-    { schema: { hide: true }, config: { skipAuth: true } },
-    async (_req, reply) => {
-      const uptime = process.uptime();
-      const memory = process.memoryUsage();
-
-      await reply
-        .type('text/plain; version=0.0.4')
-        .send([
-          '# HELP srs_api_uptime_seconds Process uptime in seconds.',
-          '# TYPE srs_api_uptime_seconds gauge',
-          `srs_api_uptime_seconds ${uptime}`,
-          '# HELP srs_api_memory_rss_bytes Resident memory size in bytes.',
-          '# TYPE srs_api_memory_rss_bytes gauge',
-          `srs_api_memory_rss_bytes ${memory.rss}`,
-          '# HELP srs_api_event_bus_connected Whether the API is connected to NATS JetStream.',
-          '# TYPE srs_api_event_bus_connected gauge',
-          `srs_api_event_bus_connected ${fastify.eventBus.isConnected() ? 1 : 0}`,
-          '',
-        ].join('\n'));
     },
   );
 }

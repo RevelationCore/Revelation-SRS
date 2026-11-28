@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { readCoreMigrationSection } from './lib/core-migration-section.mjs';
+
 const root = resolve(import.meta.dirname, '..');
 const read = (path) => readFileSync(resolve(root, path), 'utf8');
-const migration = read('packages/db/migrations/0003_engagement_and_attendance.sql');
+const migration = readCoreMigrationSection(root, '0003_engagement_and_attendance') ?? '';
 const service = read('apps/api/src/platform/regulatory/ukvi-service.ts');
 const routes = read('apps/api/src/routes/regulatory-ukvi.ts');
 const ui = read('apps/admin/src/pages/UkviPage.tsx');

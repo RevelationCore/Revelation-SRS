@@ -20,6 +20,7 @@
   "dependencies": {
     "@fastify/jwt": "^10.2.8",
     "@revelation-srs/db": "workspace:*",
+    "@revelation-srs/service-client": "workspace:*",
     "fastify": "^5.12.8",
     "fastify-plugin": "^5.1.0",
     "jose": "^5.10.0"

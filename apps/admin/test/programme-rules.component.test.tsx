@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { ProgrammeRulesPage } from '../src/pages/ProgrammeRulesPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const group = {
   moduleGroupId: 'g-1', programmeRuleSetId: 'rs-1', fheqLevel: 4, groupCode: 'CORE', title: 'Core modules', groupTypeCode: 'compulsory',
   minModules: 2, maxModules: null, minCredits: null, maxCredits: null, minFheqLevel: null, maxFheqLevel: null,

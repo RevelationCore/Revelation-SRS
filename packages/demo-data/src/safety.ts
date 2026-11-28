@@ -48,7 +48,7 @@ export async function assertResetAllowed(db: Db, tenantId: string): Promise<void
   // Gate 4: DEMO_DB_ALLOWLIST — if set, DATABASE_URL hostname must be in the list
   const allowlist = process.env['DEMO_DB_ALLOWLIST'];
   if (allowlist !== undefined && allowlist.trim() !== '') {
-    const databaseUrl = process.env['DATABASE_URL'] ?? '';
+    const databaseUrl = process.env['MIGRATION_DATABASE_URL'] ?? process.env['DATABASE_URL'] ?? '';
     let hostname = '';
     try {
       hostname = new URL(databaseUrl).hostname;

@@ -127,7 +127,7 @@ export type ModuleResult    = typeof moduleResults.$inferSelect;
 export type NewModuleResult = typeof moduleResults.$inferInsert;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BPR-D10 — assessment candidate attempt & moderation (Stage 3, migration 0004_business_process_foundations).
+// BPR-D10 — assessment candidate attempt & moderation (Stage 3, migration 0000_baseline (section 0004_business_process_foundations)).
 //
 // mark.attempt_number stays as the legacy source column. A candidate attempt
 // row is created from it (createdFromMarkId bridges to the mark that

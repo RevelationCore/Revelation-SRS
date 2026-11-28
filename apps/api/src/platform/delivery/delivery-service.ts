@@ -6,6 +6,7 @@ import {
   personIdentities,
   tenants,
   type Db,
+  type TenantScopedDb,
   type DeliveryItem,
   withTenantContext,
 } from '@revelation-srs/db';
@@ -100,10 +101,26 @@ export class DeliveryService {
    * published now is published by the reconcile loop.
    */
   async request(tenantId: string, input: RequestDeliveryInput): Promise<DeliveryItemDto | null> {
+    const item = await withTenantContext(this.db, tenantId, (tx) => this.#insertItem(tx, tenantId, input));
+    if (item?.fulfilmentModeCode === 'connected') await this.dispatchTenant(tenantId);
+    return item ? toDto(item) : null;
+  }
+
+  /**
+   * As request, in the caller's transaction, so the item commits or rolls
+   * back with the change that needs it (ADR-031 item 8: a merge and its
+   * notices). Connected items are published by the next dispatch: call
+   * dispatchTenant after the commit, or leave it to the reconcile loop.
+   */
+  async requestIn(tx: TenantScopedDb, tenantId: string, input: RequestDeliveryInput): Promise<DeliveryItemDto | null> {
+    const item = await this.#insertItem(tx, tenantId, input);
+    return item ? toDto(item) : null;
+  }
+
+  async #insertItem(tx: TenantScopedDb, tenantId: string, input: RequestDeliveryInput) {
     const flow = findFlow(input.flowCode);
     if (!flow) throw new ValidationError(`Unknown delivery flow '${input.flowCode}'`);
-
-    const item = await withTenantContext(this.db, tenantId, async (tx) => {
+    {
       const mode = (await this.#configsIn(tx, tenantId)).get(flow.flowCode)?.fulfilmentModeCode as FulfilmentMode | undefined
         ?? flow.defaultMode;
       if (mode === 'not-used') return null;
@@ -148,10 +165,7 @@ export class DeliveryService {
           ));
       }
       return row;
-    });
-
-    if (item?.fulfilmentModeCode === 'connected') await this.dispatchTenant(tenantId);
-    return item ? toDto(item) : null;
+    }
   }
 
   /** A person's entitlements (D-19): the latest item of each flow about them, with what was asked and whether it was done. */

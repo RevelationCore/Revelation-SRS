@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import {
   enrolmentDownstreamTriggers,
+  enrolmentStatusTransitions,
   enrolments,
   feeLiabilities,
   integrationExchanges,
@@ -54,7 +55,7 @@ export interface SlcConfirmationRecord {
   slcReference: string;
   programmeId: string | null;
   modeOfStudyCode: string;
-  confirmationType: 'enrolment' | 'withdrawal' | 'intermission';
+  confirmationType: 'enrolment' | 'withdrawal' | 'intermission' | 'resumption';
   feeAmount: string | null;
   startDate: string;
   expectedEndDate: string | null;
@@ -184,7 +185,8 @@ export class SlcService {
       if (seenTriggers.has(row.trigger.id)) continue;
       seenTriggers.add(row.trigger.id);
 
-      const record = buildConfirmationRecord(row.trigger.id, row.enrolment, row.fee);
+      const record = buildConfirmationRecord(row.trigger.id, row.enrolment, row.fee,
+        (row.trigger.payloadSummary)?.['notificationType'] === 'resumption');
       confirmations.push(record);
 
       if (opts.dryRun) continue;
@@ -388,7 +390,7 @@ export class SlcService {
       slcReference: enrolment.slcReference,
       programmeId: enrolment.programmeId,
       modeOfStudyCode: enrolment.modeOfStudyCode,
-      confirmationType: mapSlcConfirmationType(enrolment.statusCode),
+      confirmationType: mapSlcConfirmationType(enrolment.statusCode, await this.#resumed(tenantId, enrolmentId, enrolment.statusCode)),
       feeAmount: formatFeeAmount(feeRows[0]?.amountMinorUnits ?? null),
       startDate: enrolment.startDate,
       expectedEndDate: enrolment.expectedEndDate,
@@ -400,7 +402,7 @@ export class SlcService {
       {
         directionCode: 'outbound',
         exchangeTypeCode: 'slc-status-change',
-        idempotencyKey: `slc-status:${enrolmentId}:${enrolment.statusCode}`,
+        idempotencyKey: `slc-status:${enrolmentId}:${enrolment.statusCode}:${record.confirmationType}`,
         payloadHash: hashPayload(record),
         payloadSummary: { ...record },
       },
@@ -553,6 +555,16 @@ export class SlcService {
     await this.eventBus.publish(EVENT_TYPES.REGULATORY_SLC_CONFIRMATION_SENT, '1.0.0', tenantId, actorId, 'sensitive', payload);
   }
 
+  /** Whether the enrolment's latest status change was a return from interruption or suspension (F3). */
+  async #resumed(tenantId: string, enrolmentId: string, statusCode: string): Promise<boolean> {
+    if (statusCode !== 'enrolled') return false;
+    const [latest] = await withTenantContext(this.db, tenantId, (tx) => tx.select({ from: enrolmentStatusTransitions.fromStatusCode, to: enrolmentStatusTransitions.toStatusCode })
+      .from(enrolmentStatusTransitions)
+      .where(and(eq(enrolmentStatusTransitions.tenantId, tenantId as Uuid), eq(enrolmentStatusTransitions.enrolmentId, enrolmentId as Uuid)))
+      .orderBy(desc(enrolmentStatusTransitions.createdAt)).limit(1));
+    return latest?.to === 'enrolled' && ['intermitting', 'suspended'].includes(latest.from);
+  }
+
   async #publishNotificationReceived(
     tenantId: string,
     actorId: string,
@@ -570,6 +582,7 @@ function buildConfirmationRecord(
   triggerId: string,
   enrolment: EnrolmentRow,
   fee: FeeLiabilityRow | null,
+  resumed = false,
 ): SlcConfirmationRecord {
   return {
     triggerId,
@@ -577,14 +590,16 @@ function buildConfirmationRecord(
     slcReference: enrolment.slcReference ?? enrolment.id,
     programmeId: enrolment.programmeId,
     modeOfStudyCode: enrolment.modeOfStudyCode,
-    confirmationType: mapSlcConfirmationType(enrolment.statusCode),
+    confirmationType: mapSlcConfirmationType(enrolment.statusCode, resumed),
     feeAmount: formatFeeAmount(fee?.amountMinorUnits ?? null),
     startDate: enrolment.startDate,
     expectedEndDate: enrolment.expectedEndDate,
   };
 }
 
-function mapSlcConfirmationType(statusCode: string): 'enrolment' | 'withdrawal' | 'intermission' {
+/** F3 (BL-214): a return to study from interruption or suspension is a resumption, not a new enrolment. */
+function mapSlcConfirmationType(statusCode: string, resumed = false): 'enrolment' | 'withdrawal' | 'intermission' | 'resumption' {
+  if (resumed && statusCode === 'enrolled') return 'resumption';
   if (statusCode === 'withdrawn') return 'withdrawal';
   if (statusCode === 'intermitting' || statusCode === 'suspended') return 'intermission';
   return 'enrolment';

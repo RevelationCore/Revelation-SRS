@@ -9,7 +9,7 @@ import { renderWithProviders } from './render.js';
 import { AdjustmentRequestPage } from '../src/pages/AdjustmentRequestPage.js';
 import { AdjustmentCaseDetailPage } from '../src/pages/AdjustmentCaseDetailPage.js';
 
-const WELLBEING_API = 'http://localhost:3002';
+const WELLBEING_API = 'http://localhost:3000/bff/wellbeing';
 const PERSON_ID = 'test-student-001';
 const NEW_CASE_ID = 'new-case-001';
 

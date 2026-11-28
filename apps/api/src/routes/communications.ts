@@ -131,7 +131,7 @@ export function communicationRoutes(fastify: FastifyInstance): void {
     },
     async (request, reply) => {
       const { templateId } = request.params as { templateId: string };
-      const template = await fastify.communicationService.getTemplate(templateId);
+      const template = await fastify.communicationService.getTemplate(templateId, request.tenantId);
       await reply.send(templateToWire(template));
     },
   );

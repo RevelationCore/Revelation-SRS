@@ -208,6 +208,47 @@ describe('HESA student returns', () => {
   });
 });
 
+describe('HESA mode crosswalk (four-nation pre-review F-05, BL-307)', () => {
+  it('every emitted MODE is a member of the hesa-mode-of-study value set, from the crosswalk', async () => {
+    const year = '2029-30';
+    const expected: Record<string, string> = { 'full-time': '01', 'part-time': '31', sandwich: '02', distance: '63' };
+    const people: Record<string, string> = {};
+    for (const mode of Object.keys(expected)) {
+      const s = await createHesaStudent('Mode', mode, '1999-05-06');
+      await ctx.db.execute(sql`UPDATE enrolment SET mode_of_study_code = ${mode}, academic_year_of_entry = ${year} WHERE id = ${s.enrolmentId}::uuid`);
+      people[s.personId] = mode;
+    }
+    const returnId = await createReturn(year);
+    const records = await ctx.db.execute(sql`SELECT r.record_payload->>'MODE' AS mode, e.person_id::text AS person_id
+      FROM hesa_student_return_record r JOIN enrolment e ON e.id = r.enrolment_id AND e.recorded_until IS NULL
+      WHERE r.hesa_student_return_id = ${returnId}::uuid`) as unknown as Array<{ mode: string; person_id: string }>;
+    const hesaCodes = (await ctx.db.execute(sql`SELECT m.code FROM value_set_member m JOIN value_set vs ON vs.id = m.value_set_id
+      WHERE vs.set_code = 'hesa-mode-of-study'`) as unknown as Array<{ code: string }>).map((c) => c.code);
+    expect(records).toHaveLength(4);
+    for (const r of records) {
+      expect(hesaCodes, `MODE ${r.mode}`).toContain(r.mode);
+      expect(r.mode).toBe(expected[people[r.person_id]!]);
+    }
+  });
+
+  it('a mode with no HESA crosswalk entry is a validation error, not a guessed code', async () => {
+    const year = '2030-31';
+    const s = await createHesaStudent('Mode', 'Unmapped', '1999-05-06');
+    await ctx.db.execute(sql`UPDATE value_set_member SET source_metadata = source_metadata - 'hesaModeOfStudy'
+      WHERE code = 'sandwich' AND value_set_id = (SELECT id FROM value_set WHERE set_code = 'mode-of-study-code')`);
+    try {
+      await ctx.db.execute(sql`UPDATE enrolment SET mode_of_study_code = 'sandwich', academic_year_of_entry = ${year} WHERE id = ${s.enrolmentId}::uuid`);
+      const returnId = await createReturn(year);
+      const res = await ctx.app.inject({ method: 'POST', url: `/api/v1/regulatory/hesa/returns/${returnId}/validate`, headers: { authorization: `Bearer ${jwt}` } });
+      expect(res.statusCode).toBe(200);
+      expect(res.json<{ errors: Array<{ field: string }> }>().errors.map((e) => e.field)).toContain('MODE');
+    } finally {
+      await ctx.db.execute(sql`UPDATE value_set_member SET source_metadata = COALESCE(source_metadata, '{}'::jsonb) || '{"hesaModeOfStudy": "02"}'::jsonb
+        WHERE code = 'sandwich' AND value_set_id = (SELECT id FROM value_set WHERE set_code = 'mode-of-study-code')`);
+    }
+  });
+});
+
 describe('HESA return submission approval workflow', () => {
   async function createValidatedReturnWithFile(academicYear: string): Promise<string> {
     await createHesaStudent('Hesa', 'Workflow', '2000-05-05');

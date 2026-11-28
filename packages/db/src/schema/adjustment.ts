@@ -44,6 +44,20 @@ export const reasonableAdjustments = pgTable('reasonable_adjustment', {
   // (adjustment-amount-unit-code): percent-of-duration | minutes-per-hour | days.
   amountValue:       numeric('amount_value', { precision: 8, scale: 2 }),
   amountUnitCode:    text('amount_unit_code'),
+  // ADR-033: the authority this adjustment was recorded under. NOT NULL with
+  // no default, so every writer must name one; a CHECK ties each code to its
+  // reference (value set adjustment-provenance-code).
+  provenanceCode:    text('provenance_code').notNull(), // wellbeing-case | manual-approved | migrated | legacy-direct
+  manualProposalId:  uuid('manual_proposal_id'),
+  migrationBatchId:  uuid('migration_batch_id'),
+  migrationSourceReference: text('migration_source_reference'),
+  // ADR-034: set on the version that ended the adjustment early, naming the
+  // authority and reason; a CHECK ties each authority to its reference.
+  withdrawalAuthorityCode:  text('withdrawal_authority_code'), // wellbeing-case | approved-withdrawal | enrolment-ended
+  withdrawalReasonCode:     text('withdrawal_reason_code'),    // value set adjustment-withdrawal-reason-code
+  withdrawalId:             uuid('withdrawal_id'),
+  withdrawalEnrolmentTransitionId: uuid('withdrawal_enrolment_transition_id'),
+  replacementAdjustmentId:  uuid('replacement_adjustment_id'),
 });
 
 export type ReasonableAdjustment    = typeof reasonableAdjustments.$inferSelect;
@@ -138,14 +152,94 @@ export const adjustmentRequests = pgTable('adjustment_request', {
 export type AdjustmentRequest = typeof adjustmentRequests.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A manual adjustment proposal (ADR-033 item 2, migration 0009): a core
+ * adjustment with no wellbeing case behind it, held here until an adjustment
+ * approver who did not propose it decides it. Not bitemporal: a governed
+ * decision record, like ec_determination. Readers of reasonable_adjustment
+ * never see a proposal; approval writes the adjustment (provenance
+ * 'manual-approved') and sets adjustmentId. There is no notes field: free
+ * text must not reach the targets (BL-243).
+ */
+export const adjustmentProposals = pgTable('adjustment_proposal', {
+  id:                  uuid('id').primaryKey().defaultRandom(),
+  tenantId:            uuid('tenant_id').notNull().references(() => tenants.id),
+  personId:            uuid('person_id').notNull(),
+  enrolmentId:         uuid('enrolment_id').notNull(),
+  adjustmentTypeCode:  text('adjustment_type_code').notNull(),
+  scopeCode:           text('scope_code').notNull(),
+  amountValue:         numeric('amount_value', { precision: 8, scale: 2 }),
+  amountUnitCode:      text('amount_unit_code'),
+  validFrom:           timestamp('valid_from', { withTimezone: true }).notNull(),
+  validTo:             timestamp('valid_to', { withTimezone: true }),
+  manualReasonCode:    text('manual_reason_code').notNull(),   // value set adjustment-manual-reason-code
+  externalReference:   text('external_reference').notNull(),   // where the decision is held; 1-100 chars
+  statusCode:          text('status_code').notNull().default('proposed'), // proposed | approved | rejected
+  proposedBy:          text('proposed_by').notNull(),
+  proposedByPersonId:  uuid('proposed_by_person_id'),
+  proposedAt:          timestamp('proposed_at', { withTimezone: true }).notNull().defaultNow(),
+  workflowInstanceId:  uuid('workflow_instance_id'),
+  decidedBy:           text('decided_by'),
+  decidedByPersonId:   uuid('decided_by_person_id'),
+  decidedAt:           timestamp('decided_at', { withTimezone: true }),
+  decisionReason:      text('decision_reason'),
+  adjustmentId:        uuid('adjustment_id'),
+});
+
+export type AdjustmentProposal = typeof adjustmentProposals.$inferSelect;
+
+/**
+ * A proposal to end a manual, migrated or legacy adjustment early (ADR-034
+ * item 5, migration 0012), decided by an adjustment approver who did not
+ * propose it. Until it is approved the adjustment is unchanged. An adjustment
+ * from a wellbeing case is withdrawn through its case instead.
+ */
+export const adjustmentWithdrawals = pgTable('adjustment_withdrawal', {
+  id:                      uuid('id').primaryKey().defaultRandom(),
+  tenantId:                uuid('tenant_id').notNull().references(() => tenants.id),
+  adjustmentId:            uuid('adjustment_id').notNull(),   // the logical id; not a FK, it repeats across versions
+  personId:                uuid('person_id').notNull(),
+  withdrawalReasonCode:    text('withdrawal_reason_code').notNull(),
+  externalReference:       text('external_reference').notNull(),
+  replacementAdjustmentId: uuid('replacement_adjustment_id'),
+  statusCode:              text('status_code').notNull().default('proposed'), // proposed | approved | rejected
+  proposedBy:              text('proposed_by').notNull(),
+  proposedByPersonId:      uuid('proposed_by_person_id'),
+  proposedAt:              timestamp('proposed_at', { withTimezone: true }).notNull().defaultNow(),
+  workflowInstanceId:      uuid('workflow_instance_id'),
+  decidedBy:               text('decided_by'),
+  decidedByPersonId:       uuid('decided_by_person_id'),
+  decidedAt:               timestamp('decided_at', { withTimezone: true }),
+  decisionReason:          text('decision_reason'),
+  withdrawnAt:             timestamp('withdrawn_at', { withTimezone: true }),
+});
+
+export type AdjustmentWithdrawal = typeof adjustmentWithdrawals.$inferSelect;
+
+/**
+ * The release of one migrated adjustment for distribution (ADR-033 item 7,
+ * migration 0010). Append-only; its presence is what makes a repeated batch
+ * release a no-op, including for adjustments every target ignores.
+ */
+export const adjustmentMigrationReleases = pgTable('adjustment_migration_release', {
+  tenantId:                uuid('tenant_id').notNull().references(() => tenants.id),
+  adjustmentId:            uuid('adjustment_id').notNull(),
+  migrationBatchId:        uuid('migration_batch_id').notNull(),
+  reconciliationReference: text('reconciliation_reference').notNull(),
+  releasedBy:              text('released_by').notNull(),
+  releasedAt:              timestamp('released_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [primaryKey({ columns: [table.tenantId, table.adjustmentId] })]);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BPR-D09 note: an earlier `support_outcome`/shared distribution_item table
 // (originally migration 0046_support_outcome_distribution, since squashed
-// into 0004_business_process_foundations) was intended to replace
+// into 0000_baseline (section 0004_business_process_foundations)) was intended to replace
 // adjustment_distribution above. It never reached parity — no route ever
 // drove a distribution_item past creation (no acknowledge/reconcile path),
 // it published no domain events, and no writer ever superseded one — while
 // adjustment_distribution remained the live, tested, externally-contracted
 // path (two documented adapters, VLE and attendance, key their idempotency
-// on it). Retired in migration 0006_adjustments_integration_and_support.sql (section 0022_retire_support_outcome) rather than
+// on it). Retired in migration 0000_baseline.sql (section 0006_adjustments_integration_and_support / 0022_retire_support_outcome) rather than
 // finished and migrated onto, given it was unused and untested end to end.
 // See docs/user-guides/wellbeing-and-revelation-srs.md for the full account.

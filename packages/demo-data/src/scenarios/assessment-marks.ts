@@ -429,13 +429,13 @@ async function loadWellbeing(db: Db, tenantId: string): Promise<void> {
         scopeCode:          'exam',
         amountValue:        '25.00',
         amountUnitCode:     'percent-of-duration',
-        notes:              'DEMO - additional time on timed written exams. Synthetic record.',
         actorId:            ACTOR,
         validFrom:          VALID_FROM,
         recordedAt:         VALID_FROM,
         // Genuine cross-service link back to the wellbeing case that
         // approved it — previously these were fabricated independently.
         sourceCaseId:       adjustmentCaseId(tenantId, seq),
+        provenanceCode:       'wellbeing-case', // ADR-033
       });
     }
 

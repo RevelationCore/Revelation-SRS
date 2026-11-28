@@ -160,7 +160,7 @@ export class ClearingService {
         caseId: c.id, statusCode: c.statusCode, applicationId: c.subjectId,
         sourceReference: data.apps.find((a) => a.id === c.subjectId)?.sourceReference ?? '',
         offerId: offer.id, offerTypeCode: offer.offerTypeCode, expiresOn: offer.expiresOn, programmeId: offer.programmeId,
-        decidedBy: offer.decidedBy, decidedAt: offer.decidedAt, reviewDueBy: await addWorkingDaysFor(this.db, tenantId, offer.decidedAt, 1),
+        decidedBy: offer.decidedBy, decidedAt: offer.decidedAt, reviewDueBy: await addWorkingDaysFor(this.db, tenantId, offer.decidedAt, 1, 'institutional'),
         review: decision ? { outcomeCode: decision.decisionTypeCode, reviewedBy: decision.authorityActorId, reviewedAt: decision.decidedAt, note: decision.reasonText } : null,
       });
     }

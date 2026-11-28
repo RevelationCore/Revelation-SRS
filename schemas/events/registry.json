@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "generated": "2026-11-17T08:44:33.221Z",
+  "generated": "2026-11-23T13:11:13.103Z",
   "description": "Machine-readable registry of all Revelation SRS domain events.",
   "schemaUriBase": "https://schemas.revelation-srs.io/events",
   "events": [
@@ -329,6 +329,34 @@
       "consumers": [
         "assessment-venue-adapter",
         "wellbeing-module"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.person.merged",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/person/merged/v1.json",
+      "schemaPath": "schemas/events/person/merged/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "survivorPersonId",
+      "consumers": [
+        "wellbeing-module",
+        "attendance-module",
+        "vle-connector"
+      ],
+      "status": "published"
+    },
+    {
+      "subject": "srs.person.unmerged",
+      "version": "1.0.0",
+      "schemaRef": "https://schemas.revelation-srs.io/events/person/unmerged/v1.json",
+      "schemaPath": "schemas/events/person/unmerged/v1.json",
+      "dataClass": "personal",
+      "partitionKey": "survivorPersonId",
+      "consumers": [
+        "wellbeing-module",
+        "attendance-module",
+        "vle-connector"
       ],
       "status": "published"
     },

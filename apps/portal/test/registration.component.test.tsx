@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { RegistrationPage } from '../src/pages/RegistrationPage.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 const ME = 'test-student-001';
 const reg = (over: Record<string, unknown> = {}, statusCode = 'pending') => ({
   confirmation: { confirmationId: 'c-1', enrolmentId: 'e-1', statusCode, confirmedAt: null, channelCode: null, termsVersion: null },

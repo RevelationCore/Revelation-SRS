@@ -1,5 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import { requirePermission, requireAnyPermission } from '@revelation-srs/auth';
+import { hasPermission } from '@revelation-srs/domain';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { clockNow } from '../platform/clock.js';
@@ -9,6 +10,8 @@ import type {
   ModuleRegistrationDto,
   TimetableRegistrationDto,
 } from '../platform/registration/service.js';
+
+import { assertOwnEnrolment } from './own-records.js';
 
 const ModuleRegistrationSchema = Type.Object({
   moduleRegistrationId: Type.String(),
@@ -85,6 +88,8 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
       if (query.enrolmentId !== undefined) opts.enrolmentId = query.enrolmentId;
       if (query.moduleOfferingId !== undefined) opts.moduleOfferingId = query.moduleOfferingId;
       if (query.statusCode !== undefined) opts.statusCode = query.statusCode;
+      // A student lists only their own enrolment's registrations (BL-177).
+      await assertOwnEnrolment(fastify, request, query.enrolmentId, 'module-registration:read:all');
 
       const registrations = await fastify.moduleRegistrationService.listRegistrations(request.tenantId, opts);
       await reply.send(registrations.map(moduleRegistrationToWire));
@@ -102,6 +107,7 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
     },
     async (request, reply) => {
       const { enrolmentId } = request.query as { enrolmentId: string };
+      await assertOwnEnrolment(fastify, request, enrolmentId, 'module-registration:read:all');
       const registrations = await fastify.moduleRegistrationService.listTimetableRegistrations(
         request.tenantId,
         enrolmentId,
@@ -143,7 +149,7 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
       };
 
       // Students may only register within their own enrolment
-      if (request.user.srsPersonId && !request.user.roles.includes('registry-administrator')) {
+      if (!hasPermission(request.user.roles, 'module-registration:write')) {
         const enrolment = await fastify.enrolmentService.getEnrolment(body.enrolmentId, request.tenantId);
         if (!enrolment || enrolment.personId !== request.user.srsPersonId) {
           return reply.code(403).send({
@@ -246,7 +252,7 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
       const body = request.body as { validFrom?: string };
 
       // Students may only withdraw their own registrations
-      if (request.user.srsPersonId && !request.user.roles.includes('registry-administrator')) {
+      if (!hasPermission(request.user.roles, 'module-registration:write')) {
         const reg = await fastify.moduleRegistrationService.getRegistration(moduleRegistrationId, request.tenantId);
         if (!reg) {
           return reply.code(404).send({
@@ -336,7 +342,7 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
         enrolmentId: string; moduleOfferingId: string; registrationDate?: string; reason?: string;
       };
 
-      if (request.user.srsPersonId && !request.user.roles.includes('registry-administrator')) {
+      if (!hasPermission(request.user.roles, 'module-registration:write')) {
         const enrolment = await fastify.enrolmentService.getEnrolment(body.enrolmentId, request.tenantId);
         if (!enrolment || enrolment.personId !== request.user.srsPersonId) {
           return reply.code(403).send({
@@ -387,7 +393,7 @@ export function moduleRegistrationsRoutes(fastify: FastifyInstance): void {
       const { moduleRegistrationId } = request.params as { moduleRegistrationId: string };
       const { reason } = request.body as { reason?: string };
 
-      if (request.user.srsPersonId && !request.user.roles.includes('registry-administrator')) {
+      if (!hasPermission(request.user.roles, 'module-registration:write')) {
         const reg = await fastify.moduleRegistrationService.getRegistration(moduleRegistrationId, request.tenantId);
         if (!reg) {
           return reply.code(404).send({

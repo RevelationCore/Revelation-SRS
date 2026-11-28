@@ -2,7 +2,7 @@
 
 > Pattern: per-flow fulfilment (event, staff task, file, or none) over one delivery ledger
 > Audience: institutions configuring Revelation SRS, and teams building connectors
-> Code: `apps/api/src/platform/delivery/`, migration `0006_adjustments_integration_and_support` (section `0029_delivery_ledger`)
+> Code: `apps/api/src/platform/delivery/`, migration `0000_baseline` (section `0006_adjustments_integration_and_support` / `0029_delivery_ledger`)
 
 Not every institution has every adjacent system, and not every system it has is connected. Rather than build each system or leave changes to wait silently, every outbound reference-model flow with no other route is registered, and each institution says how it is fulfilled:
 
@@ -38,7 +38,7 @@ Event-driven flows are state-sync snapshots except OIV, where each check is its 
 
 ## Student support payments (F-SIS-PAY-01 ↔ F-PAY-SIS-01)
 
-Student support (studentship stipends, bursaries, scholarships, hardship awards) is an entitlement the SRS decides; payroll only pays it. Employment pay (GTA, demonstrating) is a contract HR and payroll own, and the SRS refuses it as support (`422`). Migration `0006_adjustments_integration_and_support` (section `0032_student_support_and_employment`).
+Student support (studentship stipends, bursaries, scholarships, hardship awards) is an entitlement the SRS decides; payroll only pays it. Employment pay (GTA, demonstrating) is a contract HR and payroll own, and the SRS refuses it as support (`422`). Migration `0000_baseline` (section `0006_adjustments_integration_and_support` / `0032_student_support_and_employment`).
 
 1. Staff with `support:write` record a `support_award` and its `support_instalment` schedule on the student's **Support & employment** tab.
 2. Someone else with `support:approve` approves the award, then each instalment. Whoever recorded it cannot approve it (`409`).
@@ -103,9 +103,31 @@ Both carry a snapshot of the enrolment's current state, so a later item can repl
 
 `progression` is the latest decision (`null` if none); `ratified` is false until an exam board locks it. The accommodation payload has `modeOfStudy` and `startDate` instead of `progression`.
 
+## Identity merges (ADR-031, BL-357)
+
+When two student records are merged, every flow that has delivered something about either person receives one `person-merged` item, in the merge's transaction. This is a minor version of each flow's contract: targets that do not know `messageType` can ignore it, and the flow's normal snapshot for the survivor follows.
+
+| Field | Meaning |
+|---|---|
+| `messageType` | `person-merged` |
+| `mergeId` | The merge; the same id is in `srs.person.merged` |
+| `survivorPersonId`, `survivorStudentNumber` | The record that continues |
+| `mergedPersonId`, `mergedStudentNumber` | The record merged into it, which still resolves to the survivor |
+| `effectiveAt` | When the merge took effect |
+
+The item's subject is the merge (`subjectType: person-merge`), so it never supersedes a pending snapshot. After the merge commits, the flows' own producers send the survivor's fresh state: its recomputed IAM account, its service-desk snapshot, and a snapshot for each enrolment it now holds.
+
+**F-SIS-IAM-01 (contract 2.1).** IAM gets an account instruction instead of the notice, on the merged person's account (`instruction`, `successorPersonId`, `mergeId`):
+- `rebind`: only the merged person had an account; bind it to the survivor.
+- `ended`, with `accessLevel: ended` and `endReason: merged`: both had accounts (the merge proposal confirmed it); end the merged person's, and the survivor keeps theirs.
+
+**Unmerge (BL-359).** When a merge is reversed, the same flows get a `person-unmerged` item (`survivorPersonId`, `restoredPersonId` and their student numbers), and IAM reverses what the merge told it: `rebind` binds an account the merge rebound back to the restored person, and `restore` re-enables one it ended (both with `fromPersonId`). Fresh snapshots for both people follow.
+
+HESA, UCAS, SLC and UKVI are not ledger targets; a regulatory correction for a dropped identifier is BL-419.
+
 ## Inbound: what other systems report back
 
-The reverse direction is a store of what adjacent systems report about a student (migration `0006_adjustments_integration_and_support` (section `0030_external_records`)). A connector posts with `integration:manage`; where none exists, staff with `external-record:write` enter it on the student record (**Other systems** tab), and each entry is audited. Staff with `external-record:read` (registry administrators, tenant administrators, personal tutors) see current records and, on request, earlier ones.
+The reverse direction is a store of what adjacent systems report about a student (migration `0000_baseline` (section `0006_adjustments_integration_and_support` / `0030_external_records`)). A connector posts with `integration:manage`; where none exists, staff with `external-record:write` enter it on the student record (**Other systems** tab), and each entry is audited. Staff with `external-record:read` (registry administrators, tenant administrators, personal tutors) see current records and, on request, earlier ones.
 
 ```http
 POST /api/v1/inbound/F-LIB-SIS-01

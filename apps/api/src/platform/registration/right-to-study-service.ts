@@ -11,7 +11,7 @@ import {
   withTenantContext,
 } from '@revelation-srs/db';
 import { ConflictError, NotFoundError, ValidationError } from '@revelation-srs/domain';
-import { and, desc, eq, inArray, isNotNull, isNull, lte, ne } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, lte, ne, sql } from 'drizzle-orm';
 
 import { clockNow } from '../clock.js';
 import type { NotificationService } from '../notifications/notification-service.js';
@@ -225,7 +225,9 @@ export class RightToStudyService implements RegistrationBlockerProvider {
     const { scope } = await this.#settings(tenantId);
     if (scope === 'none') return [];
     const sponsored = await this.#sponsored(tenantId, enrolment.personId);
-    if (scope === 'sponsored' && !sponsored) return [];
+    // F-5 (BL-182): 'sponsored' still covers unsponsored entrants who are not
+    // recorded as British or Irish; an unknown nationality is checked.
+    if (scope === 'sponsored' && !sponsored && (await this.#exemptNationality(tenantId, enrolment.personId))) return [];
     const current = await this.current(tenantId, enrolment.personId);
     if (periodTypeCode === 'initial') {
       if (current?.outcomeCode !== 'eligible') {
@@ -279,10 +281,25 @@ export class RightToStudyService implements RegistrationBlockerProvider {
     return row?.id ?? null;
   }
 
+  /** Whether the person's current nationality is one that needs no right-to-study check (value set metadata). */
+  async #exemptNationality(tenantId: string, personId: string): Promise<boolean> {
+    const rows = await withTenantContext(this.db, tenantId, (tx) => tx.execute(sql`
+      SELECT 1 FROM person_identity pi
+      JOIN value_set_member m ON m.code = pi.nationality_code AND (m.tenant_id IS NULL OR m.tenant_id = ${tenantId}::uuid)
+      JOIN value_set vs ON vs.id = m.value_set_id AND vs.set_code = 'hesa-nationality-code'
+      WHERE pi.tenant_id = ${tenantId}::uuid AND pi.person_id = ${personId}::uuid AND pi.recorded_until IS NULL
+        AND (m.source_metadata->>'rightToStudyExempt')::boolean IS TRUE
+      LIMIT 1`)) as unknown as unknown[];
+    return rows.length > 0;
+  }
+
   async #settings(tenantId: string): Promise<{ scope: RightToStudyScope; expiryWarningDays: number }> {
     const [row] = await this.db.select({ configuration: tenants.configuration }).from(tenants).where(eq(tenants.id, tenantId as Uuid)).limit(1);
     const c = (row?.configuration?.['rightToStudy'] ?? {}) as Record<string, unknown>;
-    const scope = c['scope'] === 'sponsored' || c['scope'] === 'none' ? c['scope'] : 'all';
+    // F-5 (BL-182): 'none' only for a tenant that records it holds no sponsor
+    // licence; otherwise it reads as 'all', so the registration check stays.
+    const noLicence = (row?.configuration?.['ukvi'] as Record<string, unknown> | undefined)?.['holdsSponsorLicence'] === false;
+    const scope = c['scope'] === 'sponsored' ? 'sponsored' : c['scope'] === 'none' && noLicence ? 'none' : 'all';
     const days = c['expiryWarningDays'];
     return { scope, expiryWarningDays: typeof days === 'number' && days >= 0 ? days : 60 };
   }

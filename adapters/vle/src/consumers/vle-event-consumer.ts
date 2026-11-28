@@ -10,6 +10,7 @@
  */
 
 import type { DomainEventEnvelope } from '@revelation-srs/domain';
+import { natsConnectOptions } from '@revelation-srs/service-client';
 import type {
   ConsumerMessages,
   JetStreamClient,
@@ -73,7 +74,7 @@ export class VleEventConsumer {
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   async connect(): Promise<void> {
-    this.nc = await connect({ servers: this.natsUrl });
+    this.nc = await connect(natsConnectOptions(this.natsUrl));
     this.log.info({ natsUrl: this.natsUrl }, 'VLE connector NATS consumer connected');
     await this.ensureConsumer(this.nc);
   }
@@ -248,7 +249,13 @@ export class VleEventConsumer {
         'VLE durable consumer created',
       );
     } catch {
-      // Consumer already exists — re-attach on restart.
+      // Consumer already exists — re-attach on restart. Bring its filter up to
+      // date, or a subject added since it was created would never arrive.
+      try {
+        await jsm.consumers.update(STREAM_NAME, consumerNameFor(this.tenantId), { filter_subjects: [...VLE_SUBSCRIBED_SUBJECTS] });
+      } catch (err) {
+        this.log.warn({ err, consumer: consumerNameFor(this.tenantId) }, 'Could not update the VLE consumer filter');
+      }
       this.log.debug(
         { consumer: consumerNameFor(this.tenantId) },
         'VLE consumer already exists — re-attaching',

@@ -1,8 +1,12 @@
+import { randomUUID } from 'node:crypto';
+
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { IntegrationBusPublisher } from '../src/platform/integration-bus/publisher.js';
 
 import { ratifyThroughDecision } from './helpers/board-ratification.js';
+import { wellbeingServiceJwt } from './helpers/adjustments.js';
 import { startTestApp, type TestApp } from './helpers/test-app.js';
 
 interface CapturedEvent {
@@ -461,17 +465,20 @@ async function createAdjustment(fixture: BoardFixture): Promise<void> {
   const adjustment = await ctx.app.inject({
     method: 'POST',
     url: `/api/v1/students/${fixture.personId}/adjustments`,
-    headers: { authorization: `Bearer ${jwt}` },
-    payload: {
+    headers: { authorization: `Bearer ${await wellbeingServiceJwt(ctx)}` },
+    payload: { sourceCaseId: randomUUID(), 
       enrolmentId: fixture.enrolmentId,
       adjustmentTypeCode: 'extra-time',
       scopeCode: 'exam',
       validFrom: '2027-09-01T00:00:00.000Z',
       amount: { value: 25, unitCode: 'percent-of-duration' },
-      notes: 'BOARD-PRIVATE-NOTE: must never reach a board pack',
     },
   });
   expect(adjustment.statusCode).toBe(201);
+  // Core refuses notes (BL-243), but a row recorded before that, or migrated,
+  // may hold them: a board pack must still never show them.
+  const { adjustmentId } = adjustment.json<{ adjustmentId: string }>();
+  await ctx.db.execute(sql`UPDATE reasonable_adjustment SET notes = 'BOARD-PRIVATE-NOTE: must never reach a board pack' WHERE id = ${adjustmentId}`);
 }
 
 async function createExceptionalCircumstances(fixture: BoardFixture): Promise<void> {
@@ -488,7 +495,7 @@ async function createExceptionalCircumstances(fixture: BoardFixture): Promise<vo
   });
   expect(ec.statusCode).toBe(201);
   // The proposed outcome is decided by someone else (D-41) before the board sees it.
-  const decider = await ctx.makeJwt({ sub: 'ec-decider', roles: ['exam-board-chair'] });
+  const decider = await ctx.makeJwt({ sub: 'ec-decider', roles: ['ec-decision-maker'] });
   const decided = await ctx.app.inject({
     method: 'POST', url: `/api/v1/ec-determinations/${ec.json<{ determinationId: string }>().determinationId}/decision`,
     headers: { authorization: `Bearer ${decider}` }, payload: { decisionCode: 'upheld' },

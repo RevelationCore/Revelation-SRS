@@ -52,7 +52,11 @@ export interface RuntimeDeploymentMetadata {
 }
 
 export interface EnvironmentRuntimeReportDto {
-  environment: DeploymentEnvironmentDto;
+  /** The code this deployment runs as (SRS_ENVIRONMENT_CODE). */
+  environmentCode: string;
+  /** False until an environment record with that code is registered (BL-402). */
+  registered: boolean;
+  environment: DeploymentEnvironmentDto | null;
   releaseVersion: string;
   imageDigest: string | null;
   migrationVersion: string;
@@ -101,7 +105,12 @@ export class EnvironmentService {
   }
 
   async getRuntimeReport(): Promise<EnvironmentRuntimeReportDto> {
-    const environment = await this.getEnvironmentByCode(this.runtime.environmentCode);
+    // An unregistered environment is a state to show, not an error: a fresh
+    // install has none until the operator registers it.
+    const [row] = await this.db.select().from(deploymentEnvironments).where(
+      eq(deploymentEnvironments.environmentCode, this.runtime.environmentCode),
+    ).limit(1);
+    const environment = row ? environmentToDto(row) : null;
     const workflowRows = await this.db.select({
       definitionCode: workflowDefinitions.definitionCode,
       currentVersionNumber: workflowDefinitions.currentVersionNumber,
@@ -113,6 +122,8 @@ export class EnvironmentService {
     }).from(featureFlags).orderBy(featureFlags.flagKey);
 
     return {
+      environmentCode: this.runtime.environmentCode,
+      registered: environment !== null,
       environment,
       releaseVersion: this.runtime.releaseVersion,
       imageDigest: this.runtime.imageDigest ?? null,

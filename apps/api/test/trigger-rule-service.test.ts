@@ -93,6 +93,18 @@ describe('enrolment trigger rule evaluation', () => {
     });
   });
 
+  it('BL-214 (F3): tells SLC of a suspension, and of a return from interruption or suspension as a resumption', () => {
+    const suspended = evaluateLegacyEnrolmentStatusTransitionTriggers({ current: currentEnrolment, newStatus: 'suspended' });
+    expect(suspended[0]?.payloadSummary).toMatchObject({ notificationType: 'suspended' });
+    for (const from of ['intermitting', 'suspended'] as const) {
+      const back = evaluateLegacyEnrolmentStatusTransitionTriggers({ current: { ...currentEnrolment, statusCode: from }, newStatus: 'enrolled' });
+      expect(back, from).toHaveLength(1);
+      expect(back[0]?.payloadSummary).toMatchObject({ notificationType: 'resumption' });
+    }
+    // Enrolling from pre-registration is not a resumption.
+    expect(evaluateLegacyEnrolmentStatusTransitionTriggers({ current: { ...currentEnrolment, statusCode: 'pre-registration' }, newStatus: 'enrolled' })).toEqual([]);
+  });
+
   it('allows configured mode to disable a trigger by omitting its active rule', () => {
     const decisions = evaluateConfiguredEnrolmentTriggers(
       'enrolment.created',

@@ -7,7 +7,7 @@ import { server } from '../../../test/msw-server.mjs';
 import { renderWithProviders } from './render.js';
 import { ExternalRecordsTab } from '../src/pages/ExternalRecordsTab.js';
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:3000/bff/srs';
 
 const records = [
   { externalRecordId: 'r2', flowCode: 'F-LIB-SIS-01', flowName: 'Library account', sourceLabel: 'Library', personId: 'p1', recordKey: 'account', payload: {}, summary: 'Library account active: 2 on loan, 0 overdue, £0.00 outstanding', observedAt: '2026-10-08T09:00:00.000Z', receivedAt: '2026-10-08T09:00:00.000Z', receivedVia: 'connector', current: true },

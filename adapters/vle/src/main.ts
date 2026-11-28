@@ -2,16 +2,21 @@
 import './telemetry.js';
 
 import { pino } from 'pino';
+import { assertNatsCredentials } from '@revelation-srs/service-client';
 
 import { buildApp } from './app.js';
-import { loadConfig } from './config.js';
+import { assertVleSrsClientConfig, loadConfig } from './config.js';
 import { VleEventConsumer } from './consumers/vle-event-consumer.js';
 import { ReconciliationService } from './reliability/reconciliation-service.js';
 import { HttpSrsAcknowledgementClient } from './srs-client/acknowledgement-client.js';
+import { createSrsTokenSource } from './srs-client/service-tokens.js';
 
 async function main(): Promise<void> {
   const config = loadConfig();
-  const app    = await buildApp(config);
+  assertNatsCredentials('srs-vle-adapter', config.nodeEnv);
+  assertVleSrsClientConfig(config.nodeEnv, config.srsClient);
+  const srsTokens = createSrsTokenSource(config.srsClient);
+  const app    = await buildApp(config, { srsTokens });
 
   await app.listen({ port: config.port, host: '0.0.0.0' });
   app.log.info(`VLE connector listening on port ${config.port}`);
@@ -21,7 +26,7 @@ async function main(): Promise<void> {
   // The consumer and reconciler take a pino logger (special-category data is
   // never logged; handlers log identifiers only).
   const log = pino({ level: config.logLevel });
-  const srsAckClient = new HttpSrsAcknowledgementClient(config.srsApiUrl, config.serviceAccountToken);
+  const srsAckClient = new HttpSrsAcknowledgementClient(config.srsApiUrl, srsTokens, config.tenantId);
 
   let consumer: VleEventConsumer | null = null;
   if (config.consumerEnabled) {

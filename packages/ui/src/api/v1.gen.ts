@@ -276,7 +276,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/adjustments/{adjustmentId}/expire": {
+    "/api/v1/students/{personId}/adjustments/{adjustmentId}/withdrawal": {
         parameters: {
             query?: never;
             header?: never;
@@ -285,7 +285,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["createAdjustmentsByAdjustmentIdExpire"];
+        post: operations["createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -302,6 +302,166 @@ export interface paths {
         get: operations["getStudentsByPersonIdAdjustmentsByAdjustmentIdOutcomeDocument"];
         put?: never;
         post: operations["createStudentsByPersonIdAdjustmentsByAdjustmentIdOutcomeDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/adjustment-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createStudentsByPersonIdAdjustmentProposals"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdjustmentProposals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-proposals/{proposalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdjustmentProposalsByProposalId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-proposals/{proposalId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdjustmentProposalsByProposalIdDecision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-migration-batches/{batchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdjustmentMigrationBatchesByBatchId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-migration-batches/{batchId}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdjustmentMigrationBatchesByBatchIdRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/students/{personId}/adjustments/{adjustmentId}/withdrawal-proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawalProposals"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-withdrawals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdjustmentWithdrawals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-withdrawals/{withdrawalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAdjustmentWithdrawalsByWithdrawalId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-withdrawals/{withdrawalId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createAdjustmentWithdrawalsByWithdrawalIdDecision"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2905,6 +3065,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/identity-resolution/cases/{caseId}/proposal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getIdentityResolutionCasesByCaseIdProposal"];
+        put: operations["replaceIdentityResolutionCasesByCaseIdProposal"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/identity-resolution/cases/{caseId}/decision": {
         parameters: {
             query?: never;
@@ -2931,6 +3107,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createIdentityResolutionLinks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-merges/{mergeId}/unmerge-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createIdentityMergesByMergeIdUnmergeCases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-unmerge-cases/{unmergeCaseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getIdentityUnmergeCasesByUnmergeCaseId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-unmerge-cases/{unmergeCaseId}/proposal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["replaceIdentityUnmergeCasesByUnmergeCaseIdProposal"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/identity-unmerge-cases/{unmergeCaseId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createIdentityUnmergeCasesByUnmergeCaseIdDecision"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7012,9 +7252,95 @@ export interface paths {
         put?: never;
         /**
          * Retention enforcement sweep
-         * @description Run a data retention sweep for the tenant. In dry-run mode (default), identifies eligible persons and returns counts without making changes. Set dryRun=false to apply irreversible anonymisation.
+         * @description Dry run of a data retention sweep for the tenant: identifies eligible persons and returns counts without making changes. dryRun=false is refused (409); disposal needs an approved plan (POST /admin/retention/plans).
          */
         post: operations["createAdminRetentionEnforce"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List retention disposal plans */
+        get: operations["getAdminRetentionPlans"];
+        put?: never;
+        /** Prepare a retention disposal plan */
+        post: operations["createAdminRetentionPlans"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/plans/{planId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a retention disposal plan */
+        get: operations["getAdminRetentionPlansByPlanId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/plans/{planId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a retention disposal plan (not its preparer) */
+        post: operations["createAdminRetentionPlansByPlanIdApprove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/plans/{planId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a retention disposal plan (not its preparer) */
+        post: operations["createAdminRetentionPlansByPlanIdReject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/retention/plans/{planId}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Execute an approved retention disposal plan (irreversible) */
+        post: operations["createAdminRetentionPlansByPlanIdExecute"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7904,6 +8230,10 @@ export interface operations {
                         recordedUntil: string | null;
                         sourceCaseId: string | null;
                         outcomeDocumentId: string | null;
+                        provenanceCode: string;
+                        manualProposalId: string | null;
+                        withdrawalAuthorityCode: string | null;
+                        withdrawalReasonCode: string | null;
                     }[];
                 };
             };
@@ -7950,7 +8280,6 @@ export interface operations {
                         value: number;
                         unitCode: string;
                     };
-                    notes?: string;
                     sourceCaseId?: string;
                 };
             };
@@ -7975,6 +8304,20 @@ export interface operations {
                 content: {
                     "application/json": {
                         adjustmentId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };
@@ -8057,6 +8400,10 @@ export interface operations {
                         recordedUntil: string | null;
                         sourceCaseId: string | null;
                         outcomeDocumentId: string | null;
+                        provenanceCode: string;
+                        manualProposalId: string | null;
+                        withdrawalAuthorityCode: string | null;
+                        withdrawalReasonCode: string | null;
                     };
                 };
             };
@@ -8435,26 +8782,87 @@ export interface operations {
             };
         };
     };
-    createAdjustmentsByAdjustmentIdExpire: {
+    createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawal: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                personId: string;
                 adjustmentId: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    sourceCaseId: string;
+                    withdrawalReasonCode: string;
+                    /** Format: uuid */
+                    replacementAdjustmentId?: string;
+                };
+            };
+        };
         responses: {
             /** @description Default Response */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        adjustmentId: string;
+                        validTo: string;
+                        withdrawalAuthorityCode: string | null;
+                        withdrawalReasonCode: string | null;
+                        changed: boolean;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8537,6 +8945,781 @@ export interface operations {
             };
             /** @description Default Response */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createStudentsByPersonIdAdjustmentProposals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    enrolmentId: string;
+                    adjustmentTypeCode: string;
+                    scopeCode: string;
+                    /** Format: date-time */
+                    validFrom: string;
+                    /** Format: date-time */
+                    validTo?: string;
+                    amount?: {
+                        value: number;
+                        unitCode: string;
+                    };
+                    manualReasonCode: string;
+                    /** @description Where the decision is held, e.g. the disability service case number. An identifier, never narrative. */
+                    externalReference: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposalId: string;
+                        statusCode: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAdjustmentProposals: {
+        parameters: {
+            query?: {
+                statusCode?: string;
+                personId?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposalId: string;
+                        personId: string;
+                        enrolmentId: string;
+                        adjustmentTypeCode: string;
+                        scopeCode: string;
+                        amount: {
+                            value: number;
+                            unitCode: string;
+                        } | null;
+                        validFrom: string;
+                        validTo: string | null;
+                        manualReasonCode: string;
+                        externalReference: string;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        workflowInstanceId: string | null;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        adjustmentId: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    getAdjustmentProposalsByProposalId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposalId: string;
+                        personId: string;
+                        enrolmentId: string;
+                        adjustmentTypeCode: string;
+                        scopeCode: string;
+                        amount: {
+                            value: number;
+                            unitCode: string;
+                        } | null;
+                        validFrom: string;
+                        validTo: string | null;
+                        manualReasonCode: string;
+                        externalReference: string;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        workflowInstanceId: string | null;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        adjustmentId: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdjustmentProposalsByProposalIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposalId: string;
+                        statusCode: string;
+                        adjustmentId: string | null;
+                        decisionStatus: "applied" | "pending";
+                    };
+                };
+            };
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposalId: string;
+                        statusCode: string;
+                        adjustmentId: string | null;
+                        decisionStatus: "applied" | "pending";
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAdjustmentMigrationBatchesByBatchId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        batchId: string;
+                        total: number;
+                        current: number;
+                        released: number;
+                        unreleased: number;
+                        ended: number;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdjustmentMigrationBatchesByBatchIdRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The number of current adjustments the legacy report shows for this batch */
+                    expectedCount: number;
+                    /** @description The reference of the legacy report the count was checked against. An identifier, never narrative. */
+                    reconciliationReference: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        released: number;
+                        alreadyReleased: number;
+                        ended: number;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createStudentsByPersonIdAdjustmentsByAdjustmentIdWithdrawalProposals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                adjustmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    withdrawalReasonCode: string;
+                    /** @description Where the evidence is held, e.g. the student's written request or the review record. An identifier, never narrative. */
+                    externalReference: string;
+                    /** Format: uuid */
+                    replacementAdjustmentId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        withdrawalId: string;
+                        statusCode: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAdjustmentWithdrawals: {
+        parameters: {
+            query?: {
+                statusCode?: string;
+                personId?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        withdrawalId: string;
+                        adjustmentId: string;
+                        personId: string;
+                        withdrawalReasonCode: string;
+                        externalReference: string;
+                        replacementAdjustmentId: string | null;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        workflowInstanceId: string | null;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        withdrawnAt: string | null;
+                    }[];
+                };
+            };
+        };
+    };
+    getAdjustmentWithdrawalsByWithdrawalId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                withdrawalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        withdrawalId: string;
+                        adjustmentId: string;
+                        personId: string;
+                        withdrawalReasonCode: string;
+                        externalReference: string;
+                        replacementAdjustmentId: string | null;
+                        statusCode: string;
+                        proposedBy: string;
+                        proposedAt: string;
+                        workflowInstanceId: string | null;
+                        decidedBy: string | null;
+                        decidedAt: string | null;
+                        decisionReason: string | null;
+                        withdrawnAt: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdjustmentWithdrawalsByWithdrawalIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                withdrawalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionCode: "approved" | "rejected";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        withdrawalId: string;
+                        statusCode: string;
+                        adjustmentId: string;
+                        withdrawnAt: string | null;
+                        decisionStatus: "applied" | "pending";
+                    };
+                };
+            };
+            /** @description Default Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        withdrawalId: string;
+                        statusCode: string;
+                        adjustmentId: string;
+                        withdrawnAt: string | null;
+                        decisionStatus: "applied" | "pending";
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20138,6 +21321,169 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getIdentityResolutionCasesByCaseIdProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposalId: string;
+                        version: number;
+                        survivorPersonId: string;
+                        mergedPersonId: string;
+                        factChoices: {
+                            [key: string]: string;
+                        };
+                        identifierResolutions: {
+                            [key: string]: {
+                                keep: string;
+                                reason: string;
+                            };
+                        };
+                        twoAccountsConfirmed: boolean;
+                        proposedBy: string;
+                        proposedAt: string;
+                        identifierConflicts: {
+                            identifierClass: string;
+                            survivorValues: string[];
+                            mergedValues: string[];
+                            resolved: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    replaceIdentityResolutionCasesByCaseIdProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    survivorPersonId: string;
+                    /** Format: uuid */
+                    mergedPersonId: string;
+                    factChoices?: {
+                        [key: string]: "survivor" | "merged";
+                    };
+                    identifierResolutions?: {
+                        [key: string]: {
+                            keep: "survivor" | "merged";
+                            reason: string;
+                        };
+                    };
+                    twoAccountsConfirmed?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        proposalId: string;
+                        version: number;
+                        survivorPersonId: string;
+                        mergedPersonId: string;
+                        factChoices: {
+                            [key: string]: string;
+                        };
+                        identifierResolutions: {
+                            [key: string]: {
+                                keep: string;
+                                reason: string;
+                            };
+                        };
+                        twoAccountsConfirmed: boolean;
+                        proposedBy: string;
+                        proposedAt: string;
+                        identifierConflicts: {
+                            identifierClass: string;
+                            survivorValues: string[];
+                            mergedValues: string[];
+                            resolved: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -20156,7 +21502,8 @@ export interface operations {
             content: {
                 "application/json": {
                     decisionTypeCode: "merge" | "reject" | "link";
-                    survivorPersonId?: string;
+                    proposalVersion?: number;
+                    reason: string;
                 };
             };
         };
@@ -20173,6 +21520,40 @@ export interface operations {
                 };
             };
             /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -20183,6 +21564,26 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -20197,6 +21598,9 @@ export interface operations {
                         title: string;
                         status: number;
                         detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -20227,6 +21631,356 @@ export interface operations {
                 content: {
                     "application/json": {
                         linkId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    createIdentityMergesByMergeIdUnmergeCases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mergeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unmergeCaseId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getIdentityUnmergeCasesByUnmergeCaseId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unmergeCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unmergeCaseId: string;
+                        mergeId: string;
+                        survivorPersonId: string;
+                        restoredPersonId: string;
+                        statusCode: string;
+                        proposalVersion: number;
+                        allocations: {
+                            [key: string]: "survivor" | "restored";
+                        };
+                        postMergeRecords: {
+                            key: string;
+                            table: string;
+                            column: string;
+                            rowKey: string;
+                        }[];
+                        openedBy: string;
+                        proposedBy: string | null;
+                        decidedBy: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    replaceIdentityUnmergeCasesByUnmergeCaseIdProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unmergeCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    allocations: {
+                        [key: string]: "survivor" | "restored";
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unmergeCaseId: string;
+                        mergeId: string;
+                        survivorPersonId: string;
+                        restoredPersonId: string;
+                        statusCode: string;
+                        proposalVersion: number;
+                        allocations: {
+                            [key: string]: "survivor" | "restored";
+                        };
+                        postMergeRecords: {
+                            key: string;
+                            table: string;
+                            column: string;
+                            rowKey: string;
+                        }[];
+                        openedBy: string;
+                        proposedBy: string | null;
+                        decidedBy: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    createIdentityUnmergeCasesByUnmergeCaseIdDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unmergeCaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    decisionTypeCode: "unmerge" | "reject";
+                    proposalVersion?: number;
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unmergeCaseId: string;
+                        mergeId: string;
+                        survivorPersonId: string;
+                        restoredPersonId: string;
+                        statusCode: string;
+                        proposalVersion: number;
+                        allocations: {
+                            [key: string]: "survivor" | "restored";
+                        };
+                        postMergeRecords: {
+                            key: string;
+                            table: string;
+                            column: string;
+                            rowKey: string;
+                        }[];
+                        openedBy: string;
+                        proposedBy: string | null;
+                        decidedBy: string | null;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        errors?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -23682,7 +25436,7 @@ export interface operations {
                                 slcReference: string;
                                 programmeId: string | null;
                                 modeOfStudyCode: string;
-                                confirmationType: "enrolment" | "withdrawal" | "intermission";
+                                confirmationType: "enrolment" | "withdrawal" | "intermission" | "resumption";
                                 feeAmount: string | null;
                                 startDate: string;
                                 expectedEndDate: string | null;
@@ -23716,7 +25470,7 @@ export interface operations {
                         slcReference: string;
                         programmeId: string | null;
                         modeOfStudyCode: string;
-                        confirmationType: "enrolment" | "withdrawal" | "intermission";
+                        confirmationType: "enrolment" | "withdrawal" | "intermission" | "resumption";
                         feeAmount: string | null;
                         startDate: string;
                         expectedEndDate: string | null;
@@ -25351,6 +27105,7 @@ export interface operations {
                     checkTypeCode: string;
                     resultCode: string;
                     evidenceRef?: string;
+                    exemptionReason?: string;
                 };
             };
         };
@@ -26411,6 +28166,7 @@ export interface operations {
                         studentNumber: string;
                         legalFirstName: string;
                         legalFamilyName: string;
+                        mergedFrom?: string[];
                     }[];
                 };
             };
@@ -29267,6 +31023,17 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        markId: string;
+                    };
+                };
+            };
             /** @description Default Response */
             201: {
                 headers: {
@@ -34669,6 +36436,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        environmentCode: string;
+                        registered: boolean;
                         environment: {
                             deploymentEnvironmentId: string;
                             environmentCode: string;
@@ -34682,7 +36451,7 @@ export interface operations {
                             active: boolean;
                             createdAt: string;
                             updatedAt: string;
-                        };
+                        } | null;
                         releaseVersion: string;
                         imageDigest: string | null;
                         migrationVersion: string;
@@ -34695,20 +36464,6 @@ export interface operations {
                             statusCode: string;
                             defaultVariantKey: string;
                         }[];
-                    };
-                };
-            };
-            /** @description Default Response */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        type: string;
-                        title: string;
-                        status: number;
-                        detail?: string;
                     };
                 };
             };
@@ -36614,9 +38369,376 @@ export interface operations {
                         skipped: number;
                         details: {
                             personId: string;
-                            action: "anonymised" | "flagged-for-dpo" | "skipped-award-hold";
+                            action: "anonymised" | "flagged-for-dpo" | "skipped-award-hold" | "skipped-hold" | "skipped-restriction" | "skipped-open-request" | "skipped-schedule";
                             reason?: string;
                         }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAdminRetentionPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        statusCode: string;
+                        preparedBy: string;
+                        preparedAt: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        rejectedBy: string | null;
+                        rejectionReason: string | null;
+                        executedBy: string | null;
+                        executedAt: string | null;
+                        personIds: string[];
+                    }[];
+                };
+            };
+        };
+    };
+    createAdminRetentionPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        statusCode: string;
+                        preparedBy: string;
+                        preparedAt: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        rejectedBy: string | null;
+                        rejectionReason: string | null;
+                        executedBy: string | null;
+                        executedAt: string | null;
+                        personIds: string[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+        };
+    };
+    getAdminRetentionPlansByPlanId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        statusCode: string;
+                        preparedBy: string;
+                        preparedAt: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        rejectedBy: string | null;
+                        rejectionReason: string | null;
+                        executedBy: string | null;
+                        executedAt: string | null;
+                        personIds: string[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdminRetentionPlansByPlanIdApprove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        statusCode: string;
+                        preparedBy: string;
+                        preparedAt: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        rejectedBy: string | null;
+                        rejectionReason: string | null;
+                        executedBy: string | null;
+                        executedAt: string | null;
+                        personIds: string[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdminRetentionPlansByPlanIdReject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        statusCode: string;
+                        preparedBy: string;
+                        preparedAt: string;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        rejectedBy: string | null;
+                        rejectionReason: string | null;
+                        executedBy: string | null;
+                        executedAt: string | null;
+                        personIds: string[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+        };
+    };
+    createAdminRetentionPlansByPlanIdExecute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        planId: string;
+                        executedAt: string;
+                        anonymised: number;
+                        certificates: {
+                            personId: string;
+                            certificateRef: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
+                        instance?: string;
                     };
                 };
             };
@@ -36704,6 +38826,20 @@ export interface operations {
                 content: {
                     "application/json": {
                         findingId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        type: string;
+                        title: string;
+                        status: number;
+                        detail?: string;
                     };
                 };
             };

@@ -7,6 +7,9 @@
  *
  * All three are idempotent on the SRS side.
  */
+
+import { callCoreAsService, type ServiceTokenSource } from '@revelation-srs/service-client';
+
 export interface SrsAcknowledgementClient {
   acknowledgeDistribution(adjustmentId: string, distributionId: string): Promise<void>;
   reportFailure(adjustmentId: string, distributionId: string, reason: string): Promise<void>;
@@ -25,8 +28,9 @@ export class SrsAcknowledgementError extends Error {
 
 export class HttpSrsAcknowledgementClient implements SrsAcknowledgementClient {
   constructor(
-    private readonly srsBaseUrl:  string,
-    private readonly bearerToken: string,
+    private readonly srsBaseUrl: string,
+    private readonly tokens:     ServiceTokenSource,
+    private readonly tenantId:   string,
   ) {}
 
   async acknowledgeDistribution(adjustmentId: string, distributionId: string): Promise<void> {
@@ -55,12 +59,9 @@ export class HttpSrsAcknowledgementClient implements SrsAcknowledgementClient {
     tolerated:      number[],
   ): Promise<void> {
     const url = `${this.srsBaseUrl}/api/v1/adjustments/${encodeURIComponent(adjustmentId)}/distributions/${encodeURIComponent(distributionId)}/${action}`;
-    const res = await fetch(url, {
+    const res = await callCoreAsService(this.tokens, this.tenantId, url, {
       method:  'POST',
-      headers: {
-        'Authorization': `Bearer ${this.bearerToken}`,
-        'Content-Type':  'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
 

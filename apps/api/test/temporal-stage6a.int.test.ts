@@ -80,6 +80,8 @@ async function replayAppliedCommand(workflowInstanceId: string): Promise<void> {
 describe('coverage', () => {
   it('registers a worker effect for every Stage 6a approval that changes a record', () => {
     expect(ctx.app.reviewActivitiesService.effectWorkflowCodes()).toEqual([
+      'adjustment-manual-approval', // ADR-033 (BL-378)
+      'adjustment-withdrawal-approval', // ADR-034 (BL-408)
       'ec-determination',
       'hesa-return-submission-approval',
       'legal-identity-change-approval',

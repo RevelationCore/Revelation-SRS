@@ -20,19 +20,18 @@ const OUTPUT_PATH = join(OUTPUT_DIR, 'v1.json');
 const config: Config = {
   port:                      3000,
   logLevel:                  'silent',
-  nodeEnv:                   'production',
+  nodeEnv:                   'test',  // generation only: no tokens are validated
+  documentScanner:           { mode: 'reject', clamdPort: 3310, timeoutMs: 30_000, maxConcurrency: 4 }, // nothing is uploaded
   databaseUrl:               'postgres://unused/openapi-generation',
   natsUrl:                   'nats://unused:4222',
   temporalAddress:           'unused:7233',
   deploymentEnvironmentCode: 'local',
   releaseVersion:            '1.0.0',
   imageDigest:               undefined,
-  migrationVersion:          '0004_business_process_foundations',
+  migrationVersion:          '0001_security_and_tenant_isolation',
   jwtSecret:                 'generation-only',
   keycloakJwksUrl:           undefined,
   corsOrigins:               ['*'],
-  otelEndpoint:              undefined,
-  otelServiceName:           'srs-api',
 };
 
 const app = await buildApp(config);

@@ -4,7 +4,6 @@ import { useAuth } from './auth/AuthContext.js';
 import { RequireRole } from './auth/RequireRole.js';
 import { RequirePermission } from './auth/RequirePermission.js';
 import { Layout } from './components/Layout.js';
-import { CallbackPage } from './pages/CallbackPage.js';
 import { LoginPage } from './pages/LoginPage.js';
 
 const AcademicRulesPage = lazy(() => import('./pages/AcademicRulesPage.js').then((m) => ({ default: m.AcademicRulesPage })));
@@ -99,9 +98,9 @@ const ADMIN_PERMISSIONS = [
 ] as const;
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { token, isReady } = useAuth();
+  const { authenticated, isReady } = useAuth();
   if (!isReady) return null;
-  if (!token)   return <Navigate to="/login" replace />;
+  if (!authenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
@@ -111,7 +110,6 @@ export function App() {
     <Routes>
       {/* Public routes */}
       <Route path="/login"           element={<LoginPage />} />
-      <Route path="/callback"        element={<CallbackPage />} />
       <Route path="/403"             element={<ForbiddenPage />} />
       <Route path="/accessibility-statement" element={<AccessibilityStatementPage />} />
 
@@ -226,13 +224,13 @@ export function App() {
                 {/* Governance — write-only workflow consoles (no list endpoints) */}
                 <Route path="governance/moderation" element={<RequirePermission permissions={['mark:write']}><ModerationPage /></RequirePermission>} />
                 <Route path="governance/regulatory-collections" element={<RequirePermission permissions={['regulatory:write']}><RegulatoryCollectionsPage /></RequirePermission>} />
-                <Route path="governance/identity-resolution" element={<RequirePermission permissions={['identity:manage']}><IdentityResolutionPage /></RequirePermission>} />
+                <Route path="governance/identity-resolution" element={<RequirePermission permissions={['identity-resolution:read', 'identity:manage']}><IdentityResolutionPage /></RequirePermission>} />
                 <Route path="governance/pgr-supervision" element={<RequirePermission permissions={['pgr-case:read']}><PgrSupervisionPage /></RequirePermission>} />
                 <Route path="governance/pgr-progress-review" element={<RequirePermission permissions={['pgr-case:read']}><PgrProgressReviewPage /></RequirePermission>} />
                 <Route path="governance/pgr-examination" element={<RequirePermission permissions={['pgr-case:read']}><PgrExaminationPage /></RequirePermission>} />
                 <Route path="governance/pgr-completion" element={<RequirePermission permissions={['pgr-case:read']}><PgrCompletionPage /></RequirePermission>} />
                 <Route path="governance/rights-requests" element={<RequirePermission permissions={['identity:manage', 'retention:enforce']}><RightsRequestsPage /></RequirePermission>} />
-                <Route path="governance/audit-review" element={<RequirePermission permissions={['audit-log:read']}><AuditReviewPage /></RequirePermission>} />
+                <Route path="governance/audit-review" element={<RequirePermission permissions={['audit-review:manage']}><AuditReviewPage /></RequirePermission>} />
                 <Route path="governance/adjustment-cases" element={<RequirePermission permissions={['adjustment-case:read:all']}><AdjustmentCasesPage /></RequirePermission>} />
                 <Route path="governance/adjustment-cases/:caseId" element={<RequirePermission permissions={['adjustment-case:read:all']}><AdjustmentCaseDetailPage /></RequirePermission>} />
 
