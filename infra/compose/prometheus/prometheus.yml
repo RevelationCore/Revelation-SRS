@@ -5,7 +5,7 @@ global:
 scrape_configs:
   - job_name: srs-api
     static_configs:
-      - targets: ['host.docker.internal:3000']
+      - targets: ['host.docker.internal:9464']  # packages/telemetry's dedicated metrics port (ADR-035)
     metrics_path: /metrics
 
   - job_name: nats

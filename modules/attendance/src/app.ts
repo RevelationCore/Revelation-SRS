@@ -1,3 +1,4 @@
+import { httpServerMetrics } from '@revelation-srs/telemetry';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { assertSecureAuthConfig, jwtPlugin, jwtPluginOptions, tenantContextPlugin } from '@revelation-srs/auth';
@@ -37,6 +38,8 @@ export async function buildApp(config: Config, appOpts: AppOptions = {}): Promis
       : { level: config.logLevel },
     trustProxy: true,
   });
+  // ADR-035: request durations by route template, served on the metrics port.
+  httpServerMetrics(fastify);
 
   // Security headers
   await fastify.register(helmet, { global: true });

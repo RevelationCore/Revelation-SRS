@@ -88,14 +88,16 @@ export default [
     },
   },
   // Connectors stay independently replaceable (ADR-032): the only workspace
-  // package they import at runtime is the leaf client package.
+  // packages they import at runtime are leaf packages with no workspace
+  // dependencies: the client package, and the telemetry bootstrap every
+  // service runs (ADR-035).
   {
     files: ['adapters/*/src/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', {
         patterns: [{
-          regex: '^@revelation-srs/(?!service-client$|domain$)',
-          message: 'Connectors import only @revelation-srs/service-client (and domain types); see ADR-032.',
+          regex: '^@revelation-srs/(?!service-client$|telemetry$|domain$)',
+          message: 'Connectors import only @revelation-srs/service-client, @revelation-srs/telemetry (and domain types); see ADR-032 and ADR-035.',
         }],
       }],
     },

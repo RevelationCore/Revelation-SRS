@@ -1,5 +1,5 @@
 // OTel must be bootstrapped before any other import so instrumentation patches load first.
-import './telemetry.js';
+import './telemetry-worker.js';
 
 import { createServer, type Server } from 'node:http';
 import { hostname } from 'node:os';
@@ -36,7 +36,7 @@ const reconcileIntervalMs = Number(process.env['RECONCILE_INTERVAL_MS'] ?? 15_00
 const healthPort = Number(process.env['WORKER_HEALTH_PORT'] ?? 9466);
 const identity = `srs-worker@${hostname()}:${config.releaseVersion}`;
 
-const app = await buildApp({ ...config, otelServiceName: `${config.otelServiceName}-worker` });
+const app = await buildApp(config);
 await app.ready();
 
 try {

@@ -1,3 +1,4 @@
+import { httpServerMetrics } from '@revelation-srs/telemetry';
 import { createDocumentScanner, loadDocumentScannerConfig, type DocumentScanner } from '@revelation-srs/documents';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -332,6 +333,8 @@ export async function buildApp(
     // per-IP limit becomes one budget shared by all callers (BL-168).
     trustProxy: config.trustProxy ?? false,
   });
+  // ADR-035: request durations by route template, served on the metrics port.
+  httpServerMetrics(fastify);
 
   // Inject OTel traceId into every Fastify log line for log-trace correlation.
   fastify.addHook('onRequest', (req, _reply, done) => {

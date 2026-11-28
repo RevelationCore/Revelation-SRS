@@ -117,28 +117,4 @@ export function healthRoutes(fastify: FastifyInstance): void {
       });
     },
   );
-
-  fastify.get(
-    '/metrics',
-    { schema: { hide: true }, config: { skipAuth: true } },
-    async (_req, reply) => {
-      const uptime = process.uptime();
-      const memory = process.memoryUsage();
-
-      await reply
-        .type('text/plain; version=0.0.4')
-        .send([
-          '# HELP srs_api_uptime_seconds Process uptime in seconds.',
-          '# TYPE srs_api_uptime_seconds gauge',
-          `srs_api_uptime_seconds ${uptime}`,
-          '# HELP srs_api_memory_rss_bytes Resident memory size in bytes.',
-          '# TYPE srs_api_memory_rss_bytes gauge',
-          `srs_api_memory_rss_bytes ${memory.rss}`,
-          '# HELP srs_api_event_bus_connected Whether the API is connected to NATS JetStream.',
-          '# TYPE srs_api_event_bus_connected gauge',
-          `srs_api_event_bus_connected ${fastify.eventBus.isConnected() ? 1 : 0}`,
-          '',
-        ].join('\n'));
-    },
-  );
 }

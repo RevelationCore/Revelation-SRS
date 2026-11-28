@@ -1,6 +1,7 @@
 import { Readable } from 'node:stream';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
 
+import { httpServerMetrics } from '@revelation-srs/telemetry';
 import { fetchWithTimeout } from '@revelation-srs/service-client';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { decodeJwt } from 'jose';
@@ -32,6 +33,8 @@ const NEVER_FORWARD = new Set(['cookie', 'authorization', 'origin', 'referer', '
 export async function buildBff(cfg: BffConfig, deps: BffDeps): Promise<FastifyInstance> {
   assertSecureBffConfig(cfg);
   const app = Fastify({ logger: { level: cfg.logLevel, redact: ['req.headers.cookie', 'req.headers.authorization'] }, bodyLimit: 25 * 1024 * 1024, trustProxy: 'uniquelocal' });
+  // ADR-035: request durations by route template, served on the metrics port.
+  httpServerMetrics(app);
   const oidc = deps.oidc ?? new OidcClient(cfg);
   const store = new SessionStore(deps.sql, cfg, oidc);
   app.decorate('sessionStore', store);

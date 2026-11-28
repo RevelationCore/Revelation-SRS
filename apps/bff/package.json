@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@revelation-srs/service-client": "workspace:*",
+    "@revelation-srs/telemetry": "workspace:*",
     "fastify": "^5.12.8",
     "jose": "^5.10.0",
     "pino": "^9.14.0",

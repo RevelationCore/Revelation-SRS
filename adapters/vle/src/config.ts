@@ -1,6 +1,7 @@
 import { createPrivateKey } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
+import { loadTelemetryConfig, type TelemetryConfig } from '@revelation-srs/telemetry';
 import { DEFAULT_DEV_VLE_CLIENT_SECRET } from '@revelation-srs/service-client';
 
 /**
@@ -18,6 +19,8 @@ export interface VleSrsClientConfig {
 }
 
 export interface Config {
+  /** METRICS_PORT and OTEL_EXPORTER_OTLP_ENDPOINT (ADR-035); packages/telemetry reads the same values at start. */
+  telemetry?: TelemetryConfig;
   port:                      number;
   logLevel:                  string;
   nodeEnv:                   string;
@@ -118,6 +121,7 @@ export function loadConfig(): Config {
     throw new Error(`Invalid MOODLE_ADJUSTMENT_STRATEGY: ${moodleStrategy}`);
   }
   return {
+    telemetry:       loadTelemetryConfig(),
     vlePlatform:             platform,
     moodleStrategy,
     vleApiToken:             process.env['VLE_API_TOKEN'],

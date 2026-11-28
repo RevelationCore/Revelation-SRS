@@ -32,8 +32,6 @@ const config: Config = {
   jwtSecret:                 'generation-only',
   keycloakJwksUrl:           undefined,
   corsOrigins:               ['*'],
-  otelEndpoint:              undefined,
-  otelServiceName:           'srs-api',
 };
 
 const app = await buildApp(config);

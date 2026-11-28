@@ -1,3 +1,4 @@
+import { loadTelemetryConfig, type TelemetryConfig } from '@revelation-srs/telemetry';
 import { loadDocumentScannerConfig, type DocumentScannerConfig } from '@revelation-srs/documents';
 import { DEFAULT_DEV_JWT_SECRET, tokenEnv } from '@revelation-srs/auth';
 
@@ -65,8 +66,8 @@ export interface Config {
   /** The institution's sending address; the default for staff email and notices. */
   emailFromAddress?: string;
   corsOrigins:  string[];
-  otelEndpoint: string | undefined;
-  otelServiceName: string;
+  /** METRICS_PORT and OTEL_EXPORTER_OTLP_ENDPOINT (ADR-035); packages/telemetry reads the same values at start. */
+  telemetry?: TelemetryConfig;
 }
 
 function emailTransport(value: string | undefined): 'fake' {
@@ -160,7 +161,6 @@ export function loadConfig(): Config {
     emailTransport:  emailTransport(process.env['EMAIL_TRANSPORT']),
     emailFromAddress: process.env['EMAIL_FROM_ADDRESS'] ?? 'registry@revelation.example.ac.uk',
     corsOrigins:     (process.env['CORS_ORIGINS'] ?? 'http://localhost:5173').split(','),
-    otelEndpoint:    optional('OTEL_EXPORTER_OTLP_ENDPOINT'),
-    otelServiceName: process.env['OTEL_SERVICE_NAME'] ?? 'srs-api',
+    telemetry:       loadTelemetryConfig(),
   };
 }

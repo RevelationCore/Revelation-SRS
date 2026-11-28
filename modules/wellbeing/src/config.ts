@@ -1,9 +1,12 @@
+import { loadTelemetryConfig, type TelemetryConfig } from '@revelation-srs/telemetry';
 import { loadDocumentScannerConfig, type DocumentScannerConfig } from '@revelation-srs/documents';
 import { DEFAULT_DEV_JWT_SECRET, tokenEnv } from '@revelation-srs/auth';
 
 import { loadSrsHandoffConfig, type SrsHandoffConfig } from './srs/handoff-config.js';
 
 export interface Config {
+  /** METRICS_PORT and OTEL_EXPORTER_OTLP_ENDPOINT (ADR-035); packages/telemetry reads the same values at start. */
+  telemetry?: TelemetryConfig;
   port:            number;
   logLevel:        string;
   nodeEnv:         string;
@@ -38,6 +41,7 @@ function optionalInt(name: string, defaultValue: number): number {
 
 export function loadConfig(): Config {
   return {
+    telemetry:       loadTelemetryConfig(),
     port:            optionalInt('WELLBEING_PORT', 3002),
     logLevel:        process.env['LOG_LEVEL'] ?? 'info',
     nodeEnv:         process.env['NODE_ENV'] ?? 'development',

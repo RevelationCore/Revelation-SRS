@@ -17,7 +17,7 @@ const base: Config = {
   natsUrl: 'nats://127.0.0.1:1', attendanceApiUrl: 'http://127.0.0.1:1', temporalAddress: '127.0.0.1:1',
   deploymentEnvironmentCode: 'production', releaseVersion: '0.0.0-test', imageDigest: undefined,
   migrationVersion: 'test', jwtSecret: 'dev-secret-replace-in-production', keycloakJwksUrl: undefined,
-  corsOrigins: [], otelEndpoint: undefined, otelServiceName: 'srs-api-test',
+  corsOrigins: [],
   documentScanner: { mode: 'clamd', clamdHost: '127.0.0.1', clamdPort: 1, timeoutMs: 30_000, maxConcurrency: 4 },
 };
 

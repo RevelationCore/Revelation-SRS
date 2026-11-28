@@ -1,3 +1,4 @@
+import { httpServerMetrics } from '@revelation-srs/telemetry';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import type { ServiceTokenSource } from '@revelation-srs/service-client';
@@ -54,6 +55,8 @@ export async function buildApp(
         },
     trustProxy: true,
   });
+  // ADR-035: request durations by route template, served on the metrics port.
+  httpServerMetrics(fastify);
 
   await fastify.register(helmet, { global: true });
   await fastify.register(cors, { origin: false });

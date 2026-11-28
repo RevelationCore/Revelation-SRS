@@ -1,6 +1,8 @@
 // Development: both BFFs in one process (ADR-026 item 14) — the admin app's on
 // 3010 and the portal's on 3011, each its own Keycloak client, with
 // development sessions on. The Vite servers proxy /bff to them.
+import './telemetry-dev.js';
+
 import postgres from 'postgres';
 
 import { buildBff } from './app.js';

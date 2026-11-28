@@ -207,10 +207,9 @@ describe('Stage 1 — health routes', () => {
     expect(body.checks['database']?.status).toBe('ok');
   });
 
-  it('GET /metrics returns Prometheus text format', async () => {
+  it('GET /metrics is not served on the main port (ADR-035: port 9464 only)', async () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/metrics' });
-    expect(res.statusCode).toBe(200);
-    expect(res.headers['content-type']).toContain('text/plain');
-    expect(res.body).toContain('wellbeing_uptime_seconds');
+    expect(res.statusCode).not.toBe(200);
+    expect(res.body).not.toContain('# TYPE');
   });
 });

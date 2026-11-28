@@ -1,0 +1,43 @@
+{
+  "name": "@revelation-srs/telemetry",
+  "version": "0.0.1",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "description": "One OpenTelemetry bootstrap for every Node service (ADR-035): traces over OTLP, metrics for Prometheus on a dedicated port, and HTTP server metrics with a bounded route label.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "~1.9.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.81.2",
+    "@opentelemetry/exporter-prometheus": "^0.223.2",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.223.2",
+    "@opentelemetry/instrumentation-runtime-node": "^0.36.1",
+    "@opentelemetry/resources": "^2.12.1",
+    "@opentelemetry/sdk-metrics": "^2.12.1",
+    "@opentelemetry/sdk-node": "^0.223.2",
+    "@opentelemetry/sdk-trace-node": "^2.12.1",
+    "@opentelemetry/semantic-conventions": "^1.45.0"
+  },
+  "peerDependencies": {
+    "fastify": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "fastify": "^5.12.8",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.12"
+  }
+}

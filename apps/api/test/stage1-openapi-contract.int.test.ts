@@ -109,8 +109,6 @@ const STUB_CONFIG: Config = {
   jwtSecret:                 'test-secret',
   keycloakJwksUrl:           undefined,
   corsOrigins:               ['*'],
-  otelEndpoint:              undefined,
-  otelServiceName:           'srs-api',
 };
 
 // ---------------------------------------------------------------------------

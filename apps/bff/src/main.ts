@@ -1,3 +1,6 @@
+// OTel must be bootstrapped before any other import.
+import './telemetry.js';
+
 import postgres from 'postgres';
 
 import { buildBff } from './app.js';

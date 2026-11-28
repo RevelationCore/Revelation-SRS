@@ -118,8 +118,6 @@ export async function startTestApp(opts: StartTestAppOptions = {}): Promise<Test
     ...(opts.attendance?.timeoutMs !== undefined ? { engagementProxyTimeoutMs: opts.attendance.timeoutMs } : {}),
     ...(opts.trustProxy !== undefined ? { trustProxy: opts.trustProxy } : {}),
     corsOrigins:      ['http://localhost:5173'],
-    otelEndpoint:     undefined,
-    otelServiceName:  'srs-api-test',
   };
 
   const app = await buildApp(config, { eventBus: opts.eventBus, ...(opts.documentScanner ? { documentScanner: opts.documentScanner } : {}) });

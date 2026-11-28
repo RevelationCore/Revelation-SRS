@@ -1,8 +1,12 @@
+import { loadTelemetryConfig, type TelemetryConfig } from '@revelation-srs/telemetry';
+
 /**
  * BFF configuration (ADR-026). One instance per SPA, each its own
  * confidential Keycloak client.
  */
 export interface BffConfig {
+  /** METRICS_PORT and OTEL_EXPORTER_OTLP_ENDPOINT (ADR-035); packages/telemetry reads the same values at start. */
+  telemetry?: TelemetryConfig;
   nodeEnv:            string;
   port:               number;
   logLevel:           string;
@@ -51,6 +55,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BffConfig {
   const optionalInt = (name: string, fallback: number) => (env[name] ? Number(env[name]) : fallback);
   return {
     nodeEnv,
+    telemetry:       loadTelemetryConfig(env),
     port:            optionalInt('PORT', 3010),
     logLevel:        env['LOG_LEVEL'] ?? 'info',
     databaseUrl:     env['DATABASE_URL'] ?? 'postgres://srs:srs@localhost:5432/srs',

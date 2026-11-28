@@ -40,25 +40,4 @@ export function healthRoutes(fastify: FastifyInstance): void {
       });
     },
   );
-
-  fastify.get(
-    '/metrics',
-    { config: { skipAuth: true }, schema: { tags: ['health'], summary: 'Prometheus metrics' } },
-    async (_req, reply) => {
-      const uptime = process.uptime();
-      const memory = process.memoryUsage();
-
-      await reply
-        .type('text/plain; version=0.0.4')
-        .send([
-          '# HELP wellbeing_uptime_seconds Process uptime in seconds.',
-          '# TYPE wellbeing_uptime_seconds gauge',
-          `wellbeing_uptime_seconds ${uptime}`,
-          '# HELP wellbeing_memory_rss_bytes Resident memory size in bytes.',
-          '# TYPE wellbeing_memory_rss_bytes gauge',
-          `wellbeing_memory_rss_bytes ${memory.rss}`,
-          '',
-        ].join('\n'));
-    },
-  );
 }
